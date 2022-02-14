@@ -1,5 +1,6 @@
-# Compiled python
-*.pyc
+# Python
+__pycache__/
+*.py[cod]
 
 # Prerequisites
 *.d
@@ -38,3 +39,6 @@
 *.editorconfig
 *.pyproj
 *.vs
+
+# Other
+*.bak
