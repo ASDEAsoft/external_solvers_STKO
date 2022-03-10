@@ -124,7 +124,7 @@ def __control(xobj):
 		d.ndf = [3, 4, 6] # we allow 3D-U 3D-R and 3D-P
 	return d
 
-def getNodalSpatialDim(xobj):
+def getNodalSpatialDim(xobj, xobj_phys_prop):
 	d = __control(xobj)
 	return [(d.ndm,d.ndf),(d.ndm,d.ndf)]
 
