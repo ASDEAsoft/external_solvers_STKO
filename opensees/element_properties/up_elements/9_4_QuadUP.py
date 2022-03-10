@@ -149,7 +149,7 @@ def writeTcl(pinfo):
 	if not phys_prop.XObject.Xnamespace.startswith('materials.nD'):
 		raise Exception('Physical property must be "materials.nD" and not: "{}"'.format(phys_prop.XObject.Xnamespace))
 	if (elem.geometryFamilyType() != MpcElementGeometryFamilyType.Quadrilateral) or (len(elem.nodes) != 9):
-		raise Exception('Invalid element type for "{}", expected Quadrilateral with 9 nodes, given {} with {} nodes'.format(elem.geometryFamilyType(), len(elem.nodes)))
+		raise Exception('Invalid element type for "{}", expected Quadrilateral with 9 nodes, given {} with {} nodes'.format(elem_prop.name, elem.geometryFamilyType(), len(elem.nodes)))
 	
 	tag = elem.id
 	matTag = phys_prop.id
