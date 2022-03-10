@@ -149,7 +149,7 @@ def makeXObjectMetaData():
 	
 	return xom
 
-def getNodalSpatialDim(xobj):
+def getNodalSpatialDim(xobj, xobj_phys_prop):
 	return [(2,3),(2,3),(2,3),(2,3)]	# ndm, ndf
 
 def writeTcl(pinfo):
