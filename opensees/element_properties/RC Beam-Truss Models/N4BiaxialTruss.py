@@ -205,7 +205,7 @@ def makeXObjectMetaData():
 	
 	return xom
 
-def getNodalSpatialDim(xobj):
+def getNodalSpatialDim(xobj, xobj_phys_prop):
 	# This is an assembly of 4 N4BiaxialTruss elements
 	# in 2D, they support both 2 or 3 dofs.
 	return [(2, [2,3]), (2, [2,3]), (2, [2,3]), (2, [2,3])]
