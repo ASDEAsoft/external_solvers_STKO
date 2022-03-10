@@ -14,7 +14,7 @@ def makeXObjectMetaData():
 		html_par(html_begin()) +
 		html_par(html_boldtext('Optional')+'<br/>') +
 		html_par('to activate b1, b2 and b3') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Standard_Brick_Element','Standard Brick Element')+'<br/>') +
+		html_par(html_href('https://opensees.berkeley.edu/wiki/index.php/FourNodeTetrahedron','FourNodeTetrahedron')+'<br/>') +
 		html_end()
 		)
 	
@@ -27,7 +27,7 @@ def makeXObjectMetaData():
 		html_par(html_begin()) +
 		html_par(html_boldtext('b1')+'<br/>') +
 		html_par('body force in global x direction') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Standard_Brick_Element','Standard Brick Element')+'<br/>') +
+		html_par(html_href('https://opensees.berkeley.edu/wiki/index.php/FourNodeTetrahedron','FourNodeTetrahedron')+'<br/>') +
 		html_end()
 		)
 	at_b1.dimension = u.F
@@ -41,7 +41,7 @@ def makeXObjectMetaData():
 		html_par(html_begin()) +
 		html_par(html_boldtext('b2')+'<br/>') +
 		html_par('body force in global y direction') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Standard_Brick_Element','Standard Brick Element')+'<br/>') +
+		html_par(html_href('https://opensees.berkeley.edu/wiki/index.php/FourNodeTetrahedron','FourNodeTetrahedron')+'<br/>') +
 		html_end()
 		)
 	at_b2.dimension = u.F
@@ -55,7 +55,7 @@ def makeXObjectMetaData():
 		html_par(html_begin()) +
 		html_par(html_boldtext('b3')+'<br/>') +
 		html_par('body force in global z direction') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Standard_Brick_Element','Standard Brick Element')+'<br/>') +
+		html_par(html_href('https://opensees.berkeley.edu/wiki/index.php/FourNodeTetrahedron','FourNodeTetrahedron')+'<br/>') +
 		html_end()
 		)
 	at_b3.dimension = u.F
