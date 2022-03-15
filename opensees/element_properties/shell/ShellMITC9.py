@@ -36,11 +36,11 @@ def writeTcl(pinfo):
 	if namePh != 'sections':
 		raise Exception('Error: physical property must be "sections" and not: "{}"'.format(namePh))
 	
-	# NODE
-	nstr = shelu.getNodeString(elem)
-	
 	if (elem.geometryFamilyType() != MpcElementGeometryFamilyType.Quadrilateral or len(elem.nodes)!=9):
 		raise Exception('Error: invalid type of element or number of nodes')
+	
+	# NODE
+	nstr = shelu.getNodeString(elem)
 	
 	str_tcl = '{}element ShellNL {} {} {}\n'.format(pinfo.indent, tag, nstr, secTag)
 	
