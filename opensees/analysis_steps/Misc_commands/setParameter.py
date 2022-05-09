@@ -149,12 +149,13 @@ def writeTcl(pinfo):
 	pid_element_map = {}
 	if pinfo.process_count > 1:
 		for ele_id in parameter_map_elem:
-			pid = doc.mesh.partitionData.elementPartition(ele_id)
-			pid_values = pid_element_map.get(pid, None)
-			if pid_values is None:
-				pid_values = []
-				pid_element_map[pid] = pid_values
-			pid_values.append(ele_id)
+			if not ele_id in auto_gen_elements_pid_map:
+				pid = doc.mesh.partitionData.elementPartition(ele_id)
+				pid_values = pid_element_map.get(pid, None)
+				if pid_values is None:
+					pid_values = []
+					pid_element_map[pid] = pid_values
+				pid_values.append(ele_id)
 		for ele_id, pid in auto_gen_elements_pid_map.items():
 			pid_values = pid_element_map.get(pid, None)
 			if pid_values is None:

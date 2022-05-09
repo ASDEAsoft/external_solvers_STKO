@@ -92,7 +92,7 @@ def getNodalSpatialDim(xobj, xobj_phys_prop):
 	xobj_ep_hinge_j_index = _get_xobj_attribute(xobj, 'zeroLength_j').index
 	
 	do_hinge_i = (xobj_ep_hinge_i_index != 0)
-	do_hinge_j = (xobj_ep_hinge_i_index != 0)
+	do_hinge_j = (xobj_ep_hinge_j_index != 0)
 	
 	ep_Beam = doc.elementProperties[xobj_ep_beam_index]
 	ep_Beam_xobj = ep_Beam.XObject
@@ -206,15 +206,15 @@ def writeTcl(pinfo):
 	if xobj_ep_hinge_i_index != 0:
 		if xobj_pp_hinge_i_index == 0:
 			raise Exception("You provided a hinge element in I-end, but no hinge material!")
-	if xobj_pp_hinge_i_index != 0:
-		if xobj_ep_hinge_i_index == 0:
-			raise Exception("You provided a hinge material in I-end, but no hinge element!")
+	# if xobj_pp_hinge_i_index != 0:
+		# if xobj_ep_hinge_i_index == 0:
+			# raise Exception("You provided a hinge material in I-end, but no hinge element!")
 	if xobj_ep_hinge_j_index != 0:
 		if xobj_pp_hinge_j_index == 0:
 			raise Exception("You provided a hinge element in J-end, but no hinge material!")
-	if xobj_pp_hinge_j_index != 0:
-		if xobj_ep_hinge_j_index == 0:
-			raise Exception("You provided a hinge material in J-end, but no hinge element!")
+	# if xobj_pp_hinge_j_index != 0:
+		# if xobj_ep_hinge_j_index == 0:
+			# raise Exception("You provided a hinge material in J-end, but no hinge element!")
 	
 	# let's see if we have to build hinges, and at what sides
 	do_hinge_i = (elem.nodes[0].flags & MpcNodeFlags.OnVertex) and (xobj_ep_hinge_i_index != 0)

@@ -293,6 +293,8 @@ def makeXObjectMetaData():
 		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Limit_State_Material','Limit State Material')+'<br/>') +
 		html_end()
 		)
+	at_curveTag.indexSource.type = MpcAttributeIndexSourceType.Definition
+	at_curveTag.indexSource.addAllowedNamespace("limitCurves")
 	
 	# curveType
 	at_curveType = MpcAttributeMetaData()

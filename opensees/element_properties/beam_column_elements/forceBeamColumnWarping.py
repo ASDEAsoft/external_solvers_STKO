@@ -119,7 +119,7 @@ def makeXObjectMetaData():
 	
 	return xom
 
-def getNodalSpatialDim(xobj):
+def getNodalSpatialDim(xobj, xobj_phys_prop):
 	Dimension2_at = xobj.getAttribute('2D')
 	if(Dimension2_at is None):
 		raise Exception('Error: cannot find "2D" attribute')

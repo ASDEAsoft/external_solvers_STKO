@@ -3,6 +3,12 @@ from PyMpc import *
 from mpc_utils_html import *
 import opensees.physical_properties.sections.extrusion_utils as exutils
 
+def _geta(xobj, name):
+	a = xobj.getAttribute(name)
+	if a is None:
+		raise Exception('Error: cannot find "{}" attribute'.format(name))
+	return a
+
 def makeXObjectMetaData():
 	
 	# PP_Beam
@@ -80,10 +86,7 @@ def makeExtrusionBeamDataCompoundInfo(xobj):
 	will be the one containing the extrusion source. See the opensees.physical_properties.sections.Fiber.py module.
 	'''
 	
-	at_PP_Beam = xobj.getAttribute('PP_Beam')
-	if(at_PP_Beam is None):
-		raise Exception('Error: cannot find "PP_Beam" attribute')
-	PP_Beam = at_PP_Beam.index
+	PP_Beam = _geta(xobj, 'PP_Beam').index
 	# get extrusion info for the inner beam property
 	inner_items = exutils.getExtrusionDataAllItems(doc.getPhysicalProperty(PP_Beam))
 	if inner_items and len(inner_items) > 0:
@@ -104,11 +107,13 @@ def makeExtrusionBeamDataCompoundInfo(xobj):
 		if len(inner_items) > 0:
 			yOffset = inner_items[0].yOffset
 			zOffset = inner_items[0].zOffset
-		info.add(None, 0.05, True, True, yOffset, zOffset)
+		if _geta(xobj, 'zeroLength_i').index != 0:
+			info.add(None, 0.05, True, True, yOffset, zOffset)
 		exutils.checkOffsetCompatibility(inner_items)
 		for item in inner_items:
 			info.add(item.property, item.weight, item.isParametric, False, item.yOffset, item.zOffset)
-		info.add(None, 0.05, True, True, yOffset, zOffset)
+		if _geta(xobj, 'zeroLength_j').index != 0:
+			info.add(None, 0.05, True, True, yOffset, zOffset)
 	
 	return info
 

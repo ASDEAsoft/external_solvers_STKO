@@ -7,9 +7,17 @@ import math
 from opensees.conditions.Constraints.mp.ASDEmbeddedNodeElementUtils import ASDEmbeddedNodeElementUtils as ebu
 import os
 
+def _err(id, msg):
+	return 'Error in "ASDEmbeddedNodeElement" at "Condition {}":\n{}'.format(id, msg)
+def _geta(xobj, name):
+	a = xobj.getAttribute(name)
+	if a is None:
+		raise Exception(_err(xobj.parent.componentId, 'cannot find "{}" attribute'.format(name)))
+	return a
+
 def makeXObjectMetaData():
 	
-	dp = 'file:///{}/ASDEmbeddedNodeElement.pdf'.format(os.path.dirname(os.path.realpath(__file__)))
+	dp = 'https://opensees.github.io/OpenSeesDocumentation/user/manual/model/elements/ASDEmbeddedNodeElement.html'
 	
 	# stiffness
 	K = MpcAttributeMetaData()
@@ -49,6 +57,57 @@ def makeXObjectMetaData():
 		)
 	rot.setDefault(True)
 	
+	# rotation flag
+	pressure = MpcAttributeMetaData()
+	pressure.type = MpcAttributeType.Boolean
+	pressure.name = 'Constrain Pressure'
+	pressure.group = 'Default'
+	pressure.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('Constrain Pressure')+'<br/>') + 
+		html_par(
+			"If True, the constrained-node's pressure DOF will be constrained "
+			"to be equal to the weighted average of the retained-nodes's pressure DOF.<br/>"
+			"Note that this flag will be discarded if at least 1 node (either retained or constrained) is not U-P."
+			) +
+		html_par(html_href(dp,'ASDEmbeddedNodeElement')+'<br/>') +
+		html_end()
+		)
+	pressure.setDefault(False)
+	
+	# -KP
+	use_KP = MpcAttributeMetaData()
+	use_KP.type = MpcAttributeType.Boolean
+	use_KP.name = '-KP'
+	use_KP.group = 'Default'
+	use_KP.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('-KP')+'<br/>') + 
+		html_par(
+			"If True, the user can define a custom value for the KP stiffness parameter for pressure DOF. Otherwise it will be equal to K"
+			) +
+		html_par(html_href(dp,'ASDEmbeddedNodeElement')+'<br/>') +
+		html_end()
+		)
+	use_KP.setDefault(False)
+	
+	# stiffness
+	KP = MpcAttributeMetaData()
+	KP.type = MpcAttributeType.QuantityScalar
+	KP.name = 'KP (Penalty)'
+	KP.group = 'Default'
+	KP.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('KP (Penalty)')+'<br/>') + 
+		html_par(
+			"A penalty stiffness value used to enforce the constraint for Pressure DOF.<br/>"
+			) +
+		html_par(html_href(dp,'ASDEmbeddedNodeElement')+'<br/>') +
+		html_end()
+		)
+	KP.dimension = u.F/u.L/u.L
+	KP.setDefault(1.0e12)
+	
 	# ignore outside
 	son = MpcAttributeMetaData()
 	son.type = MpcAttributeType.Boolean
@@ -71,6 +130,9 @@ def makeXObjectMetaData():
 	xom.name = 'ASDEmbeddedNodeElement'
 	xom.addAttribute(K)
 	xom.addAttribute(rot)
+	xom.addAttribute(pressure)
+	xom.addAttribute(use_KP)
+	xom.addAttribute(KP)
 	xom.addAttribute(son)
 	
 	return xom
@@ -93,24 +155,43 @@ def makeConditionRepresentationData(xobj):
 	
 	return d
 
+def onEditBegin(editor, xobj):
+	if _geta(xobj, 'Constrain Rotations').boolean:
+		_geta(xobj, 'Constrain Pressure').boolean = False
+		_geta(xobj, '-KP').visible = False
+		_geta(xobj, 'KP (Penalty)').visible = False
+	if _geta(xobj, 'Constrain Pressure').boolean:
+		_geta(xobj, 'Constrain Rotations').boolean = False
+		_geta(xobj, '-KP').visible = True
+		_geta(xobj, 'KP (Penalty)').visible = _geta(xobj, '-KP').boolean
+	else:
+		_geta(xobj, '-KP').visible = False
+		_geta(xobj, 'KP (Penalty)').visible = False
+
+def onAttributeChanged(editor, xobj, attribute_name):
+	if attribute_name == 'Constrain Rotations':
+		if _geta(xobj, 'Constrain Rotations').boolean:
+			_geta(xobj, 'Constrain Pressure').boolean = False
+			_geta(xobj, '-KP').visible = False
+			_geta(xobj, 'KP (Penalty)').visible = False
+	elif attribute_name == 'Constrain Pressure':
+		if _geta(xobj, 'Constrain Pressure').boolean:
+			_geta(xobj, 'Constrain Rotations').boolean = False
+			_geta(xobj, '-KP').visible = True
+			_geta(xobj, 'KP (Penalty)').visible = _geta(xobj, '-KP').boolean
+		else:
+			_geta(xobj, '-KP').visible = False
+			_geta(xobj, 'KP (Penalty)').visible = False
+	elif attribute_name == '-KP':
+		_geta(xobj, 'KP (Penalty)').visible = _geta(xobj, '-KP').boolean
+
 def writeTcl_mpConstraints(pinfo):
 	
-	# element ASDEmbeddedNodeElement $Tag  $Cnode   $Rnode1 $Rnode2 $Rnode3 <$Rnode4>   <-K $K> <-rot>
+	# element ASDEmbeddedNodeElement $Tag  $Cnode   $Rnode1 $Rnode2 $Rnode3 <$Rnode4>   <-K $K> <-rot> <-p> <-KP $KP>
 	
 	# Utility functions ====================================================================================
 	
 	import numpy as np
-	
-	# standardized error
-	def err(msg):
-		return 'Error in "ASDEmbeddedNodeElement" at "Condition {}":\n{}'.format(pinfo.condition.id, msg)
-	
-	# get attribute
-	def get_xobj_attribute(name):
-		a = xobj.getAttribute(name)
-		if a is None:
-			raise Exception(err('cannot find "{}" attribute'.format(name)))
-		return a
 	
 	# the XObject
 	xobj = pinfo.condition.XObject
@@ -118,7 +199,7 @@ def writeTcl_mpConstraints(pinfo):
 	# the document
 	doc = App.caeDocument()
 	if(doc is None):
-		raise Exception(err('null cae document'))
+		raise Exception(_err(pinfo.condition.id, 'null cae document'))
 	
 	# get all interactions with this condition
 	all_inter = pinfo.condition.assignment.interactions
@@ -129,9 +210,12 @@ def writeTcl_mpConstraints(pinfo):
 	is_partitioned = (pinfo.process_count > 1)
 	
 	# get XObject's arguments
-	K = get_xobj_attribute('K (Penalty)').quantityScalar.value
-	rot = '-rot' if get_xobj_attribute('Constrain Rotations').boolean else ''
-	ignore_outside = get_xobj_attribute('Ignore Nodes Outside').boolean
+	K = _geta(xobj, 'K (Penalty)').quantityScalar.value
+	rot = '-rot' if _geta(xobj, 'Constrain Rotations').boolean else ''
+	pressure = '-p' if _geta(xobj, 'Constrain Pressure').boolean else ''
+	ignore_outside = _geta(xobj, 'Ignore Nodes Outside').boolean
+	KP_value = _geta(xobj, 'KP (Penalty)').quantityScalar.value
+	KP = '-KP {}'.format(KP_value) if (_geta(xobj, 'Constrain Pressure').boolean and _geta(xobj, '-KP').boolean) else ''
 	
 	# some stats
 	stats = [0, 0]
@@ -144,7 +228,7 @@ def writeTcl_mpConstraints(pinfo):
 		for inter in all_inter:
 			# get info about master geometry and do some checks
 			if inter.type != MpcInteractionType.NodeToElement:
-				raise Exception(err(
+				raise Exception(_err(pinfo.condition.id, 
 					'Interaction "{}" [{}] should be a Node-to-Element interaction, not {}.'.format(
 						inter.name, inter.id, inter.type)
 						))
@@ -160,14 +244,14 @@ def writeTcl_mpConstraints(pinfo):
 				NM = elem.numberOfMasterNodes()
 				NS = NN - NM
 				if NS != 1:
-					raise Exception(err('Link element should have only 1 constrained node'))
+					raise Exception(_err(pinfo.condition.id, 'Link element should have only 1 constrained node'))
 				# the constrained node
 				Cnode = elem.nodes[-1]
 				Cpos = np.asarray([[Cnode.x],[Cnode.y], [Cnode.z]])
 				# get source element
 				source_elem = elem.sourceElement
 				if source_elem is None:
-					raise Exception(err('Link element should have a valid source element'))
+					raise Exception(_err(pinfo.condition.id, 'Link element should have a valid source element'))
 				# check source element and extract embedding sub-simplex (3-node triangle or 4-node tetrahedron)
 				retained_nodes = []
 				distance = 1.0e10
@@ -204,7 +288,7 @@ def writeTcl_mpConstraints(pinfo):
 					distance = aux[0][1]
 				else:
 					# unsupported element type
-					raise Exception(err(
+					raise Exception(_err(pinfo.condition.id, 
 						'The source element (master geometry) of the Link element {} '
 						'has a wrong family type ({})'.format(elem.id, family)
 						))
@@ -214,7 +298,7 @@ def writeTcl_mpConstraints(pinfo):
 						stats[1] += 1
 						continue
 					else:
-						raise Exception(err(
+						raise Exception(_err(pinfo.condition.id, 
 							'The constrained node of the Link element {} '
 							'is outside the embedding domain (error = {} %; Max allowed error = 1.0 %)'.format(elem.id, distance*100.0)
 							))
@@ -230,10 +314,10 @@ def writeTcl_mpConstraints(pinfo):
 						first_done = True
 				# write this element
 				pinfo.out_file.write(
-					'{}{}element ASDEmbeddedNodeElement {}  {}   {}   -K {} {}\n'.format(
+					'{}{}element ASDEmbeddedNodeElement {}  {}   {}   -K {} {} {} {}\n'.format(
 						pinfo.indent, block_indent, elem.id, Cnode.id, 
 						' '.join(str(Rnode.id) for Rnode in retained_nodes),
-						K, rot
+						K, rot, pressure, KP
 						)
 					)
 				stats[0] += 1
@@ -247,7 +331,7 @@ def writeTcl_mpConstraints(pinfo):
 		return process_block_count
 	
 	# write description
-	description = '\n{}# element ASDEmbeddedNodeElement $Tag  $Cnode   $Rnode1 $Rnode2 $Rnode3 <$Rnode4>   <-K $K> <-rot>\n'.format(pinfo.indent)
+	description = '\n{}# element ASDEmbeddedNodeElement $Tag  $Cnode   $Rnode1 $Rnode2 $Rnode3 <$Rnode4>   <-K $K> <-rot> <-p> <-KP $KP>\n'.format(pinfo.indent)
 	pinfo.out_file.write(description)
 	
 	# call the internal function based on partitions

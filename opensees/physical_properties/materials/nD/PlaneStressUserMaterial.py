@@ -1,3 +1,6 @@
+# enable default 3D tester for this module
+from opensees.physical_properties.utils.tester.EnableTester2DPlaneStress import *
+
 import PyMpc.Units as u
 from PyMpc import *
 from mpc_utils_html import *
