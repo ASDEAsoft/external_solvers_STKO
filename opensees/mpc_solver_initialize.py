@@ -87,6 +87,7 @@ def initialize():
 	__load_module_internal(['definitions', 'frictionModel'], doc.registerMetaDataDefinition)
 	__load_module_internal(['definitions', 'timeSeries'], doc.registerMetaDataDefinition)
 	__load_module_internal(['definitions', 'randomVariable'], doc.registerMetaDataDefinition)
+	__load_module_internal(['definitions', 'limitCurves'], doc.registerMetaDataDefinition)
 	__load_module_internal(['definitions', 'misc'], doc.registerMetaDataDefinition)
 	
 	# register all metadata of analysis steps

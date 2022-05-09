@@ -89,6 +89,8 @@ def makeXObjectMetaData():
 		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Joint2D_Element','Joint2D Element')+'<br/>') +
 		html_end()
 		)
+	at_MatC.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
+	at_MatC.indexSource.addAllowedNamespace("materials.uniaxial")
 	
 	
 	xom = MpcXObjectMetaData()

@@ -45,6 +45,9 @@ def writeTcl(pinfo):
 	secTag = phys_prop.id
 	xobj = elem_prop.XObject
 	
+	if (elem.geometryFamilyType()) != MpcElementGeometryFamilyType.Quadrilateral or len(elem.nodes)!=4:
+		raise Exception('Error: invalid type of element or number of nodes')
+	
 	ClassName = xobj.name
 	if pinfo.currentDescription != ClassName:
 		pinfo.out_file.write('\n{}# {} {}\n'.format(pinfo.indent, xobj.Xnamespace, ClassName))
@@ -62,9 +65,6 @@ def writeTcl(pinfo):
 	
 	# NODE
 	nstr = shelu.getNodeString(elem)
-	
-	if (elem.geometryFamilyType()) != MpcElementGeometryFamilyType.Quadrilateral or len(elem.nodes)!=4:
-		raise Exception('Error: invalid type of element or number of nodes')
 	
 	# optional paramters
 	sopt = ''

@@ -60,12 +60,27 @@ def makeXObjectMetaData():
 		)
 	#at_rho.dimension = u.M/u.L**3
 	
+	# Ep_mod
+	at_Ep_mod = MpcAttributeMetaData()
+	at_Ep_mod.type = MpcAttributeType.Real
+	at_Ep_mod.name = 'Ep_mod'
+	at_Ep_mod.group = 'Group'
+	at_Ep_mod.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('Ep_mod')+'<br/>') + 
+		html_par('Ratio of Flexural to Membrane stiffness. Optional. Default = 1') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Membrane_Plate_Section','Elastic Membrane Plate Section')+'<br/>') +
+		html_end()
+		)
+	at_Ep_mod.setDefault(1.0)
+	
 	xom = MpcXObjectMetaData()
 	xom.name = 'ElasticMembranePlateSection'
 	xom.addAttribute(at_E)
 	xom.addAttribute(at_nu)
 	xom.addAttribute(at_h)
 	xom.addAttribute(at_rho)
+	xom.addAttribute(at_Ep_mod)
 	
 	return xom
 
@@ -97,8 +112,12 @@ def writeTcl(pinfo):
 		raise Exception('Error: cannot find "rho" attribute')
 	rho = rho_at.quantityScalar
 	
+	Ep_mod_at = xobj.getAttribute('Ep_mod')
+	if(Ep_mod_at is None):
+		raise Exception('Error: cannot find "Ep_mod" attribute')
+	Ep_mod = Ep_mod_at.real
 	
-	str_tcl = '{}section ElasticMembranePlateSection {} {} {} {} {}\n'.format(pinfo.indent, tag, E.value, nu, h.value, rho.value)
+	str_tcl = '{}section ElasticMembranePlateSection {} {} {} {} {} {}\n'.format(pinfo.indent, tag, E.value, nu, h.value, rho.value, Ep_mod)
 	
 	# now write the string into the file
 	pinfo.out_file.write(str_tcl)

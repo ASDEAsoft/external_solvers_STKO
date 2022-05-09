@@ -139,7 +139,7 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			set factor_increment [expr max($min_factor_increment, [expr double($desired_iter) / double($num_iter)])]
 			set factor [expr $factor * $factor_increment]
 			if {$process_id == 0} {
-				puts "Reducing increment factor due to non convergece. Factor = $factor"
+				puts "Reducing increment factor due to non convergence. Factor = $factor"
 			}
 			if {$factor < $min_factor} {
 				if {$process_id == 0} {

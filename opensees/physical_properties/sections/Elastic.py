@@ -4,6 +4,12 @@ from mpc_utils_html import *
 import opensees.utils.tcl_input as tclin
 import opensees.physical_properties.sections.offset_utils as ofu
 
+def _geta(xobj, name):
+	x = xobj.getAttribute(name)
+	if x is None:
+		raise Exception('Cannot find "{}" attribute'.format(name))
+	return x
+
 def makeXObjectMetaData():
 	
 	#2D
@@ -105,6 +111,62 @@ def makeXObjectMetaData():
 		)
 	at_G_3D.dimension = u.F/u.L**2
 	
+	# use_uniaxial
+	at_use_uniaxial = MpcAttributeMetaData()
+	at_use_uniaxial.type = MpcAttributeType.Boolean
+	at_use_uniaxial.name = 'Use Uniaxial Materials'
+	at_use_uniaxial.group = 'Material properties'
+	at_use_uniaxial.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('Use Uniaxial Materials')+'<br/>') + 
+		html_par('Tick this value to use custom uniaxial materials instead of elastic constants. This will turn the Elastic Section into a section aggregator') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Section','Elastic Section')+'<br/>') +
+		html_end()
+		)
+	at_use_uniaxial.setDefault(False)
+	# material_Em
+	at_material_Em = MpcAttributeMetaData()
+	at_material_Em.type = MpcAttributeType.Index
+	at_material_Em.name = 'Em material'
+	at_material_Em.group = 'Material properties'
+	at_material_Em.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('Em material')+'<br/>') + 
+		html_par('tag of previously-defined UniaxialMaterial objects (stress-strain for axial behavior)') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Section','Elastic Section')+'<br/>') +
+		html_end()
+		)
+	at_material_Em.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
+	at_material_Em.indexSource.addAllowedNamespace('materials.uniaxial')
+	# material_Eb
+	at_material_Eb = MpcAttributeMetaData()
+	at_material_Eb.type = MpcAttributeType.Index
+	at_material_Eb.name = 'Eb material'
+	at_material_Eb.group = 'Material properties'
+	at_material_Eb.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('Em material')+'<br/>') + 
+		html_par('tag of previously-defined UniaxialMaterial objects (stress-strain for bending behavior)') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Section','Elastic Section')+'<br/>') +
+		html_end()
+		)
+	at_material_Eb.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
+	at_material_Eb.indexSource.addAllowedNamespace('materials.uniaxial')
+	# material_G
+	at_material_G = MpcAttributeMetaData()
+	at_material_G.type = MpcAttributeType.Index
+	at_material_G.name = 'G material'
+	at_material_G.group = 'Material properties'
+	at_material_G.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('G material')+'<br/>') + 
+		html_par('tag of previously-defined UniaxialMaterial objects (stress-strain for shear/torsion behavior)') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Section','Elastic Section')+'<br/>') +
+		html_end()
+		)
+	at_material_G.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
+	at_material_G.indexSource.addAllowedNamespace('materials.uniaxial')
+	
 	# Optional
 	at_Optional = MpcAttributeMetaData()
 	at_Optional.type = MpcAttributeType.Boolean
@@ -153,9 +215,13 @@ def makeXObjectMetaData():
 	xom.addAttribute(at_3D)
 	xom.addAttribute(at_Section)
 	#material params
+	xom.addAttribute(at_use_uniaxial)
 	xom.addAttribute(at_E)
 	xom.addAttribute(at_G_2D)
 	xom.addAttribute(at_G_3D)
+	xom.addAttribute(at_material_Em)
+	xom.addAttribute(at_material_Eb)
+	xom.addAttribute(at_material_G)
 	# options
 	xom.addAttribute(at_Optional)
 	# modifiers
@@ -178,6 +244,20 @@ def makeXObjectMetaData():
 	ofu.addOffsetMetaData(xom, dep_3d = at_3D)
 	
 	return xom
+
+def onEditBegin(editor, xobj):
+	onAttributeChanged(editor, xobj, 'Use Uniaxial Materials')
+
+def onAttributeChanged(editor, xobj, attribute_name):
+	uni =_geta(xobj, 'Use Uniaxial Materials').boolean
+	d2 = _geta(xobj, '2D').boolean
+	opt = _geta(xobj, 'Optional').boolean
+	_geta(xobj, 'E').visible = not uni
+	_geta(xobj, 'G/2D').visible = (not uni) and (d2 and opt)
+	_geta(xobj, 'G/3D').visible = (not uni) and (not d2)
+	_geta(xobj, 'Em material').visible = uni
+	_geta(xobj, 'Eb material').visible = uni
+	_geta(xobj, 'G material').visible = uni and ((not d2) or (d2 and opt))
 
 def makeExtrusionBeamDataCompoundInfo(xobj):
 	
@@ -220,104 +300,121 @@ def writeTcl(pinfo):
 	#3D
 	#section Elastic $secTag $E $A $Iz $Iy $G $J <$alphaY $alphaZ>
 	
+	# utils
+	def next_id():
+		id = pinfo.next_physicalProperties_id
+		pinfo.next_physicalProperties_id += 1
+		return id
+	
+	# xobj and tag
 	xobj = pinfo.phys_prop.XObject
 	tag = xobj.parent.componentId
 	
-	# mandatory parameters
-	at_E = xobj.getAttribute('E')
-	if(at_E is None):
-		raise Exception('Error: cannot find "E" attribute')
-	E = at_E.quantityScalar
+	# dimension
+	b2D = _geta(xobj, '2D').boolean
+	b3D = _geta(xobj, '3D').boolean
+	if b2D == b3D:
+		raise Exception('Cannot set both 2D and 3D flags to the same value in Elastic section')
 	
-	at_Optional = xobj.getAttribute('Optional')
-	if(at_Optional is None):
-		raise Exception('Error: cannot find "Optional" attribute')
-	Optional = at_Optional.boolean
-	
-	at_2D = xobj.getAttribute('2D')
-	if(at_2D is None):
-		raise Exception('Error: cannot find "2D" attribute')
-	b2D = at_2D.boolean
-	
-	at_3D = xobj.getAttribute('3D')
-	if(at_3D is None):
-		raise Exception('Error: cannot find "3D" attribute')
-	b3D = at_3D.boolean
-	
-	at_Section = xobj.getAttribute('Section')
-	if(at_Section is None):
-		raise Exception('Error: cannot find "Section" attribute')
-	Section = at_Section.customObject
+	# section properties
+	Section = _geta(xobj, 'Section').customObject
 	if Section is None:
-		raise Exception('Error: Section is None')
-	
-	at_Izz_modifier = xobj.getAttribute('Izz_modifier')
-	if(at_Izz_modifier is None):
-		raise Exception('Error: cannot find "Izz_modifier" attribute')
-	Izz_modifier = at_Izz_modifier.real
-	
-	at_Iyy_modifier = xobj.getAttribute('Iyy_modifier')
-	if(at_Iyy_modifier is None):
-		raise Exception('Error: cannot find "Iyy_modifier" attribute')
-	Iyy_modifier = at_Iyy_modifier.real
-	
-	# getSpatialDim
-	if b2D:
-		ndm = 2
-		ndf = 3
-		
-	else:
-		ndm = 3
-		ndf = 6
-	
-	pinfo.updateModelBuilder(ndm, ndf)
-	
-	
+		raise Exception('Error in Elastic section: Section is not defined')
+	Izz_modifier = _geta(xobj, 'Izz_modifier').real
+	Iyy_modifier = _geta(xobj, 'Iyy_modifier').real
+	alphaZ = Section.properties.alphaZ
+	alphaY = Section.properties.alphaY
 	A = Section.properties.area
 	Iz = Section.properties.Izz * Izz_modifier
+	Iy = Section.properties.Iyy * Iyy_modifier
+	J = Section.properties.J
 	
+	# material properties
+	E = _geta(xobj, 'E').quantityScalar.value
 	if b2D:
+		G = _geta(xobj, 'G/2D').quantityScalar.value
+	else:
+		G = _geta(xobj, 'G/3D').quantityScalar.value
 		
-		# Analysis 2D
-		# optional paramters
-		sopt = ''
-		
-		if Optional:
-			G_at_2D = xobj.getAttribute('G/2D')
-			if(G_at_2D is None):
-				raise Exception('Error: cannot find "G" attribute')
-			G_2D = G_at_2D.quantityScalar
-			
-			alphaY = Section.properties.alphaY
-			
-			sopt += ' {} {}'.format(G_2D.value, alphaY)
-		
-		str_tcl = '\n{}section Elastic {} {} {} {}{}\n'.format(pinfo.indent, tag, E.value, A, Iz, sopt)
+	# shear deformability option
+	Optional = _geta(xobj, 'Optional').boolean
 	
-	elif b3D:
-		# Analysis 3D
-		
-		Iy = Section.properties.Iyy * Iyy_modifier
-		
-		G_3D_at = xobj.getAttribute('G/3D')
-		if(G_3D_at is None):
-			raise Exception('Error: cannot find "G" attribute')
-		G_3D = G_3D_at.quantityScalar
-		
-		J = Section.properties.J
-		
-		# optional paramters
-		sopt = ''
-		
-		if Optional:
-			alphaY = Section.properties.alphaY
-			alphaZ = Section.properties.alphaZ
-			sopt += ' {} {}'.format(alphaY, alphaZ)
+	# custom uniaxial for conversion to aggregator
+	use_uniaxial = _geta(xobj, 'Use Uniaxial Materials').boolean
+	if use_uniaxial:
+		Em = _geta(xobj, 'Em material').index
+		Eb = _geta(xobj, 'Eb material').index
+		GG = _geta(xobj, 'G material').index
+		if Em == 0:
+			raise Exception('Error in Elastic section: Missing uniaxial material for axial response "Em"')
+		if Eb == 0:
+			raise Exception('Error in Elastic section: Missing uniaxial material for bending response "Eb"')
+		if (b2D and Optional) or b3D:
+			if GG == 0:
+				raise Exception('Error in Elastic section: Missing uniaxial material for shear/torsion response "G"')
 	
-		str_tcl = '\n{}section Elastic {} {} {} {} {} {} {}{}\n'.format(pinfo.indent, tag, E.value, A, Iz, Iy, G_3D.value, J, sopt)
+	# update model builder
+	if not use_uniaxial:
+		if b2D:
+			ndm = 2
+			ndf = 3
+		else:
+			ndm = 3
+			ndf = 6
+		pinfo.updateModelBuilder(ndm, ndf)
+	
+	# write section
+	if b2D:
+		if use_uniaxial:
+			# aggregator 2D
+			P = next_id()
+			pinfo.out_file.write('{}uniaxialMaterial Parallel {} {} -factors {}\n'.format(pinfo.indent, P, Em, A))
+			Mz = next_id()
+			pinfo.out_file.write('{}uniaxialMaterial Parallel {} {} -factors {}\n'.format(pinfo.indent, Mz, Eb, Iz))
+			data = [P, 'P', Mz, 'Mz']
+			if Optional:
+				Vy = next_id()
+				pinfo.out_file.write('{}uniaxialMaterial Parallel {} {} -factors {}\n'.format(pinfo.indent, Vy, GG, A*alphaY))
+				data.append(Vy)
+				data.append('Vy')
+			str_tcl = '{}section Aggregator {} {}\n'.format(pinfo.indent, tag, ' '.join(str(i) for i in data))
+			
+		else:
+			# elastic section 2D
+			sopt = ''
+			if Optional:
+				sopt = ' {} {}'.format(G, alphaY)
+			str_tcl = '\n{}section Elastic {} {} {} {}{}\n'.format(pinfo.indent, tag, E, A, Iz, sopt)
 	
 	else:
-		raise Exception('both 2D and 3D options are set to false')
+		if use_uniaxial:
+			# aggregator 3D
+			P = next_id()
+			pinfo.out_file.write('{}uniaxialMaterial Parallel {} {} -factors {}\n'.format(pinfo.indent, P, Em, A))
+			Mz = next_id()
+			pinfo.out_file.write('{}uniaxialMaterial Parallel {} {} -factors {}\n'.format(pinfo.indent, Mz, Eb, Iz))
+			My = next_id()
+			pinfo.out_file.write('{}uniaxialMaterial Parallel {} {} -factors {}\n'.format(pinfo.indent, My, Eb, Iy))
+			T = next_id()
+			pinfo.out_file.write('{}uniaxialMaterial Parallel {} {} -factors {}\n'.format(pinfo.indent, T, GG, J))
+			data = [P, 'P', Mz, 'Mz', My, 'My', T, 'T']
+			if Optional:
+				Vy = next_id()
+				pinfo.out_file.write('{}uniaxialMaterial Parallel {} {} -factors {}\n'.format(pinfo.indent, Vy, GG, A*alphaY))
+				data.append(Vy)
+				data.append('Vy')
+				Vz = next_id()
+				pinfo.out_file.write('{}uniaxialMaterial Parallel {} {} -factors {}\n'.format(pinfo.indent, Vz, GG, A*alphaZ))
+				data.append(Vz)
+				data.append('Vz')
+			str_tcl = '{}section Aggregator {} {}\n'.format(pinfo.indent, tag, ' '.join(str(i) for i in data))
+			
+		else:
+			# elastic section 3D
+			sopt = ''
+			if Optional:
+				sopt = ' {} {}'.format(alphaY, alphaZ)
+			str_tcl = '\n{}section Elastic {} {} {} {} {} {} {}{}\n'.format(pinfo.indent, tag, E, A, Iz, Iy, G, J, sopt)
 	
 	# now write the string into the file
 	pinfo.out_file.write(str_tcl)
