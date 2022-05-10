@@ -54,11 +54,13 @@ def makeXObjectMetaData():
 	at_deformation = mka_er('deformation')
 	at_damage = mka_er('damage')
 	at_equivalentPlasticStrain = mka_er('equivalentPlasticStrain')
+	at_cw = mka_er('cw')
 	
 	at_material_stress = mka_er('material.stress')
 	at_material_strain = mka_er('material.strain')
 	at_material_damage = mka_er('material.damage')
 	at_material_equivalentPlasticStrain = mka_er('material.equivalentPlasticStrain')
+	at_material_cw = mka_er('material.cw')
 	
 	at_section_force = mka_er('section.force')
 	at_section_deformation = mka_er('section.deformation')
@@ -66,6 +68,7 @@ def makeXObjectMetaData():
 	at_section_fiber_strain = mka_er('section.fiber.strain')
 	at_section_fiber_damage = mka_er('section.fiber.damage')
 	at_section_fiber_equivalentPlasticStrain = mka_er('section.fiber.equivalentPlasticStrain')
+	at_section_fiber_cw = mka_er('section.fiber.cw')
 	
 	at_custom = mka(MpcAttributeType.StringVector, 'custom', 'custom element results', 
 		'You can define 1 string for each result not mentioned in the built-in ones')
@@ -133,16 +136,19 @@ def makeXObjectMetaData():
 	xom.addAttribute(at_localForce)
 	xom.addAttribute(at_damage)
 	xom.addAttribute(at_equivalentPlasticStrain)
+	xom.addAttribute(at_cw)
 	xom.addAttribute(at_section_force)
 	xom.addAttribute(at_section_deformation)
 	xom.addAttribute(at_material_stress)
 	xom.addAttribute(at_material_strain)
 	xom.addAttribute(at_material_damage)
 	xom.addAttribute(at_material_equivalentPlasticStrain)
+	xom.addAttribute(at_material_cw)
 	xom.addAttribute(at_section_fiber_stress)
 	xom.addAttribute(at_section_fiber_strain)
 	xom.addAttribute(at_section_fiber_damage)
 	xom.addAttribute(at_section_fiber_equivalentPlasticStrain)
+	xom.addAttribute(at_section_fiber_cw)
 	
 	xom.addAttribute(at_custom)
 	
@@ -293,6 +299,8 @@ def writeTcl(pinfo):
 		sopt += ' "damage"'
 	if geta('equivalentPlasticStrain').boolean:
 		sopt += ' "equivalentPlasticStrain"'
+	if geta('cw').boolean:
+		sopt += ' "cw"'
 	if geta('section.force').boolean:
 		sopt += ' "section.force"'
 	if geta('section.deformation').boolean:
@@ -305,6 +313,8 @@ def writeTcl(pinfo):
 		sopt += ' "material.damage"'
 	if geta('material.equivalentPlasticStrain').boolean:
 		sopt += ' "material.equivalentPlasticStrain"'
+	if geta('material.cw').boolean:
+		sopt += ' "material.cw"'
 	if geta('section.fiber.stress').boolean:
 		sopt += ' "section.fiber.stress"'
 	if geta('section.fiber.strain').boolean:
@@ -313,6 +323,8 @@ def writeTcl(pinfo):
 		sopt += ' "section.fiber.damage"'
 	if geta('section.fiber.equivalentPlasticStrain').boolean:
 		sopt += ' "section.fiber.equivalentPlasticStrain"'
+	if geta('section.fiber.cw').boolean:
+		sopt += ' "section.fiber.cw"'
 	
 	if sopt:
 		pinfo.out_file.write(' \\\n{}-E{}'.format(pinfo.indent, sopt))
