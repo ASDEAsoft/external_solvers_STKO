@@ -102,11 +102,25 @@ def _normalized(x):
 	else:
 		y = x.copy()
 	return y
-		
 
-def _update_graphics(db, do_center=False, scale=1.0, crd_scale=1.0,
+def _generate_visual_materials():
+	mat_in = FxMaterial()
+	mat_in.pointColor = FxColor(1.0, 0.0, 0.0)
+	mat_in.pointSize = 10
+	mat_in.visibilityOptionsOverride = FxMaterialVisibilityOptions(True, True, True, True)
+	mat_out = FxMaterial()
+	mat_out.pointColor = FxColor(0.0, 0.0, 1.0)
+	mat_out.pointSize = 10
+	mat_out.visibilityOptionsOverride = FxMaterialVisibilityOptions(True, True, True, True)
+	mat_qa = FxMaterial()
+	mat_qa.pointColor = FxColor(0.0, 1.0, 0.0)
+	mat_qa.pointSize = 10
+	mat_qa.visibilityOptionsOverride = FxMaterialVisibilityOptions(True, True, True, True)
+	return (mat_in, mat_out, mat_qa)
+
+def _update_graphics(db, bbox, do_center=False, scale=1.0, crd_scale=1.0,
 	e1 = np.array([1.0,0.0,0.0]), e2 = np.array([0.0, 1.0, 0.0]),
-	extra_T = np.zeros(3)):
+	extra_T = np.zeros(3), time_id = 0):
 	try:
 		# create a STKO 3d graphics
 		doc = App.caeDocument()
@@ -117,14 +131,20 @@ def _update_graphics(db, do_center=False, scale=1.0, crd_scale=1.0,
 		# box points and flags
 		xyz = db['/DRM_Data/xyz']
 		internal = db['/DRM_Data/internal']
+		data_location = db['/DRM_Data/data_location']
+		displacement = None
+		if 'displacement' in db['/DRM_Data']:
+			displacement = db['/DRM_Data/displacement']
 		# get data for box points 
 		xyz_data = xyz[:,:]
 		internal_data = internal[:]
+		data_location_data = data_location[:]
+		if displacement:
+			displacement_data = displacement[:,:]
 		# compute transformartion matrix
 		# drm center
 		drm_center = np.mean(xyz_data, axis=0)
-		# condition target center (TODO)
-		bbox = doc.scene.boundingBox
+		# geom center
 		pmax = bbox.maxPoint
 		pmin = bbox.minPoint
 		center = (pmin+pmax)/2
@@ -151,13 +171,50 @@ def _update_graphics(db, do_center=False, scale=1.0, crd_scale=1.0,
 		R = np.zeros((4,4))
 		e11 = _normalized(e1)
 		e22 = _normalized(e2)
-		e33 = np.cross(e11, e22)
+		e33 = _normalized(np.cross(e11, e22))
+		e22 = _normalized(np.cross(e33, e11))
+		if np.linalg.norm(e11) < 0.1:
+			IO.write_cerr('Local X vector has a zero length\n')
+		if np.linalg.norm(e22) < 0.1:
+			IO.write_cerr('Local Y vector has a zero length\n')
+		if np.linalg.norm(e33) < 0.1:
+			IO.write_cerr('Local Z vector has a zero length. Make sure Local X and Y are not parallel\n')
 		R[0:3, 0] = e11
 		R[0:3, 1] = e22
 		R[0:3, 2] = e33
 		R[3,3] = 1.0
 		TT = T1 @ R @ S @ T0
-		print(TT)
+		# generate visual materials
+		mat_in, mat_out, _ = _generate_visual_materials()
+		# create visual representations
+		vrep_in = FxShape()
+		vrep_out = FxShape()
+		vrep_in.material = mat_in
+		vrep_out.material = mat_out
+		in_counter = 0
+		out_counter = 0
+		for i in range(xyz_data.shape[0]):
+			p = np.ones(4)
+			p[0:3] = xyz_data[i,:]
+			p = TT @ p
+			if displacement:
+				loc = data_location_data[i]
+				u = displacement_data[loc:loc+3, time_id]*scale
+				p[0:3] += u
+			flag = internal_data[i]
+			if flag:
+				vrep_in.vertices.vertices.append(Math.vertex(Math.vec3(p[0],p[1],p[2])))
+				vrep_in.vertices.indices.append(in_counter)
+				in_counter += 1
+			else:
+				vrep_out.vertices.vertices.append(Math.vertex(Math.vec3(p[0],p[1],p[2])))
+				vrep_out.vertices.indices.append(out_counter)
+				out_counter += 1
+		vrep_in.commitChanges()
+		vrep_out.commitChanges()
+		doc.addCustomDrawableEntity(vrep_in)
+		doc.addCustomDrawableEntity(vrep_out)
+		App.updateActiveView()
 	except:
 		print(traceback.format_exc())
 
@@ -274,6 +331,13 @@ class DRMWidget(QWidget):
 		self.windowLoaded.connect(self.onWindowLoaded)
 		self.tdrop.valueChanged.connect(self.onTDropValueChanged)
 		self.ndrop.currentIndexChanged.connect(self.onNDropCurrentIndexChanged)
+		self.dedit.textChanged.connect(self.onDeformationChanged)
+		#
+		# set up an empty bounding box
+		self.bbox = None
+		#
+		# first update
+		self.updateDRMGraphics()
 	
 	# implement the show event
 	def showEvent(self, event):
@@ -294,15 +358,7 @@ class DRMWidget(QWidget):
 		# update time label
 		self.tstep_label.setText('Step: {}; Time: {:.6g}'.format(value, ctime))
 		# update graphics
-		_update_graphics(
-			self.db,
-			do_center = self.xobj.getAttribute('Center box').boolean,
-			scale = _settings.locale.toDouble(self.dedit.text())[0],
-			crd_scale = self.xobj.getAttribute('crd_scale').real,
-			e1 = _toNpArray(self.xobj.getAttribute('Local X').quantityVector3.value),
-			e2 = _toNpArray(self.xobj.getAttribute('Local Y').quantityVector3.value),
-			extra_T = _toNpArray(self.xobj.getAttribute('Extra Translation').quantityVector3.value),
-			)
+		self.updateDRMGraphics()
 	
 	@Slot(int)
 	def onNDropCurrentIndexChanged(self, value):
@@ -363,6 +419,10 @@ class DRMWidget(QWidget):
 				iplot[3].value = False
 				print("not", target)
 	
+	@Slot(str)
+	def onDeformationChanged(self, value):
+		self.updateDRMGraphics()
+	
 	def setDatabase(self, db):
 		# set a reference to the database
 		if self.db:
@@ -404,7 +464,30 @@ class DRMWidget(QWidget):
 			iy = xyz[i, 1]
 			iz = xyz[i, 2]
 			self.ndrop.addItem('[{}] ({:.3g}, {:.3g}, {:.3g})'.format(i, ix,iy,iz), i)
-		
+		# update
+		self.updateDRMGraphics()
+	
+	def updateDRMGraphics(self):
+		if self.db:
+			if self.bbox is None:
+				doc = App.caeDocument()
+				self.bbox = FxBndBox()
+				all_geom = self.xobj.parent.assignment.geometries
+				for geom, subset in all_geom.items():
+					for i in subset.solids:
+						solid = geom.visualRepresentation.solids[i]
+						self.bbox.add(solid.boundingBox)
+			_update_graphics(
+				self.db,
+				self.bbox,
+				do_center = self.xobj.getAttribute('Center box').boolean,
+				scale = _settings.locale.toDouble(self.dedit.text())[0],
+				crd_scale = self.xobj.getAttribute('crd_scale').real,
+				e1 = _toNpArray(self.xobj.getAttribute('Local X').quantityVector3.value),
+				e2 = _toNpArray(self.xobj.getAttribute('Local Y').quantityVector3.value),
+				extra_T = _toNpArray(self.xobj.getAttribute('Extra Translation').quantityVector3.value),
+				time_id = self.tdrop.value()
+				)
 
 def makeXObjectMetaData():
 	
@@ -508,6 +591,9 @@ def _removeGui():
 		_constants.gui.setParent(None)
 		_constants.gui.deleteLater()
 		_constants.gui = None
+		# clear previous graphics
+		doc = App.caeDocument()
+		doc.clearCustomDrawableEntities()
 
 def onEditorClosing(editor, xobj):
 	_removeGui()
@@ -538,3 +624,5 @@ def onAttributeChanged(editor, xobj, attribute_name):
 	# or you can use this to automatically trigger the update
 	if attribute_name == 'File Name':
 		_setDatabaseOnGui(xobj)
+	elif attribute_name in ('crd_scale', 'Center box', 'Extra Translation', 'Local X', 'Local Y'):
+		_constants.gui.updateDRMGraphics()
