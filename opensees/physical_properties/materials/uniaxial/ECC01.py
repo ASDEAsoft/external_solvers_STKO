@@ -225,7 +225,7 @@ def writeTcl(pinfo):
 	sigt0_at = xobj.getAttribute('sigt0')
 	if(sigt0_at is None):
 		raise Exception('Error: cannot find "sigt0" attribute')
-	sigt0 = sigt0_at.quantityScalar
+	sigt0 = sigt0_at.quantityScalar.value
 	
 	epst0_at = xobj.getAttribute('epst0')
 	if(epst0_at is None):
@@ -235,7 +235,7 @@ def writeTcl(pinfo):
 	sigt1_at = xobj.getAttribute('sigt1')
 	if(sigt1_at is None):
 		raise Exception('Error: cannot find "sigt1" attribute')
-	sigt1 = sigt1_at.quantityScalar
+	sigt1 = sigt1_at.quantityScalar.value
 	
 	epst1_at = xobj.getAttribute('epst1')
 	if(epst1_at is None):
@@ -250,7 +250,7 @@ def writeTcl(pinfo):
 	sigc0_at = xobj.getAttribute('sigc0')
 	if(sigc0_at is None):
 		raise Exception('Error: cannot find "sigc0" attribute')
-	sigc0 = sigc0_at.quantityScalar
+	sigc0 = sigc0_at.quantityScalar.value
 	
 	epsc0_at = xobj.getAttribute('epsc0')
 	if(epsc0_at is None):
