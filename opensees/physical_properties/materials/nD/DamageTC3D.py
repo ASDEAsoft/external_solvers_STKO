@@ -57,7 +57,7 @@ def makeXObjectMetaData():
 	eta  = mka("eta", "Misc", "Viscosity parameter", MpcAttributeType.Real, dval=0.0)
 	pdf_t = mka("pdf_t", "Misc", "Plastic-Damage factor for tensile response in range [0 (full damage) ... (mixed) ... 1 (full plasticity)]", MpcAttributeType.Real, dval=0.0)
 	pdf_c = mka("pdf_c", "Misc", "Plastic-Damage factor for compressive response in range [0 (full damage) ... (mixed) ... 1 (full plasticity)]", MpcAttributeType.Real, dval=0.7)
-	algo = mka("integration", "Misc", ("Inegration type.<br/>"
+	algo = mka("integration", "Misc", ("Integration type.<br/>"
 		"(Default) Implicit: A standard Backward-Euler integration scheme.<br/>"
 		"IMPL-EX: A mixed IMPLicit-EXplicit integration scheme. The resulting response is "
 		"step-wise linear with a positive-definite tangent stiffnes matrix due to the explicit extrapolation of the internal variables.<br/>"
@@ -69,7 +69,13 @@ def makeXObjectMetaData():
 		"will be divided by the element characteristic length, in order to obtain a response which is mesh-size independent.<br/>"
 		"If turn this flag Off, the input fracture energies will be used as they are."), 
 		MpcAttributeType.Boolean, dval=True)
-
+	ctype = mka("constitutiveTensorType", "Misc", ("Constitutive Tensor Tyope.<br/>"
+		"(Default) Tangent: The algorithmic tangent tensor.<br/>"
+		"TangentPerturbation: The algorithmic tangent tensor computed with numerical differentiation.<br/>"
+		"Secant: The secant tensor.<br/>"), 
+		MpcAttributeType.String, dval="Tangent")
+	ctype.sourceType = MpcAttributeSourceType.List
+	ctype.setSourceList(['Tangent', 'TangentPerturbation', 'Secant'])
 	
 	xom = MpcXObjectMetaData()
 	xom.name = 'DamageTC3D'
@@ -102,6 +108,7 @@ def makeXObjectMetaData():
 	xom.addAttribute(pdf_c)
 	xom.addAttribute(algo)
 	xom.addAttribute(reg)
+	xom.addAttribute(ctype)
 	
 	return xom
 
@@ -116,6 +123,14 @@ def writeTcl(pinfo):
 		if at is None:
 			raise Exception('Error: cannot find "{}" attribute'.format(name))
 		return at
+	
+	def getCtype(value):
+		if value == 'TangentPerturbation':
+			return 1
+		elif value == 'Secant':
+			return 2
+		else:
+			return 0
 	
 	# get parameters
 	params = ([
@@ -140,7 +155,8 @@ def writeTcl(pinfo):
 		('pdf_t', geta('pdf_t').real), 
 		('pdf_c', geta('pdf_c').real), 
 		('implex', (0 if geta('integration').string == 'Implicit' else 1)), 
-		('autoRegularization', (1 if geta('autoRegularization').boolean else 0))
+		('autoRegularization', (1 if geta('autoRegularization').boolean else 0)),
+		('constitutiveTensorType', getCtype(geta('constitutiveTensorType').string))
 	])
 	
 	# todo: pre check parameters
