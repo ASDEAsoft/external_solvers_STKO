@@ -10,7 +10,7 @@ import sys
 
 class _monitor_globals:
 	
-	STR_ARGS = 'step_id dt T n_iter norm perc STKO_VAR_process_id is_parallel'
+	STR_ARGS = 'step_id dt T n_iter norm perc STKO_VAR_process_id STKO_VAR_is_parallel'
 	STR_ARGS_REF = ' '.join(['${}'.format(w) for w in STR_ARGS.split(' ')])
 	
 	MAP_COMP_T = {'X':1, 'Y':2, 'Z':3}

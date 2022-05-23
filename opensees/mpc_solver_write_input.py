@@ -87,7 +87,7 @@ def write_tcl_int(out_dir):
 	# write STKO_VAR_*** stuff
 	main_file.write('\n{}# STKO common variables (STKO_VAR_***)\n'.format(pinfo.indent))
 	main_file.write('{}set STKO_VAR_process_id [getPID]\n'.format(pinfo.indent))
-	main_file.write('{}set is_parallel {}\n'.format(pinfo.indent, int(is_partitioned)))
+	main_file.write('{}set STKO_VAR_is_parallel {}\n'.format(pinfo.indent, int(is_partitioned)))
 	# set the main file as the current output file
 	pinfo.out_file = main_file
 	

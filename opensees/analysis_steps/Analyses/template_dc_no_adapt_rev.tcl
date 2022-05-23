@@ -24,7 +24,7 @@ set trial_disp_incr __trial_disp_incr__
 # CALCULATION 
 # ======================================================================================
 
-if {$is_parallel == 1} {
+if {$STKO_VAR_is_parallel == 1} {
 	set integrator_type ParallelDisplacementControl
 } else {
 	set integrator_type DisplacementControl
@@ -85,7 +85,7 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			
 			# Call Custom Functions
 			set perc [expr $current_time/$total_duration]
-			CustomFunctionCaller $increment_counter $dT $current_time $num_iter $last_norm $perc $STKO_VAR_process_id $is_parallel
+			CustomFunctionCaller $increment_counter $dT $current_time $num_iter $last_norm $perc $STKO_VAR_process_id $STKO_VAR_is_parallel
 			
 			
 		} else {

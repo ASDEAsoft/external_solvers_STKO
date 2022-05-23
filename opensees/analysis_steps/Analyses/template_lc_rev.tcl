@@ -72,7 +72,7 @@ while 1 {
 		
 		# Call Custom Functions
 		set perc [expr $time/$total_time]
-		CustomFunctionCaller $increment_counter $time_increment $time $num_iter $last_norm $perc $STKO_VAR_process_id $is_parallel
+		CustomFunctionCaller $increment_counter $time_increment $time $num_iter $last_norm $perc $STKO_VAR_process_id $STKO_VAR_is_parallel
 		
 	} else {
 		set num_iter $max_iter
