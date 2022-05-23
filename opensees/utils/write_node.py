@@ -382,9 +382,9 @@ def write_node_partition (doc, pinfo, node_file):
 				node = doc.mesh.nodes[node_id]
 				if not first_done:
 					if process_block_count == 0:
-						node_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$process_id == ', process_id, '} {'))
+						node_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$STKO_VAR_process_id == ', process_id, '} {'))
 					else:
-						node_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$process_id == ', process_id, '} {'))
+						node_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$STKO_VAR_process_id == ', process_id, '} {'))
 					if k[0] == 3:
 						node_file.write('{}# tag x y z\n'.format(pinfo.indent))
 					else:
@@ -455,11 +455,11 @@ def write_node_not_assigned_partition (doc, pinfo, node_file):
 				do_write_mass = (process_id == doc.mesh.partitionData.nodePartition(node_id))
 				if not first_done:
 					if process_block_count == 0:
-						node_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$process_id == ', process_id, '} {'))
+						node_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$STKO_VAR_process_id == ', process_id, '} {'))
 						node_file.write('{}{} {} {} {} {}\n'.format(pinfo.indent, '#', 'tag', 'x', 'y', 'z'))
 						__check_model (write_node_not_assigned_boolean, node_file, pinfo, process_block_count)
 					else:
-						node_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$process_id == ', process_id, '} {'))
+						node_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$STKO_VAR_process_id == ', process_id, '} {'))
 						node_file.write('{}{} {} {} {} {}\n'.format(pinfo.indent, '#', 'tag', 'x', 'y', 'z'))
 						__check_model (write_node_not_assigned_boolean, node_file, pinfo, process_block_count)
 					first_done = True

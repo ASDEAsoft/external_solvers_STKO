@@ -641,9 +641,9 @@ def __process_sp(pinfo, xobj, doc, all_geom, is_partitioned, process_id, process
 			if is_partitioned :
 				if not first_done:
 					if process_block_count == 0:
-						pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$process_id == ', process_id, '} {'))
+						pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$STKO_VAR_process_id == ', process_id, '} {'))
 					else:
-						pinfo.out_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$process_id == ', process_id, '} {'))
+						pinfo.out_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$STKO_VAR_process_id == ', process_id, '} {'))
 					first_done = True
 					pinfo.out_file.write('{} # sp node\n'.format(pinfo.indent))
 			controlInternal(pinfo, xobj, domain)
@@ -665,9 +665,9 @@ def __process_sp(pinfo, xobj, doc, all_geom, is_partitioned, process_id, process
 			if is_partitioned :
 				if not first_done:
 					if process_block_count == 0:
-						pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$process_id == ', process_id, '} {'))
+						pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$STKO_VAR_process_id == ', process_id, '} {'))
 					else:
-						pinfo.out_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$process_id == ', process_id, '} {'))
+						pinfo.out_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$STKO_VAR_process_id == ', process_id, '} {'))
 					first_done = True
 					pinfo.out_file.write('{} # sp edge\n'.format(pinfo.indent))
 			controlInternal(pinfo, xobj, node)
@@ -689,9 +689,9 @@ def __process_sp(pinfo, xobj, doc, all_geom, is_partitioned, process_id, process
 			if is_partitioned :
 				if not first_done:
 					if process_block_count == 0:
-						pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$process_id == ', process_id, '} {'))
+						pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$STKO_VAR_process_id == ', process_id, '} {'))
 					else:
-						pinfo.out_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$process_id == ', process_id, '} {'))
+						pinfo.out_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$STKO_VAR_process_id == ', process_id, '} {'))
 					first_done = True
 					pinfo.out_file.write('{} # sp face\n'.format(pinfo.indent))
 			controlInternal(pinfo, xobj, node)
@@ -713,9 +713,9 @@ def __process_sp(pinfo, xobj, doc, all_geom, is_partitioned, process_id, process
 			if is_partitioned :
 				if not first_done:
 					if process_block_count == 0:
-						pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$process_id == ', process_id, '} {'))
+						pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$STKO_VAR_process_id == ', process_id, '} {'))
 					else:
-						pinfo.out_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$process_id == ', process_id, '} {'))
+						pinfo.out_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$STKO_VAR_process_id == ', process_id, '} {'))
 					first_done = True
 					pinfo.out_file.write('{} # sp solids\n'.format(pinfo.indent))
 			controlInternal(pinfo, xobj, node)

@@ -359,7 +359,7 @@ def preProcessElements(pinfo):
 					# open process scope (only for the first one in this processor)
 					if pid_count == 0:
 						pinfo.setProcessId(processor_id)
-						pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$process_id == ', processor_id, '} {'))
+						pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$STKO_VAR_process_id == ', processor_id, '} {'))
 					# write this joint
 					write_joint(joint, do_spring = (doc.mesh.partitionData.nodePartition(joint.source_node)==processor_id), indent=pinfo.tabIndent)
 					pid_count += 1

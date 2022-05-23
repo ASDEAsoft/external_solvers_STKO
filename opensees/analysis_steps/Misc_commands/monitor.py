@@ -10,7 +10,7 @@ import sys
 
 class _monitor_globals:
 	
-	STR_ARGS = 'step_id dt T n_iter norm perc process_id is_parallel'
+	STR_ARGS = 'step_id dt T n_iter norm perc STKO_VAR_process_id is_parallel'
 	STR_ARGS_REF = ' '.join(['${}'.format(w) for w in STR_ARGS.split(' ')])
 	
 	MAP_COMP_T = {'X':1, 'Y':2, 'Z':3}
@@ -437,7 +437,7 @@ def writeTcl(pinfo):
 			'{0}\t}}\n'
 		).format(indent, id_monitor, xLabel + ' ' + xLabelAppend.replace("[","\["), yLabel + ' ' + yLabelAppend.replace("[","\["), _get_plot_name(xobj))
 	if is_par:
-		f.write('\tif {$process_id == 0} {\n')
+		f.write('\tif {$STKO_VAR_process_id == 0} {\n')
 		f.write(plot_begin('\t'))
 		f.write('\t}\n')
 	else:
@@ -473,7 +473,7 @@ def writeTcl(pinfo):
 			add = geta('Add/{}'.format(COMP)).real
 			# Initialize variable
 			if is_par:
-				f.write('\tif {$process_id == 0} {\n')
+				f.write('\tif {$STKO_VAR_process_id == 0} {\n')
 				f.write('\t\tset monitor_value_{} 0.0\n'.format(COMP))
 				if operation == 'Maximum' or operation == 'Minimum':
 					f.write('\t\tset monitor_value_{}_set 0\n'.format(COMP))
@@ -491,7 +491,7 @@ def writeTcl(pinfo):
 			# and in parallel version send them to process 0
 			if is_par:
 				f.write('\t\t# get node value.\n\t\t# initialize accumulated value on P0\n')
-				f.write('\t\tif {$process_id == 0} {\n')
+				f.write('\t\tif {$STKO_VAR_process_id == 0} {\n')
 				f.write('\t\t\tset node_value 0.0\n')
 				f.write('\t\t}\n')
 				f.write('\t\tset inode_partitions [dict get $nodes_partitions_{}_{} $node_id]\n'.format(COMP, id_monitor))
@@ -499,18 +499,18 @@ def writeTcl(pinfo):
 				# partition loop begin
 				f.write((
 					'\t\t\t# obtain p_process_value\n'
-					'\t\t\tif {{$node_pid == $process_id}} {{\n'
+					'\t\t\tif {{$node_pid == $STKO_VAR_process_id}} {{\n'
 					'\t\t\t\tset p_node_value [{0} $node_id {1}]\n'
 					'\t\t\t}}\n'
 					'\t\t\t# accumulate on node_value\n'
-					'\t\t\tif {{$node_pid == $process_id}} {{\n'
-					'\t\t\t\tif {{$process_id != 0}} {{\n'
+					'\t\t\tif {{$node_pid == $STKO_VAR_process_id}} {{\n'
+					'\t\t\t\tif {{$STKO_VAR_process_id != 0}} {{\n'
 					'\t\t\t\t\tsend -pid 0 $p_node_value\n'
 					'\t\t\t\t}} else {{\n'
 					'\t\t\t\t\tset node_value [expr $node_value + $p_node_value]\n'
 					'\t\t\t\t}}\n'
 					'\t\t\t}} else {{\n'
-					'\t\t\t\tif {{$process_id == 0}} {{\n'
+					'\t\t\t\tif {{$STKO_VAR_process_id == 0}} {{\n'
 					'\t\t\t\t\trecv -pid $node_pid p_node_value\n'
 					'\t\t\t\t\tset node_value [expr $node_value + $p_node_value]\n'
 					'\t\t\t\t}}\n'
@@ -522,7 +522,7 @@ def writeTcl(pinfo):
 				if tcl_res[COMP] in _monitor_globals.MAP_RES_PARALLEL_AVG:
 					f.write((
 						'\t\t# average value from partitions ({0})\n'
-						'\t\tif {{$process_id == 0}} {{\n'
+						'\t\tif {{$STKO_VAR_process_id == 0}} {{\n'
 						'\t\t\tset node_value [expr $node_value/[llength $inode_partitions].0]\n'
 						'\t\t}}\n'
 					).format(tcl_res[COMP]))
@@ -531,7 +531,7 @@ def writeTcl(pinfo):
 				f.write('\t\tset node_value [{} $node_id {}]\n'.format(tcl_res[COMP], tcl_component[COMP]))
 			# write by operation type only on process 0
 			if is_par:
-				f.write('\t\tif {$process_id == 0} {\n')
+				f.write('\t\tif {$STKO_VAR_process_id == 0} {\n')
 			def _pwrite(what):
 				if is_par:
 					f.write('\t{}'.format(what))
@@ -560,7 +560,7 @@ def writeTcl(pinfo):
 			f.write('\t}\n') # end node loop
 			# Scale and Add results only on process 0
 			if is_par:
-				f.write('\tif {$process_id == 0} {\n')
+				f.write('\tif {$STKO_VAR_process_id == 0} {\n')
 			if operation == 'Average':
 				_pwrite('\tset monitor_value_{0} [expr $monitor_value_{0}/[llength $nodes_{0}_{1}]]\n'.format(COMP,id_monitor))
 			_pwrite('\tset monitor_value_{} [expr {} * $monitor_value_{} + {}]\n'.format(COMP,scale,COMP,add))
@@ -569,7 +569,7 @@ def writeTcl(pinfo):
 	
 	# write values
 	if is_par:
-		f.write('\tif {$process_id == 0} {\n')
+		f.write('\tif {$STKO_VAR_process_id == 0} {\n')
 		f.write('\t\tputs $STKO_plot_00 "$monitor_value_X\t$monitor_value_Y"\n')
 		f.write('\t\tclose $STKO_plot_00\n')
 		f.write('\t}\n')
@@ -617,7 +617,7 @@ def initializeMonitor(pinfo):
 	
 	# write tcl command to run the monitor
 	#f.write('\n# run the monitor\n')
-	#f.write('if {$process_id == 0} {\n')
+	#f.write('if {$STKO_VAR_process_id == 0} {\n')
 	#f.write('\tif {[catch {exec "./STKOMonitor/STKOMonitor.bat" &}]} {puts "Failed running monitor"}\n')
 	if sys.platform == 'win32':
 		with open('{}/LaunchSTKOMonitor.bat'.format(pinfo.out_dir), 'w+') as fmon:
@@ -635,7 +635,7 @@ def initializeMonitor(pinfo):
 	f.write('proc MonitorActorStatistics {{{}}} {{\n'.format(_monitor_globals.STR_ARGS))
 	f.write('\tglobal MonitorActorStatistics_once_flag\n')
 	f.write('\t# Statistics\n')
-	f.write('\tif {$process_id == 0} {\n')
+	f.write('\tif {$STKO_VAR_process_id == 0} {\n')
 	f.write('\t\tif {$MonitorActorStatistics_once_flag == 0} {\n')
 	f.write('\t\t\tset MonitorActorStatistics_once_flag 1\n')
 	f.write('\t\t\tset STKO_monitor_statistics [open "./STKO_monitor_statistics.stats"  w+]\n')
@@ -653,7 +653,7 @@ def initializeMonitor(pinfo):
 	f.write('set monitor_actor_time_0 [clock seconds]\n')
 	f.write('proc MonitorActorTiming {{{}}} {{\n'.format(_monitor_globals.STR_ARGS))
 	f.write('\tglobal monitor_actor_time_0\n')
-	f.write('\tif {$process_id == 0} {\n')
+	f.write('\tif {$STKO_VAR_process_id == 0} {\n')
 	f.write('\t\tset STKO_time [open "./STKO_time_monitor.tim" w+]\n')
 	f.write('\t\tset current_time [clock seconds]\n')
 	f.write('\t\tputs $STKO_time $monitor_actor_time_0\n')

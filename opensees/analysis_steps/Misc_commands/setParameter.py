@@ -243,7 +243,7 @@ def writeTcl(pinfo):
 			if pinfo.process_count > 1:
 				for pid, elements in pid_element_map.items():
 					if len(elements) > 0:
-						param_file.write('if {{$process_id == {}}} {{\n'.format(pid))
+						param_file.write('if {{$STKO_VAR_process_id == {}}} {{\n'.format(pid))
 						for ele_id in elements:
 							ele_nearest_pos = ele_nearest_pos_map[ele_id]
 							mat_values = mat_map[rmt.mat_point_ids[ele_nearest_pos]]
@@ -292,7 +292,7 @@ def writeTcl(pinfo):
 		if pinfo.process_count > 1:
 			for pid, values in pid_element_map.items():
 				if len(values) > 0:
-					pinfo.out_file.write('{}if {{$process_id == {}}} {{\n'.format(pinfo.indent, pid))
+					pinfo.out_file.write('{}if {{$STKO_VAR_process_id == {}}} {{\n'.format(pinfo.indent, pid))
 					pinfo.out_file.write(commandstring(values, pinfo.indent+pinfo.tabIndent, param, value))
 					pinfo.out_file.write('{}}}\n'.format(pinfo.indent))
 		else:

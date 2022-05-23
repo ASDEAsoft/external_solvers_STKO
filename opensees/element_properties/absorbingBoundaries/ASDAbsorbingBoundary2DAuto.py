@@ -322,7 +322,7 @@ def preProcessElements(pinfo):
 		indent = pinfo.indent + pinfo.tabIndent
 		for partition_id, partition_nodes in part_nodes.items():
 			pinfo.setProcessId(partition_id)
-			pinfo.out_file.write('{}if {{$process_id == {}}} {{\n'.format(pinfo.indent, partition_id))
+			pinfo.out_file.write('{}if {{$STKO_VAR_process_id == {}}} {{\n'.format(pinfo.indent, partition_id))
 			pinfo.updateModelBuilder(2, 2)
 			write_nodes(partition_nodes, indent)
 			pinfo.out_file.write('{}}}\n'.format(pinfo.indent))

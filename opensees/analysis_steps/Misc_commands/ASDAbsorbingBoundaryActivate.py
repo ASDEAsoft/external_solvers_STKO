@@ -55,7 +55,7 @@ def writeTcl(pinfo):
 	if pinfo.process_count > 1:
 		for partition_id, values in manager.elements.items():
 			if(len(values) > 0):
-				pinfo.out_file.write('{}if {{$process_id == {}}} {{\n'.format(pinfo.indent, partition_id))
+				pinfo.out_file.write('{}if {{$STKO_VAR_process_id == {}}} {{\n'.format(pinfo.indent, partition_id))
 				pinfo.out_file.write(commandstring(values, pinfo.indent+pinfo.tabIndent))
 				pinfo.out_file.write('{}}}\n'.format(pinfo.indent))
 	else:

@@ -220,9 +220,9 @@ def writeTcl(pinfo):
 					pinfo.map_tag_add_to_parameter_id_partition[tag_add_to_parameter] = (pinfo.tag_parameter)
 					if not first_done:
 						if process_block_count == 0:
-							pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$process_id == ', process_id, '} {'))
+							pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$STKO_VAR_process_id == ', process_id, '} {'))
 						else:
-							pinfo.out_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$process_id == ', process_id, '} {'))
+							pinfo.out_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$STKO_VAR_process_id == ', process_id, '} {'))
 						first_done = True
 				
 					str_addToParameter.append('{}{}addToParameter {} {} {} {}\n'.format(pinfo.indent, Indent, pinfo.tag_parameter, Type, elem_id, Arguments))
@@ -300,9 +300,9 @@ def writeTcl(pinfo):
 						pinfo.map_tag_add_to_parameter_id_partition[tag_add_to_parameter] = (pinfo.tag_parameter)
 						if not first_done:
 							if process_block_count == 0:
-								pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$process_id == ', process_id, '} {'))
+								pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$STKO_VAR_process_id == ', process_id, '} {'))
 							else:
-								pinfo.out_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$process_id == ', process_id, '} {'))
+								pinfo.out_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$STKO_VAR_process_id == ', process_id, '} {'))
 							first_done = True
 					
 						str_addToParameter.append('{}{}addToParameter {} {} {} {}\n'.format(pinfo.indent, Indent, pinfo.tag_parameter, Type, node_id, Arguments))

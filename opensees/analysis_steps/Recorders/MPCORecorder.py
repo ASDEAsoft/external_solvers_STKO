@@ -226,7 +226,7 @@ def writeTcl(pinfo):
 		mpco_file_name = mpco_file_name[0:len(mpco_file_name)-5]
 	
 	if pinfo.process_count > 1:
-		pinfo.out_file.write('\n{}recorder mpco "{}.part-$process_id.mpco"'.format(pinfo.indent, mpco_file_name))
+		pinfo.out_file.write('\n{}recorder mpco "{}.part-$STKO_VAR_process_id.mpco"'.format(pinfo.indent, mpco_file_name))
 	else:
 		pinfo.out_file.write('\n{}recorder mpco "{}.mpco"'.format(pinfo.indent, mpco_file_name))
 	

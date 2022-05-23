@@ -100,9 +100,9 @@ def writeTcl_eleLoad(pinfo, xobj):
 							continue
 						if not first_done:
 							if process_block_count == 0:
-								pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$process_id == ', process_id, '} {'))
+								pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$STKO_VAR_process_id == ', process_id, '} {'))
 							else:
-								pinfo.out_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$process_id == ', process_id, '} {'))
+								pinfo.out_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$STKO_VAR_process_id == ', process_id, '} {'))
 							first_done = True
 						eleTag += ' {}'.format(element.id)
 				# mandatory parameters

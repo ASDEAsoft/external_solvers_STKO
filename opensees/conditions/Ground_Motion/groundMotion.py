@@ -516,7 +516,7 @@ def writeTcl_groundMotion(pinfo, xobj, tag):
 		for pid in range(pcount):
 			pnodes = nodes[pid]
 			if len(pnodes) > 0:
-				pinfo.out_file.write('{}{}if {{$process_id == {}}} {{\n'.format(pinfo.indent, etab, pid))
+				pinfo.out_file.write('{}{}if {{$STKO_VAR_process_id == {}}} {{\n'.format(pinfo.indent, etab, pid))
 				for inode in pnodes:
 					write_im_node(inode, etab)
 				pinfo.out_file.write('{}{}}}\n'.format(pinfo.indent, etab))

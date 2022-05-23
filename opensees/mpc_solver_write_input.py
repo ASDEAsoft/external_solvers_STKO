@@ -78,15 +78,15 @@ def write_tcl_int(out_dir):
 		pinfo.setProcessCount(process_count)
 	
 	# create the main script
-	# initialize it with the wipe command
-	# if partitioned, init the process_id variable
 	main_file_name = '{}{}main.tcl'.format(out_dir, os.sep)
 	PyMpc.App.monitor().sendMessage('creating main script: "{}" ...'.format(main_file_name))
 	PyMpc.App.monitor().sendPercentage(current_percentage)
 	main_file = open(main_file_name, 'w+')
+	# the initial wipe
 	main_file.write('wipe\n')
-	main_file.write('\n{}# some common info\n'.format(pinfo.indent))
-	main_file.write('{}set process_id [getPID]\n'.format(pinfo.indent))
+	# write STKO_VAR_*** stuff
+	main_file.write('\n{}# STKO common variables (STKO_VAR_***)\n'.format(pinfo.indent))
+	main_file.write('{}set STKO_VAR_process_id [getPID]\n'.format(pinfo.indent))
 	main_file.write('{}set is_parallel {}\n'.format(pinfo.indent, int(is_partitioned)))
 	# set the main file as the current output file
 	pinfo.out_file = main_file

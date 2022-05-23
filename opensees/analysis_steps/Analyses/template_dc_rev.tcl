@@ -42,7 +42,7 @@ if {$is_parallel == 1} {
 set ncycles [expr [llength $time]-1]
 # total duration
 set total_duration [lindex $time $ncycles]
-if {$process_id == 0} {
+if {$STKO_VAR_process_id == 0} {
 	puts "TOTAL DURATION: $total_duration"
 }
 
@@ -67,7 +67,7 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 	# compute the monothonic time step for this cycle
 	set dT [expr $DT / $nsteps]
 	
-	if {$process_id == 0} {
+	if {$STKO_VAR_process_id == 0} {
 		puts "======================================================================"
 		puts "CYCLE $i : nsteps = $nsteps; dU = $dU; dT = $dT"
 		puts "======================================================================"
@@ -82,7 +82,7 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 	while 1 {
 		
 		if {[expr abs($dU_cumulative - $DU)] <= 1.0e-10} {
-			if {$process_id == 0} {
+			if {$STKO_VAR_process_id == 0} {
 				puts "Target displacement has been reached. Current DU = $dU_cumulative"
 				puts "SUCCESS."
 			}
@@ -96,7 +96,7 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 		
 		set dT_adapt [expr $dT * $dU_adapt/$dU]
 
-		if {$process_id == 0} {
+		if {$STKO_VAR_process_id == 0} {
 			puts "----------------------------------------------------------------------"
 			puts "Increment: $increment_counter. dU_adapt = $dU_adapt. dU_cumulative = $dU_cumulative. dT_adapt = $dT_adapt"
 			puts "----------------------------------------------------------------------"
@@ -112,13 +112,13 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			set current_time [expr $current_time + $dT_adapt]
 			set norms [testNorms]
 			if {$num_iter > 0} {set last_norm [lindex $norms [expr $num_iter-1]]} else {set last_norm 0.0}
-			if {$process_id == 0} {
+			if {$STKO_VAR_process_id == 0} {
 				puts "Increment: $increment_counter - Iterations: $num_iter - Norm: $last_norm ( [expr $current_time/$total_duration*100.0] % )"
 			}
 			
 			# Call Custom Functions
 			set perc [expr $current_time/$total_duration]
-			CustomFunctionCaller $increment_counter $dT $current_time $num_iter $last_norm $perc $process_id $is_parallel
+			CustomFunctionCaller $increment_counter $dT $current_time $num_iter $last_norm $perc $STKO_VAR_process_id $is_parallel
 			
 			set factor_increment [expr min($max_factor_increment, [expr double($desired_iter) / double($num_iter)])]
 			set factor [expr $factor * $factor_increment]
@@ -126,7 +126,7 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 				set factor $max_factor
 			}
 			if {$factor > $old_factor} {
-				if {$process_id == 0} {
+				if {$STKO_VAR_process_id == 0} {
 					puts "Increasing increment factor due to faster convergence. Factor = $factor"
 				}
 			}
@@ -138,11 +138,11 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			set num_iter $max_iter
 			set factor_increment [expr max($min_factor_increment, [expr double($desired_iter) / double($num_iter)])]
 			set factor [expr $factor * $factor_increment]
-			if {$process_id == 0} {
+			if {$STKO_VAR_process_id == 0} {
 				puts "Reducing increment factor due to non convergence. Factor = $factor"
 			}
 			if {$factor < $min_factor} {
-				if {$process_id == 0} {
+				if {$STKO_VAR_process_id == 0} {
 					puts "ERROR: current factor is less then the minimum allowed ($factor < $min_factor)"
 					puts "Giving up"
 				}
