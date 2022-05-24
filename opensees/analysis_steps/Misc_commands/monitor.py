@@ -579,7 +579,7 @@ def writeTcl(pinfo):
 	
 	# open the monitor actor function
 	f.write('}\n')
-	f.write('lappend all_monitor_actors "MonitorActor{}"\n'.format(id_monitor))
+	f.write('lappend STKO_VAR_MonitorFunctions "MonitorActor{}"\n'.format(id_monitor))
 
 def initializeMonitor(pinfo):
 	
@@ -646,7 +646,7 @@ def initializeMonitor(pinfo):
 	f.write('\t\tclose $STKO_monitor_statistics\n')
 	f.write('\t}\n')
 	f.write('}\n')
-	f.write('lappend all_monitor_actors "MonitorActorStatistics"\n')
+	f.write('lappend STKO_VAR_MonitorFunctions "MonitorActorStatistics"\n')
 	
 	# write the timer monitor actor
 	f.write('\n# Timing monitor actor\n')
@@ -661,5 +661,5 @@ def initializeMonitor(pinfo):
 	f.write('\t\tclose $STKO_time\n')
 	f.write('\t}\n')
 	f.write('}\n')
-	f.write('lappend all_monitor_actors "MonitorActorTiming"\n')
+	f.write('lappend STKO_VAR_MonitorFunctions "MonitorActorTiming"\n')
 	f.write('')

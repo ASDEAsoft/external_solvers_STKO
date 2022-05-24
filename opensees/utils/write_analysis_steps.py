@@ -24,12 +24,12 @@ def initialize_custom_functions(doc, pinfo):
 	f = pinfo.out_file
 	
 	# write the CustomFunctionCaller
-	f.write('\n# the main custom function caller that will call all actors in $all_monitor_actors and in $all_custom_functions list\n')
+	f.write('\n# the main custom function caller that will call all actors in $STKO_VAR_MonitorFunctions and in $all_custom_functions list\n')
 	f.write('proc CustomFunctionCaller {{{}}} {{\n'.format(_monitor_globals.STR_ARGS))
-	f.write('\tglobal all_monitor_actors\n')
+	f.write('\tglobal STKO_VAR_MonitorFunctions\n')
 	f.write('\tglobal all_custom_functions\n')
 	f.write('\t# Call monitors: we pass the parameters needed\n')
-	f.write('\tforeach p $all_monitor_actors {\n')
+	f.write('\tforeach p $STKO_VAR_MonitorFunctions {\n')
 	f.write('\t\t$p {}\n'.format(_monitor_globals.STR_ARGS_REF))
 	f.write('\t}\n')
 	f.write('\t# Call all other custom functions\n')
