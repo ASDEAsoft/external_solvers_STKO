@@ -106,21 +106,21 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 		set ok [analyze 1]
 		
 		if {$ok == 0} {
-			set num_iter [testIter]
+			set STKO_VAR_num_iter [testIter]
 			
 			# print statistics
 			set STKO_VAR_time [expr $STKO_VAR_time + $STKO_VAR_time_increment]
 			set perc [expr $STKO_VAR_time/$total_duration]
 			set norms [testNorms]
-			if {$num_iter > 0} {set last_norm [lindex $norms [expr $num_iter-1]]} else {set last_norm 0.0}
+			if {$STKO_VAR_num_iter > 0} {set last_norm [lindex $norms [expr $STKO_VAR_num_iter-1]]} else {set last_norm 0.0}
 			if {$STKO_VAR_process_id == 0} {
-				puts "Increment: $STKO_VAR_increment - Iterations: $num_iter - Norm: $last_norm ( [expr $perc*100.0] % )"
+				puts "Increment: $STKO_VAR_increment - Iterations: $STKO_VAR_num_iter - Norm: $last_norm ( [expr $perc*100.0] % )"
 			}
 			
 			# Call Custom Functions
-			CustomFunctionCaller $num_iter $last_norm $perc $STKO_VAR_process_id $STKO_VAR_is_parallel
+			CustomFunctionCaller $last_norm $perc $STKO_VAR_process_id $STKO_VAR_is_parallel
 			
-			set factor_increment [expr min($max_factor_increment, [expr double($desired_iter) / double($num_iter)])]
+			set factor_increment [expr min($max_factor_increment, [expr double($desired_iter) / double($STKO_VAR_num_iter)])]
 			set factor [expr $factor * $factor_increment]
 			if {$factor > $max_factor} {
 				set factor $max_factor
@@ -135,8 +135,8 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			incr STKO_VAR_increment
 			
 		} else {
-			set num_iter $max_iter
-			set factor_increment [expr max($min_factor_increment, [expr double($desired_iter) / double($num_iter)])]
+			set STKO_VAR_num_iter $max_iter
+			set factor_increment [expr max($min_factor_increment, [expr double($desired_iter) / double($STKO_VAR_num_iter)])]
 			set factor [expr $factor * $factor_increment]
 			if {$STKO_VAR_process_id == 0} {
 				puts "Reducing increment factor due to non convergence. Factor = $factor"
