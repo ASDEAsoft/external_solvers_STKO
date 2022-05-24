@@ -18,7 +18,7 @@ set min_factor_increment __min_factor__
 set max_iter __max_iter__
 set desired_iter __des_iter__
 
-set increment_counter 0
+set STKO_VAR_increment 0
 set factor 1.0
 set old_factor $factor
 set time 0.0
@@ -27,7 +27,7 @@ set time_tolerance [expr abs($initial_time_increment) * 1.0e-8]
 
 while 1 {
 	
-	incr increment_counter
+	incr STKO_VAR_increment
 	if {[expr abs($time)] >= [expr abs($total_time)]} {
 		if {$STKO_VAR_process_id == 0} {
 			puts "Target time has been reached. Current time = $time"
@@ -41,7 +41,7 @@ while 1 {
 		set time_increment [expr $total_time - $time]
 	}
 	if {$STKO_VAR_process_id == 0} {
-		puts "Increment: $increment_counter. time_increment = $time_increment. Current time = $time"
+		puts "Increment: $STKO_VAR_increment. time_increment = $time_increment. Current time = $time"
 	}
 	
 	integrator __integrator_type__ __more_int_data__
@@ -67,12 +67,12 @@ while 1 {
 		set norms [testNorms]
 		if {$num_iter > 0} {set last_norm [lindex $norms [expr $num_iter-1]]} else {set last_norm 0.0}
 		if {$STKO_VAR_process_id == 0} {
-			puts "Increment: $increment_counter - Iterations: $num_iter - Norm: $last_norm ( [expr $time/$total_time*100.0] % )"
+			puts "Increment: $STKO_VAR_increment - Iterations: $num_iter - Norm: $last_norm ( [expr $time/$total_time*100.0] % )"
 		}
 		
 		# Call Custom Functions
 		set perc [expr $time/$total_time]
-		CustomFunctionCaller $increment_counter $time_increment $time $num_iter $last_norm $perc $STKO_VAR_process_id $STKO_VAR_is_parallel
+		CustomFunctionCaller $time_increment $time $num_iter $last_norm $perc $STKO_VAR_process_id $STKO_VAR_is_parallel
 		
 	} else {
 		set num_iter $max_iter

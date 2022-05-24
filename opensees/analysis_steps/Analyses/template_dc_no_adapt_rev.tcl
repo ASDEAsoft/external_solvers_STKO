@@ -65,9 +65,7 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 	}
 
 	set current_time $itime_old
-	for {set increment_counter 1} {$increment_counter <= $nsteps} {incr increment_counter} {
-		
-		
+	for {set STKO_VAR_increment 1} {$STKO_VAR_increment <= $nsteps} {incr STKO_VAR_increment} {
 		
 		integrator $integrator_type $control_node $control_dof $dU
 		set ok [analyze 1]
@@ -80,19 +78,19 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			set norms [testNorms]
 			if {$num_iter > 0} {set last_norm [lindex $norms [expr $num_iter-1]]} else {set last_norm 0.0}
 			if {$STKO_VAR_process_id == 0} {
-				puts "Increment: $increment_counter - Iterations: $num_iter - Norm: $last_norm ( [expr $current_time/$total_duration*100.0] % )"
+				puts "Increment: $STKO_VAR_increment - Iterations: $num_iter - Norm: $last_norm ( [expr $current_time/$total_duration*100.0] % )"
 			}
 			
 			# Call Custom Functions
 			set perc [expr $current_time/$total_duration]
-			CustomFunctionCaller $increment_counter $dT $current_time $num_iter $last_norm $perc $STKO_VAR_process_id $STKO_VAR_is_parallel
+			CustomFunctionCaller $dT $current_time $num_iter $last_norm $perc $STKO_VAR_process_id $STKO_VAR_is_parallel
 			
 			
 		} else {
 			error "ERROR: the analysis did not converge"
 		}
 		
-		if {$increment_counter == $nsteps} {
+		if {$STKO_VAR_increment == $nsteps} {
 			if {$STKO_VAR_process_id == 0} {
 				puts "Target displacement has been reached. Current DU = $dU"
 				puts "SUCCESS."

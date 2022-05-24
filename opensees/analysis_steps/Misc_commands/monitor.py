@@ -10,7 +10,7 @@ import sys
 
 class _monitor_globals:
 	
-	STR_ARGS = 'step_id dt T n_iter norm perc STKO_VAR_process_id STKO_VAR_is_parallel'
+	STR_ARGS = 'dt T n_iter norm perc STKO_VAR_process_id STKO_VAR_is_parallel'
 	STR_ARGS_REF = ' '.join(['${}'.format(w) for w in STR_ARGS.split(' ')])
 	
 	MAP_COMP_T = {'X':1, 'Y':2, 'Z':3}
@@ -424,6 +424,7 @@ def writeTcl(pinfo):
 			f.write('set previous_monitor_value_{0}_{1} 1\n'.format(COMP,id_monitor))
 	f.write('proc MonitorActor{} {{{}}} {{\n'.format(id_monitor, _monitor_globals.STR_ARGS))
 	f.write('\tglobal MonitorActor{}_once_flag\n'.format(id_monitor))
+	f.write('\tglobal STKO_VAR_increment\n')
 	
 	# write commands for opening files and optionally computing reactions
 	def plot_begin(indent):
@@ -452,17 +453,16 @@ def writeTcl(pinfo):
 		if itype == 'Pseudo Time':
 			f.write('\tset monitor_value_{} [getTime "%e"]\n'.format(COMP))
 		elif itype == 'Time Step ID':
-			# f.write('\tset monitor_value_{0} $step_id\n'.format(COMP,id_monitor))
 			# just for plotting we plot in order all steps not returning to 0 at each new stage
 			f.write('\tglobal last_step_id_previous_stage_{0}_{1}\n'.format(COMP,id_monitor))
 			f.write('\tglobal previous_step_id_{0}_{1}\n'.format(COMP,id_monitor))
 			f.write('\tglobal previous_monitor_value_{0}_{1}\n'.format(COMP,id_monitor))
-			f.write('\tif {{$step_id < $previous_step_id_{0}_{1}}} {{\n'.format(COMP,id_monitor))
+			f.write('\tif {{$STKO_VAR_increment < $previous_step_id_{0}_{1}}} {{\n'.format(COMP,id_monitor))
 			f.write('\t\t# It means a new stage has started\n')
 			f.write('\t\tset last_step_id_previous_stage_{0}_{1} $previous_monitor_value_{0}_{1}\n'.format(COMP,id_monitor))
 			f.write('\t}\n')
-			f.write('\tset monitor_value_{0} [expr $step_id + $last_step_id_previous_stage_{0}_{1}]\n'.format(COMP,id_monitor))
-			f.write('\tset previous_step_id_{0}_{1} $step_id\n'.format(COMP,id_monitor))
+			f.write('\tset monitor_value_{0} [expr $STKO_VAR_increment + $last_step_id_previous_stage_{0}_{1}]\n'.format(COMP,id_monitor))
+			f.write('\tset previous_step_id_{0}_{1} $STKO_VAR_increment\n'.format(COMP,id_monitor))
 			f.write('\tset previous_monitor_value_{0}_{1} $monitor_value_{0}\n'.format(COMP,id_monitor))
 		elif itype == 'Results {} Axis Plot'.format(COMP):
 			# initialize output variable (only in process 0)
@@ -596,13 +596,6 @@ def initializeMonitor(pinfo):
 			else:
 				used_names[name] = id
 	
-	# this block was moved into the main writer
-	# remove all stats, plt, pltbg
-	#for ext in ['plt', 'pltbg', 'stats']:
-	#for f in glob.glob('{}/*.{}'.format(pinfo.out_dir, ext)):
-	#print('remove: ', f)
-	#os.remove(f)
-	
 	# copy the STKOMonitor python app from the external_solver directory
 	# to the current output directory
 	source_dir = Utils.get_external_solvers_dir() + os.sep + "STKOMonitor"
@@ -616,9 +609,6 @@ def initializeMonitor(pinfo):
 	f = pinfo.out_file
 	
 	# write tcl command to run the monitor
-	#f.write('\n# run the monitor\n')
-	#f.write('if {$STKO_VAR_process_id == 0} {\n')
-	#f.write('\tif {[catch {exec "./STKOMonitor/STKOMonitor.bat" &}]} {puts "Failed running monitor"}\n')
 	if sys.platform == 'win32':
 		with open('{}/LaunchSTKOMonitor.bat'.format(pinfo.out_dir), 'w+') as fmon:
 			fmon.write('.\\STKOMonitor\\STKOMonitor.bat')
@@ -627,12 +617,12 @@ def initializeMonitor(pinfo):
 		with open(launcher_name, 'w+') as fmon:
 			fmon.write('./STKOMonitor/STKOMonitor.sh')
 		os.chmod(launcher_name, 0o777)
-	#f.write('}\n')
 	
 	# write the stats monitor actor
 	f.write('\n# Statistics monitor actor\n')
 	f.write('set MonitorActorStatistics_once_flag 0\n')
 	f.write('proc MonitorActorStatistics {{{}}} {{\n'.format(_monitor_globals.STR_ARGS))
+	f.write('\tglobal STKO_VAR_increment\n')
 	f.write('\tglobal MonitorActorStatistics_once_flag\n')
 	f.write('\t# Statistics\n')
 	f.write('\tif {$STKO_VAR_process_id == 0} {\n')
@@ -642,7 +632,7 @@ def initializeMonitor(pinfo):
 	f.write('\t\t} else {\n')
 	f.write('\t\t\tset STKO_monitor_statistics [open "./STKO_monitor_statistics.stats"  a+]\n')
 	f.write('\t\t}\n')
-	f.write('\t\tputs $STKO_monitor_statistics "$step_id $dt $T $n_iter $norm $perc"\n')
+	f.write('\t\tputs $STKO_monitor_statistics "$STKO_VAR_increment $dt $T $n_iter $norm $perc"\n')
 	f.write('\t\tclose $STKO_monitor_statistics\n')
 	f.write('\t}\n')
 	f.write('}\n')
