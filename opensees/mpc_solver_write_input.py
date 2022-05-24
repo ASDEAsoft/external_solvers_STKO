@@ -83,20 +83,45 @@ def write_tcl_int(out_dir):
 	PyMpc.App.monitor().sendPercentage(current_percentage)
 	main_file = open(main_file_name, 'w+')
 	# the initial wipe
-	main_file.write('wipe\n')
+	main_file.write('wipe\n\n')
 	# write STKO_VAR_*** stuff
-	main_file.write('\n{}# STKO COMMON VARIABLES (STKO_VAR_***)\n'.format(pinfo.indent))
+	main_file.write('{}# =================================================================================\n'.format(pinfo.indent))
+	main_file.write('{}# STKO COMMON VARIABLES (STKO_VAR_***)\n'.format(pinfo.indent))
+	main_file.write('{}# =================================================================================\n\n'.format(pinfo.indent))
 	main_file.write('{}# The current process id (from 0 to NP-1)\n'.format(pinfo.indent))
 	main_file.write('{}set STKO_VAR_process_id [getPID]\n'.format(pinfo.indent))
 	main_file.write('{}# A boolean flag for parallel processing (True if NP > 1)\n'.format(pinfo.indent))
 	main_file.write('{}set STKO_VAR_is_parallel {}\n'.format(pinfo.indent, int(is_partitioned)))
+	main_file.write('{}# The result from analyze command  (0 if succesfull)\n'.format(pinfo.indent))
+	main_file.write('{}set STKO_VAR_analyze_done 0\n'.format(pinfo.indent, int(is_partitioned)))
+	main_file.write('{}# The increment counter in the current stage\n'.format(pinfo.indent))
+	main_file.write('{}set STKO_VAR_increment 0\n'.format(pinfo.indent))
+	main_file.write('{}# The current time\n'.format(pinfo.indent))
+	main_file.write('{}set STKO_VAR_time 0.0\n'.format(pinfo.indent))
+	main_file.write('{}# The current time increment\n'.format(pinfo.indent))
+	main_file.write('{}set STKO_VAR_time_increment 0.0\n'.format(pinfo.indent))
+	main_file.write('{}# The current stage percentage\n'.format(pinfo.indent))
+	main_file.write('{}set STKO_VAR_percentage 0.0\n'.format(pinfo.indent))
+	main_file.write('{}# The last number of iterations\n'.format(pinfo.indent))
+	main_file.write('{}set STKO_VAR_num_iter 0\n'.format(pinfo.indent))
+	main_file.write('{}# The last error norm\n'.format(pinfo.indent))
+	main_file.write('{}set STKO_VAR_error_norm 0.0\n'.format(pinfo.indent))
 	main_file.write('{}# A list of custom functions called before solving the current time step\n'.format(pinfo.indent))
 	main_file.write('{}set STKO_VAR_OnBeforeAnalyze_CustomFunctions {{}}\n'.format(pinfo.indent))
 	main_file.write('{}# A list of custom functions called after solving the current time step\n'.format(pinfo.indent))
 	main_file.write('{}set STKO_VAR_OnAfterAnalyze_CustomFunctions {{}}\n'.format(pinfo.indent))
+	main_file.write('{}# A list of monitor functions\n'.format(pinfo.indent))
+	main_file.write('{}set STKO_VAR_MonitorFunctions {{}}\n'.format(pinfo.indent))
 	main_file.write('{}# for backward compatibility (STKO version < 3.1.0).\n'.format(pinfo.indent))
 	main_file.write('{}# It is now deprecated and will be removed in future versions.\n'.format(pinfo.indent))
 	main_file.write('{}set all_custom_functions {{}}\n'.format(pinfo.indent))
+	
+	
+	
+	main_file.write('\n{}# =================================================================================\n'.format(pinfo.indent))
+	main_file.write('{}# SOURCING\n'.format(pinfo.indent))
+	main_file.write('{}# =================================================================================\n\n'.format(pinfo.indent))
+	
 	# set the main file as the current output file
 	pinfo.out_file = main_file
 	
@@ -299,8 +324,6 @@ def write_tcl_int(out_dir):
 	PyMpc.App.monitor().setDisplayIncrement(0.0)
 	PyMpc.App.monitor().setRange(0.0, 1.0)
 	PyMpc.App.monitor().sendPercentage(current_percentage)
-	
-	# analysis_statistics
 
 	# we do not write it here because the first call to pinfo.updateModelBuilder writes it anyway
 	# source definitions
