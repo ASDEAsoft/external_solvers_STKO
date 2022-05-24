@@ -36,15 +36,15 @@ while 1 {
 		break
 	}
 	
-	set time_increment [expr $initial_time_increment * $factor]
-	if {[expr abs($time + $time_increment)] > [expr abs($total_time) - $time_tolerance]} {
-		set time_increment [expr $total_time - $time]
+	set STKO_VAR_time_increment [expr $initial_time_increment * $factor]
+	if {[expr abs($time + $STKO_VAR_time_increment)] > [expr abs($total_time) - $time_tolerance]} {
+		set STKO_VAR_time_increment [expr $total_time - $time]
 	}
 	if {$STKO_VAR_process_id == 0} {
-		puts "Increment: $STKO_VAR_increment. time_increment = $time_increment. Current time = $time"
+		puts "Increment: $STKO_VAR_increment. time_increment = $STKO_VAR_time_increment. Current time = $time"
 	}
 	
-	integrator __integrator_type__ $time_increment __more_int_data__
+	integrator __integrator_type__ $STKO_VAR_time_increment __more_int_data__
 	set ok [analyze 1]
 	#barrier
 	
@@ -61,7 +61,7 @@ while 1 {
 			}
 		}
 		set old_factor $factor
-		set time [expr $time + $time_increment]
+		set time [expr $time + $STKO_VAR_time_increment]
 		
 		# print statistics
 		set norms [testNorms]
@@ -72,7 +72,7 @@ while 1 {
 		
 		# Call Custom Functions
 		set perc [expr $time/$total_time]
-		CustomFunctionCaller $time_increment $time $num_iter $last_norm $perc $STKO_VAR_process_id $STKO_VAR_is_parallel
+		CustomFunctionCaller $time $num_iter $last_norm $perc $STKO_VAR_process_id $STKO_VAR_is_parallel
 		
 	} else {
 		set num_iter $max_iter

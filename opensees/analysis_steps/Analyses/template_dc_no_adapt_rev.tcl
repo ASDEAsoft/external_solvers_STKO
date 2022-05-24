@@ -56,11 +56,11 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 	# compute the actual displacement increment
 	set dU [expr $DU / $nsteps]
 	# compute the monothonic time step for this cycle
-	set dT [expr $DT / $nsteps]
+	set STKO_VAR_time_increment [expr $DT / $nsteps]
 	
 	if {$STKO_VAR_process_id == 0} {
 		puts "======================================================================"
-		puts "CYCLE $i : nsteps = $nsteps; dU = $dU; dT = $dT"
+		puts "CYCLE $i : nsteps = $nsteps; dU = $dU; dT = $STKO_VAR_time_increment"
 		puts "======================================================================"
 	}
 
@@ -74,7 +74,7 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			set num_iter [testIter]
 			
 			# print statistics
-			set current_time [expr $current_time + $dT]
+			set current_time [expr $current_time + $STKO_VAR_time_increment]
 			set norms [testNorms]
 			if {$num_iter > 0} {set last_norm [lindex $norms [expr $num_iter-1]]} else {set last_norm 0.0}
 			if {$STKO_VAR_process_id == 0} {
@@ -83,7 +83,7 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			
 			# Call Custom Functions
 			set perc [expr $current_time/$total_duration]
-			CustomFunctionCaller $dT $current_time $num_iter $last_norm $perc $STKO_VAR_process_id $STKO_VAR_is_parallel
+			CustomFunctionCaller $current_time $num_iter $last_norm $perc $STKO_VAR_process_id $STKO_VAR_is_parallel
 			
 			
 		} else {

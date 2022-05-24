@@ -94,11 +94,11 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			set dU_adapt [expr $DU - $dU_cumulative]
 		}
 		
-		set dT_adapt [expr $dT * $dU_adapt/$dU]
+		set STKO_VAR_time_increment [expr $dT * $dU_adapt/$dU]
 
 		if {$STKO_VAR_process_id == 0} {
 			puts "----------------------------------------------------------------------"
-			puts "Increment: $STKO_VAR_increment. dU_adapt = $dU_adapt. dU_cumulative = $dU_cumulative. dT_adapt = $dT_adapt"
+			puts "Increment: $STKO_VAR_increment. dU_adapt = $dU_adapt. dU_cumulative = $dU_cumulative. dT_adapt = $STKO_VAR_time_increment"
 			puts "----------------------------------------------------------------------"
 		}
 		
@@ -109,7 +109,7 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			set num_iter [testIter]
 			
 			# print statistics
-			set current_time [expr $current_time + $dT_adapt]
+			set current_time [expr $current_time + $STKO_VAR_time_increment]
 			set norms [testNorms]
 			if {$num_iter > 0} {set last_norm [lindex $norms [expr $num_iter-1]]} else {set last_norm 0.0}
 			if {$STKO_VAR_process_id == 0} {
@@ -118,7 +118,7 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			
 			# Call Custom Functions
 			set perc [expr $current_time/$total_duration]
-			CustomFunctionCaller $dT $current_time $num_iter $last_norm $perc $STKO_VAR_process_id $STKO_VAR_is_parallel
+			CustomFunctionCaller $current_time $num_iter $last_norm $perc $STKO_VAR_process_id $STKO_VAR_is_parallel
 			
 			set factor_increment [expr min($max_factor_increment, [expr double($desired_iter) / double($num_iter)])]
 			set factor [expr $factor * $factor_increment]
