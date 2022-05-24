@@ -85,9 +85,18 @@ def write_tcl_int(out_dir):
 	# the initial wipe
 	main_file.write('wipe\n')
 	# write STKO_VAR_*** stuff
-	main_file.write('\n{}# STKO common variables (STKO_VAR_***)\n'.format(pinfo.indent))
+	main_file.write('\n{}# STKO COMMON VARIABLES (STKO_VAR_***)\n'.format(pinfo.indent))
+	main_file.write('{}# The current process id (from 0 to NP-1)\n'.format(pinfo.indent))
 	main_file.write('{}set STKO_VAR_process_id [getPID]\n'.format(pinfo.indent))
+	main_file.write('{}# A boolean flag for parallel processing (True if NP > 1)\n'.format(pinfo.indent))
 	main_file.write('{}set STKO_VAR_is_parallel {}\n'.format(pinfo.indent, int(is_partitioned)))
+	main_file.write('{}# A list of custom functions called before solving the current time step\n'.format(pinfo.indent))
+	main_file.write('{}set STKO_VAR_OnBeforeAnalyze_CustomFunctions {{}}\n'.format(pinfo.indent))
+	main_file.write('{}# A list of custom functions called after solving the current time step\n'.format(pinfo.indent))
+	main_file.write('{}set STKO_VAR_OnAfterAnalyze_CustomFunctions {{}}\n'.format(pinfo.indent))
+	main_file.write('{}# for backward compatibility (STKO version < 3.1.0).\n'.format(pinfo.indent))
+	main_file.write('{}# It is now deprecated and will be removed in future versions.\n'.format(pinfo.indent))
+	main_file.write('{}set all_custom_functions {{}}\n'.format(pinfo.indent))
 	# set the main file as the current output file
 	pinfo.out_file = main_file
 	

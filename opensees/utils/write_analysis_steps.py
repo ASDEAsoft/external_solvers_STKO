@@ -23,11 +23,6 @@ def initialize_custom_functions(doc, pinfo):
 	# outout file
 	f = pinfo.out_file
 	
-	# write a collection of monitor and custom function actors
-	f.write('\n# a list of all monitor and custom function actors to be called by the MonitorFunction\n')
-	f.write('set all_custom_functions {}\n')
-	f.write('set all_monitor_actors {}\n')
-	
 	# write the CustomFunctionCaller
 	f.write('\n# the main custom function caller that will call all actors in $all_monitor_actors and in $all_custom_functions list\n')
 	f.write('proc CustomFunctionCaller {{{}}} {{\n'.format(_monitor_globals.STR_ARGS))
