@@ -118,7 +118,7 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			}
 			
 			# Call Custom Functions
-			CustomFunctionCaller $STKO_VAR_process_id $STKO_VAR_is_parallel
+			CustomFunctionCaller
 			
 			set factor_increment [expr min($max_factor_increment, [expr double($desired_iter) / double($STKO_VAR_num_iter)])]
 			set factor [expr $factor * $factor_increment]

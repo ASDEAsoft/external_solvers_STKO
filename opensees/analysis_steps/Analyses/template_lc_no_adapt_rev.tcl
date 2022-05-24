@@ -33,7 +33,7 @@ for {set STKO_VAR_increment 1} {$STKO_VAR_increment <= $initial_num_incr} {incr 
 		}
 		
 		# Call Custom Functions
-		CustomFunctionCaller $STKO_VAR_process_id $STKO_VAR_is_parallel
+		CustomFunctionCaller
 
 	} else {
 		error "ERROR: the analysis did not converge"

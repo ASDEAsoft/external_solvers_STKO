@@ -1,7 +1,6 @@
 import importlib
 import PyMpc
 import PyMpc.App
-from opensees.analysis_steps.Misc_commands.monitor import _monitor_globals
 
 def write_analysis_steps(doc, pinfo):
 	PyMpc.App.monitor().sendMessage('writing analysis_steps...')
@@ -25,12 +24,12 @@ def initialize_custom_functions(doc, pinfo):
 	
 	# write the CustomFunctionCaller
 	f.write('\n# the main custom function caller that will call all actors in $STKO_VAR_MonitorFunctions and in $all_custom_functions list\n')
-	f.write('proc CustomFunctionCaller {{{}}} {{\n'.format(_monitor_globals.STR_ARGS))
+	f.write('proc CustomFunctionCaller {} {\n')
 	f.write('\tglobal STKO_VAR_MonitorFunctions\n')
 	f.write('\tglobal all_custom_functions\n')
 	f.write('\t# Call monitors: we pass the parameters needed\n')
 	f.write('\tforeach p $STKO_VAR_MonitorFunctions {\n')
-	f.write('\t\t$p {}\n'.format(_monitor_globals.STR_ARGS_REF))
+	f.write('\t\t$p\n')
 	f.write('\t}\n')
 	f.write('\t# Call all other custom functions\n')
 	f.write('\tforeach p $all_custom_functions {\n')

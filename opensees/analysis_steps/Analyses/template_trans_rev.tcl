@@ -71,7 +71,7 @@ while 1 {
 		}
 		
 		# Call Custom Functions
-		CustomFunctionCaller $STKO_VAR_process_id $STKO_VAR_is_parallel
+		CustomFunctionCaller
 		
 	} else {
 		set STKO_VAR_num_iter $max_iter

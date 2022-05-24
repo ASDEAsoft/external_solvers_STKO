@@ -9,10 +9,6 @@ import glob
 import sys
 
 class _monitor_globals:
-	
-	STR_ARGS = 'STKO_VAR_process_id STKO_VAR_is_parallel'
-	STR_ARGS_REF = ' '.join(['${}'.format(w) for w in STR_ARGS.split(' ')])
-	
 	MAP_COMP_T = {'X':1, 'Y':2, 'Z':3}
 	MAP_COMP_R = {'X':4, 'Y':5, 'Z':6}
 	MAP_RES_COMP = ({
@@ -422,8 +418,9 @@ def writeTcl(pinfo):
 			f.write('set last_step_id_previous_stage_{0}_{1} 0\n'.format(COMP,id_monitor))
 			f.write('set previous_step_id_{0}_{1} 1\n'.format(COMP,id_monitor))
 			f.write('set previous_monitor_value_{0}_{1} 1\n'.format(COMP,id_monitor))
-	f.write('proc MonitorActor{} {{{}}} {{\n'.format(id_monitor, _monitor_globals.STR_ARGS))
+	f.write('proc MonitorActor{} {{}} {{\n'.format(id_monitor))
 	f.write('\tglobal MonitorActor{}_once_flag\n'.format(id_monitor))
+	f.write('\tglobal STKO_VAR_process_id\n')
 	f.write('\tglobal STKO_VAR_increment\n')
 	
 	# write commands for opening files and optionally computing reactions
@@ -621,7 +618,8 @@ def initializeMonitor(pinfo):
 	# write the stats monitor actor
 	f.write('\n# Statistics monitor actor\n')
 	f.write('set MonitorActorStatistics_once_flag 0\n')
-	f.write('proc MonitorActorStatistics {{{}}} {{\n'.format(_monitor_globals.STR_ARGS))
+	f.write('proc MonitorActorStatistics {} {\n')
+	f.write('\tglobal STKO_VAR_process_id\n')
 	f.write('\tglobal STKO_VAR_increment\n')
 	f.write('\tglobal STKO_VAR_time_increment\n')
 	f.write('\tglobal STKO_VAR_time\n')
@@ -646,8 +644,9 @@ def initializeMonitor(pinfo):
 	# write the timer monitor actor
 	f.write('\n# Timing monitor actor\n')
 	f.write('set monitor_actor_time_0 [clock seconds]\n')
-	f.write('proc MonitorActorTiming {{{}}} {{\n'.format(_monitor_globals.STR_ARGS))
+	f.write('proc MonitorActorTiming {} {\n')
 	f.write('\tglobal monitor_actor_time_0\n')
+	f.write('\tglobal STKO_VAR_process_id\n')
 	f.write('\tif {$STKO_VAR_process_id == 0} {\n')
 	f.write('\t\tset STKO_time [open "./STKO_time_monitor.tim" w+]\n')
 	f.write('\t\tset current_time [clock seconds]\n')

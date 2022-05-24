@@ -83,7 +83,7 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			}
 			
 			# Call Custom Functions
-			CustomFunctionCaller $STKO_VAR_process_id $STKO_VAR_is_parallel
+			CustomFunctionCaller
 			
 			
 		} else {
