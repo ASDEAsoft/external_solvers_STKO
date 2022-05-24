@@ -64,7 +64,7 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 		puts "======================================================================"
 	}
 
-	set current_time $itime_old
+	set STKO_VAR_time $itime_old
 	for {set STKO_VAR_increment 1} {$STKO_VAR_increment <= $nsteps} {incr STKO_VAR_increment} {
 		
 		integrator $integrator_type $control_node $control_dof $dU
@@ -74,16 +74,16 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			set num_iter [testIter]
 			
 			# print statistics
-			set current_time [expr $current_time + $STKO_VAR_time_increment]
+			set STKO_VAR_time [expr $STKO_VAR_time + $STKO_VAR_time_increment]
+			set perc [expr $STKO_VAR_time/$total_duration]
 			set norms [testNorms]
 			if {$num_iter > 0} {set last_norm [lindex $norms [expr $num_iter-1]]} else {set last_norm 0.0}
 			if {$STKO_VAR_process_id == 0} {
-				puts "Increment: $STKO_VAR_increment - Iterations: $num_iter - Norm: $last_norm ( [expr $current_time/$total_duration*100.0] % )"
+				puts "Increment: $STKO_VAR_increment - Iterations: $num_iter - Norm: $last_norm ( [expr $perc*100.0] % )"
 			}
 			
 			# Call Custom Functions
-			set perc [expr $current_time/$total_duration]
-			CustomFunctionCaller $current_time $num_iter $last_norm $perc $STKO_VAR_process_id $STKO_VAR_is_parallel
+			CustomFunctionCaller $num_iter $last_norm $perc $STKO_VAR_process_id $STKO_VAR_is_parallel
 			
 			
 		} else {
