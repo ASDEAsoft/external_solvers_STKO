@@ -77,13 +77,13 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			set STKO_VAR_time [expr $STKO_VAR_time + $STKO_VAR_time_increment]
 			set perc [expr $STKO_VAR_time/$total_duration]
 			set norms [testNorms]
-			if {$STKO_VAR_num_iter > 0} {set last_norm [lindex $norms [expr $STKO_VAR_num_iter-1]]} else {set last_norm 0.0}
+			if {$STKO_VAR_num_iter > 0} {set STKO_VAR_error_norm [lindex $norms [expr $STKO_VAR_num_iter-1]]} else {set STKO_VAR_error_norm 0.0}
 			if {$STKO_VAR_process_id == 0} {
-				puts "Increment: $STKO_VAR_increment - Iterations: $STKO_VAR_num_iter - Norm: $last_norm ( [expr $perc*100.0] % )"
+				puts "Increment: $STKO_VAR_increment - Iterations: $STKO_VAR_num_iter - Norm: $STKO_VAR_error_norm ( [expr $perc*100.0] % )"
 			}
 			
 			# Call Custom Functions
-			CustomFunctionCaller $last_norm $perc $STKO_VAR_process_id $STKO_VAR_is_parallel
+			CustomFunctionCaller $perc $STKO_VAR_process_id $STKO_VAR_is_parallel
 			
 			
 		} else {

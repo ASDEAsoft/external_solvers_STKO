@@ -29,13 +29,13 @@ for {set STKO_VAR_increment 1} {$STKO_VAR_increment <= $initial_num_incr} {incr 
 		set perc [expr $STKO_VAR_time/$total_time]
 		# print statistics
 		set norms [testNorms]
-		if {$STKO_VAR_num_iter > 0} {set last_norm [lindex $norms [expr $STKO_VAR_num_iter-1]]} else {set last_norm 0.0}
+		if {$STKO_VAR_num_iter > 0} {set STKO_VAR_error_norm [lindex $norms [expr $STKO_VAR_num_iter-1]]} else {set STKO_VAR_error_norm 0.0}
 		if {$STKO_VAR_process_id == 0} {
-			puts "Increment: $STKO_VAR_increment - Iterations: $STKO_VAR_num_iter - Norm: $last_norm ( [expr $perc*100.0] % )"
+			puts "Increment: $STKO_VAR_increment - Iterations: $STKO_VAR_num_iter - Norm: $STKO_VAR_error_norm ( [expr $perc*100.0] % )"
 		}
 		
 		# Call Custom Functions
-		CustomFunctionCaller $last_norm $perc $STKO_VAR_process_id $STKO_VAR_is_parallel
+		CustomFunctionCaller $perc $STKO_VAR_process_id $STKO_VAR_is_parallel
 		
 	} else {
 		error "ERROR: the analysis did not converge"

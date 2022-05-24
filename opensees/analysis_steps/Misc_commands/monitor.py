@@ -10,7 +10,7 @@ import sys
 
 class _monitor_globals:
 	
-	STR_ARGS = 'norm perc STKO_VAR_process_id STKO_VAR_is_parallel'
+	STR_ARGS = 'perc STKO_VAR_process_id STKO_VAR_is_parallel'
 	STR_ARGS_REF = ' '.join(['${}'.format(w) for w in STR_ARGS.split(' ')])
 	
 	MAP_COMP_T = {'X':1, 'Y':2, 'Z':3}
@@ -626,6 +626,7 @@ def initializeMonitor(pinfo):
 	f.write('\tglobal STKO_VAR_time_increment\n')
 	f.write('\tglobal STKO_VAR_time\n')
 	f.write('\tglobal STKO_VAR_num_iter\n')
+	f.write('\tglobal STKO_VAR_error_norm\n')
 	f.write('\tglobal MonitorActorStatistics_once_flag\n')
 	f.write('\t# Statistics\n')
 	f.write('\tif {$STKO_VAR_process_id == 0} {\n')
@@ -635,7 +636,7 @@ def initializeMonitor(pinfo):
 	f.write('\t\t} else {\n')
 	f.write('\t\t\tset STKO_monitor_statistics [open "./STKO_monitor_statistics.stats"  a+]\n')
 	f.write('\t\t}\n')
-	f.write('\t\tputs $STKO_monitor_statistics "$STKO_VAR_increment $STKO_VAR_time_increment $STKO_VAR_time $STKO_VAR_num_iter $norm $perc"\n')
+	f.write('\t\tputs $STKO_monitor_statistics "$STKO_VAR_increment $STKO_VAR_time_increment $STKO_VAR_time $STKO_VAR_num_iter $STKO_VAR_error_norm $perc"\n')
 	f.write('\t\tclose $STKO_monitor_statistics\n')
 	f.write('\t}\n')
 	f.write('}\n')
