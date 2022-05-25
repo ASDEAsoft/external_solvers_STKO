@@ -7,7 +7,7 @@
 # ======================================================================================
 
 # duration and initial time step
-set total_time __total_time__
+set total_duration __total_time__
 set initial_num_incr __initial_num_incr__
 
 # parameters for adaptive time step
@@ -18,17 +18,17 @@ set min_factor_increment __min_factor__
 set max_iter __max_iter__
 set desired_iter __des_iter__
 
-set STKO_VAR_increment 0
+set STKO_VAR_increment 1
 set factor 1.0
 set old_factor $factor
 set STKO_VAR_time 0.0
-set initial_time_increment [expr $total_time / $initial_num_incr]
+set initial_time_increment [expr $total_duration / $initial_num_incr]
 set time_tolerance [expr abs($initial_time_increment) * 1.0e-8]
 
 while 1 {
 	
-	incr STKO_VAR_increment
-	if {[expr abs($STKO_VAR_time)] >= [expr abs($total_time)]} {
+	# check end of analysis
+	if {[expr abs($STKO_VAR_time)] >= [expr abs($total_duration)]} {
 		if {$STKO_VAR_process_id == 0} {
 			puts "Target time has been reached. Current time = $STKO_VAR_time"
 			puts "SUCCESS."
@@ -36,19 +36,38 @@ while 1 {
 		break
 	}
 	
+	# compute new adapted time increment
 	set STKO_VAR_time_increment [expr $initial_time_increment * $factor]
-	if {[expr abs($STKO_VAR_time + $STKO_VAR_time_increment)] > [expr abs($total_time) - $time_tolerance]} {
-		set STKO_VAR_time_increment [expr $total_time - $STKO_VAR_time]
-	}
-	if {$STKO_VAR_process_id == 0} {
-		puts "Increment: $STKO_VAR_increment. time_increment = $STKO_VAR_time_increment. Current time = $STKO_VAR_time"
+	if {[expr abs($STKO_VAR_time + $STKO_VAR_time_increment)] > [expr abs($total_duration) - $time_tolerance]} {
+		set STKO_VAR_time_increment [expr $total_duration - $STKO_VAR_time]
 	}
 	
+	# update integrator
 	integrator __integrator_type__ __more_int_data__
+	
+	# before analyze
+	STKO_CALL_OnBeforeAnalyze
+	
+	# perform this step
 	set STKO_VAR_analyze_done [analyze 1 $STKO_VAR_time_increment]
 	
+	# update common variables
 	if {$STKO_VAR_analyze_done == 0} {
 		set STKO_VAR_num_iter [testIter]
+		set STKO_VAR_time [expr $STKO_VAR_time + $STKO_VAR_time_increment]
+		set STKO_VAR_percentage [expr $STKO_VAR_time/$total_duration]
+		set norms [testNorms]
+		if {$STKO_VAR_num_iter > 0} {set STKO_VAR_error_norm [lindex $norms [expr $STKO_VAR_num_iter-1]]} else {set STKO_VAR_error_norm 0.0}
+	}
+	
+	if {$STKO_VAR_analyze_done == 0} {
+		
+		# print statistics
+		if {$STKO_VAR_process_id == 0} {
+			puts [format "Increment: %6d | Iterations: %4d | Norm: %8.3e | Progress: %7.3f %%" $STKO_VAR_increment $STKO_VAR_num_iter  $STKO_VAR_error_norm [expr $STKO_VAR_percentage*100.0]]
+		}
+		
+		# update adaptive factor
 		set factor_increment [expr min($max_factor_increment, [expr double($desired_iter) / double($STKO_VAR_num_iter)])]
 		set factor [expr $factor * $factor_increment]
 		if {$factor > $max_factor} {
@@ -60,19 +79,13 @@ while 1 {
 			}
 		}
 		set old_factor $factor
-		set STKO_VAR_time [expr $STKO_VAR_time + $STKO_VAR_time_increment]
-		set STKO_VAR_percentage [expr $STKO_VAR_time/$total_time]
-		# print statistics
-		set norms [testNorms]
-		if {$STKO_VAR_num_iter > 0} {set STKO_VAR_error_norm [lindex $norms [expr $STKO_VAR_num_iter-1]]} else {set STKO_VAR_error_norm 0.0}
-		if {$STKO_VAR_process_id == 0} {
-			puts "Increment: $STKO_VAR_increment - Iterations: $STKO_VAR_num_iter - Norm: $STKO_VAR_error_norm ( [expr $STKO_VAR_percentage*100.0] % )"
-		}
 		
-		# Call Custom Functions
-		CustomFunctionCaller
+		# increment time step
+		incr STKO_VAR_increment
 		
 	} else {
+		
+		# update adaptive factor
 		set STKO_VAR_num_iter $max_iter
 		set factor_increment [expr max($min_factor_increment, [expr double($desired_iter) / double($STKO_VAR_num_iter)])]
 		set factor [expr $factor * $factor_increment]
@@ -88,4 +101,6 @@ while 1 {
 		}
 	}
 	
+	# after analyze
+	STKO_CALL_OnAfterAnalyze
 }

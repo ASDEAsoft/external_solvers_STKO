@@ -128,6 +128,8 @@ def write_tcl_int(out_dir):
 	main_file.write('{}proc STKO_CALL_OnAfterAnalyze {{}} {{\n'.format(pinfo.indent))
 	main_file.write('{}\tglobal STKO_VAR_analyze_done\n'.format(pinfo.indent))
 	main_file.write('{}\tglobal STKO_VAR_OnAfterAnalyze_CustomFunctions\n'.format(pinfo.indent))
+	main_file.write('{}\tglobal all_custom_functions\n'.format(pinfo.indent))
+	main_file.write('{}\tglobal STKO_VAR_MonitorFunctions\n'.format(pinfo.indent))
 	main_file.write('{}\tforeach item $STKO_VAR_OnAfterAnalyze_CustomFunctions {{\n'.format(pinfo.indent))
 	main_file.write('{}\t\t$item\n'.format(pinfo.indent))
 	main_file.write('{}\t}}\n'.format(pinfo.indent))

@@ -32,6 +32,7 @@ set desired_iter __des_iter__
 # CALCULATION 
 # ======================================================================================
 
+# choose the correct integrator
 if {$STKO_VAR_is_parallel == 1} {
 	set integrator_type ParallelDisplacementControl
 } else {
@@ -81,6 +82,7 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 	set STKO_VAR_time $itime_old
 	while 1 {
 		
+		# are we done with this cycle?
 		if {[expr abs($dU_cumulative - $DU)] <= 1.0e-10} {
 			if {$STKO_VAR_process_id == 0} {
 				puts "Target displacement has been reached. Current DU = $dU_cumulative"
@@ -89,37 +91,42 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			break
 		}
 		
+		# adapt the current displacement increment
 		set dU_adapt [expr $dU * $factor]
 		if {[expr abs($dU_cumulative + $dU_adapt)] > [expr abs($DU) - $dU_tolerance]} {
 			set dU_adapt [expr $DU - $dU_cumulative]
 		}
 		
+		# compute the associated monothonic time increment
 		set STKO_VAR_time_increment [expr $dT * $dU_adapt/$dU]
-
-		if {$STKO_VAR_process_id == 0} {
-			puts "----------------------------------------------------------------------"
-			puts "Increment: $STKO_VAR_increment. dU_adapt = $dU_adapt. dU_cumulative = $dU_cumulative. dT_adapt = $STKO_VAR_time_increment"
-			puts "----------------------------------------------------------------------"
-		}
 		
+		# update integrator
 		integrator $integrator_type $control_node $control_dof $dU_adapt
+		
+		# before analyze
+		STKO_CALL_OnBeforeAnalyze
+		
+		# perform this step
 		set STKO_VAR_analyze_done [analyze 1]
 		
+		# update common variables
 		if {$STKO_VAR_analyze_done == 0} {
 			set STKO_VAR_num_iter [testIter]
-			
-			# print statistics
 			set STKO_VAR_time [expr $STKO_VAR_time + $STKO_VAR_time_increment]
 			set STKO_VAR_percentage [expr $STKO_VAR_time/$total_duration]
 			set norms [testNorms]
 			if {$STKO_VAR_num_iter > 0} {set STKO_VAR_error_norm [lindex $norms [expr $STKO_VAR_num_iter-1]]} else {set STKO_VAR_error_norm 0.0}
+		}
+		
+		# check convergence
+		if {$STKO_VAR_analyze_done == 0} {
+			
+			# print statistics
 			if {$STKO_VAR_process_id == 0} {
-				puts "Increment: $STKO_VAR_increment - Iterations: $STKO_VAR_num_iter - Norm: $STKO_VAR_error_norm ( [expr $STKO_VAR_percentage*100.0] % )"
+				puts [format "Increment: %6d | Iterations: %4d | Norm: %8.3e | Progress: %7.3f %%" $STKO_VAR_increment $STKO_VAR_num_iter  $STKO_VAR_error_norm [expr $STKO_VAR_percentage*100.0]]
 			}
 			
-			# Call Custom Functions
-			CustomFunctionCaller
-			
+			# update adaptive factor
 			set factor_increment [expr min($max_factor_increment, [expr double($desired_iter) / double($STKO_VAR_num_iter)])]
 			set factor [expr $factor * $factor_increment]
 			if {$factor > $max_factor} {
@@ -132,9 +139,13 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			}
 			set old_factor $factor
 			set dU_cumulative [expr $dU_cumulative + $dU_adapt]
+			
+			# increment time step
 			incr STKO_VAR_increment
 			
 		} else {
+			
+			# update adaptive factor
 			set STKO_VAR_num_iter $max_iter
 			set factor_increment [expr max($min_factor_increment, [expr double($desired_iter) / double($STKO_VAR_num_iter)])]
 			set factor [expr $factor * $factor_increment]
@@ -149,6 +160,9 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 				error "ERROR: the analysis did not converge"
 			}
 		}
+		
+		# after analyze
+		STKO_CALL_OnAfterAnalyze
 	}
 	# end of adaptive time stepping
 }

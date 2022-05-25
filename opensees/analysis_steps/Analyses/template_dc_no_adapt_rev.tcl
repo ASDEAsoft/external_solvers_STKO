@@ -24,6 +24,7 @@ set trial_disp_incr __trial_disp_incr__
 # CALCULATION 
 # ======================================================================================
 
+# choose the correct integrator
 if {$STKO_VAR_is_parallel == 1} {
 	set integrator_type ParallelDisplacementControl
 } else {
@@ -67,37 +68,42 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 	set STKO_VAR_time $itime_old
 	for {set STKO_VAR_increment 1} {$STKO_VAR_increment <= $nsteps} {incr STKO_VAR_increment} {
 		
+		# update integrator
 		integrator $integrator_type $control_node $control_dof $dU
+		
+		# before analyze
+		STKO_CALL_OnBeforeAnalyze
+		
+		# perform this step
 		set STKO_VAR_analyze_done [analyze 1]
 		
+		# update common variables
 		if {$STKO_VAR_analyze_done == 0} {
 			set STKO_VAR_num_iter [testIter]
-			
-			# print statistics
 			set STKO_VAR_time [expr $STKO_VAR_time + $STKO_VAR_time_increment]
 			set STKO_VAR_percentage [expr $STKO_VAR_time/$total_duration]
 			set norms [testNorms]
 			if {$STKO_VAR_num_iter > 0} {set STKO_VAR_error_norm [lindex $norms [expr $STKO_VAR_num_iter-1]]} else {set STKO_VAR_error_norm 0.0}
+		}
+		
+		# check convergence
+		if {$STKO_VAR_analyze_done == 0} {
+			# print statistics
 			if {$STKO_VAR_process_id == 0} {
-				puts "Increment: $STKO_VAR_increment - Iterations: $STKO_VAR_num_iter - Norm: $STKO_VAR_error_norm ( [expr $STKO_VAR_percentage*100.0] % )"
+				puts [format "Increment: %6d | Iterations: %4d | Norm: %8.3e | Progress: %7.3f %%" $STKO_VAR_increment $STKO_VAR_num_iter  $STKO_VAR_error_norm [expr $STKO_VAR_percentage*100.0]]
 			}
-			
-			# Call Custom Functions
-			CustomFunctionCaller
-			
-			
 		} else {
+			# stop analysis
 			error "ERROR: the analysis did not converge"
 		}
 		
-		if {$STKO_VAR_increment == $nsteps} {
-			if {$STKO_VAR_process_id == 0} {
-				puts "Target displacement has been reached. Current DU = $dU"
-				puts "SUCCESS."
-			}
-			break
-		}
+		# after analyze
+		STKO_CALL_OnAfterAnalyze
 	}
 	
-	# end of adaptive time stepping
+	# done with this cycle
+	if {$STKO_VAR_process_id == 0} {
+		puts "Target displacement has been reached. Current U = $iU"
+		puts "SUCCESS."
+	}
 }
