@@ -45,10 +45,9 @@ while 1 {
 	}
 	
 	integrator __integrator_type__ __more_int_data__
-	set ok [analyze 1 $STKO_VAR_time_increment]
-	#barrier
+	set STKO_VAR_analyze_done [analyze 1 $STKO_VAR_time_increment]
 	
-	if {$ok == 0} {
+	if {$STKO_VAR_analyze_done == 0} {
 		set STKO_VAR_num_iter [testIter]
 		set factor_increment [expr min($max_factor_increment, [expr double($desired_iter) / double($STKO_VAR_num_iter)])]
 		set factor [expr $factor * $factor_increment]

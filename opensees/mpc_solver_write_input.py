@@ -116,7 +116,30 @@ def write_tcl_int(out_dir):
 	main_file.write('{}# It is now deprecated and will be removed in future versions.\n'.format(pinfo.indent))
 	main_file.write('{}set all_custom_functions {{}}\n'.format(pinfo.indent))
 	
+	main_file.write('{}# Call functions before the analyze command.\n'.format(pinfo.indent))
+	main_file.write('{}proc STKO_CALL_OnBeforeAnalyze {{}} {{\n'.format(pinfo.indent))
+	main_file.write('{}\tglobal STKO_VAR_OnBeforeAnalyze_CustomFunctions\n'.format(pinfo.indent))
+	main_file.write('{}\tforeach item $STKO_VAR_OnBeforeAnalyze_CustomFunctions {{\n'.format(pinfo.indent))
+	main_file.write('{}\t\t$item\n'.format(pinfo.indent))
+	main_file.write('{}\t}}\n'.format(pinfo.indent))
+	main_file.write('{}}}\n'.format(pinfo.indent))
 	
+	main_file.write('{}# Call functions after the analyze command.\n'.format(pinfo.indent))
+	main_file.write('{}proc STKO_CALL_OnAfterAnalyze {{}} {{\n'.format(pinfo.indent))
+	main_file.write('{}\tglobal STKO_VAR_analyze_done\n'.format(pinfo.indent))
+	main_file.write('{}\tglobal STKO_VAR_OnAfterAnalyze_CustomFunctions\n'.format(pinfo.indent))
+	main_file.write('{}\tforeach item $STKO_VAR_OnAfterAnalyze_CustomFunctions {{\n'.format(pinfo.indent))
+	main_file.write('{}\t\t$item\n'.format(pinfo.indent))
+	main_file.write('{}\t}}\n'.format(pinfo.indent))
+	main_file.write('{}\tif {{$STKO_VAR_analyze_done == 0}} {{\n'.format(pinfo.indent))
+	main_file.write('{}\t\tforeach item $all_custom_functions {{\n'.format(pinfo.indent))
+	main_file.write('{}\t\t\t$item\n'.format(pinfo.indent))
+	main_file.write('{}\t\t}}\n'.format(pinfo.indent))
+	main_file.write('{}\t\tforeach item $STKO_VAR_MonitorFunctions {{\n'.format(pinfo.indent))
+	main_file.write('{}\t\t\t$item\n'.format(pinfo.indent))
+	main_file.write('{}\t\t}}\n'.format(pinfo.indent))
+	main_file.write('{}\t}}\n'.format(pinfo.indent))
+	main_file.write('{}}}\n'.format(pinfo.indent))
 	
 	main_file.write('\n{}# =================================================================================\n'.format(pinfo.indent))
 	main_file.write('{}# SOURCING\n'.format(pinfo.indent))
@@ -297,9 +320,6 @@ def write_tcl_int(out_dir):
 	PyMpc.App.monitor().sendMessage('writing analysis steps...')
 	analysis_steps_file = open('{}{}{}'.format(out_dir, os.sep, analysis_steps_file_name), 'w+')
 	pinfo.out_file = analysis_steps_file
-	
-	# First of all create the structure for calling custom Functions during analysis steps
-	write_analysis_steps.initialize_custom_functions(doc, pinfo)
 	
 	# search for all monitors (if any) and do the first monitor initialization.
 	# if at least a monitor is defined, all analyses will have a monitor.

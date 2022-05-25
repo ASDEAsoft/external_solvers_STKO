@@ -68,9 +68,9 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 	for {set STKO_VAR_increment 1} {$STKO_VAR_increment <= $nsteps} {incr STKO_VAR_increment} {
 		
 		integrator $integrator_type $control_node $control_dof $dU
-		set ok [analyze 1]
+		set STKO_VAR_analyze_done [analyze 1]
 		
-		if {$ok == 0} {
+		if {$STKO_VAR_analyze_done == 0} {
 			set STKO_VAR_num_iter [testIter]
 			
 			# print statistics

@@ -20,10 +20,9 @@ for {set STKO_VAR_increment 1} {$STKO_VAR_increment <= $initial_num_incr} {incr 
 		puts "Increment: $STKO_VAR_increment. time_increment = $STKO_VAR_time_increment. Current time = $STKO_VAR_time"
 	}
 	
-	set ok [analyze 1 $STKO_VAR_time_increment]
-	#barrier
+	set STKO_VAR_analyze_done [analyze 1 $STKO_VAR_time_increment]
 	
-	if {$ok == 0} {
+	if {$STKO_VAR_analyze_done == 0} {
 		set STKO_VAR_num_iter [testIter]
 		set STKO_VAR_time [expr $STKO_VAR_time + $STKO_VAR_time_increment]
 		set STKO_VAR_percentage [expr $STKO_VAR_time/$total_time]

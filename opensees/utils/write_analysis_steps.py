@@ -17,26 +17,6 @@ def write_analysis_steps(doc, pinfo):
 	pinfo.out_file.write('\n# Done!\n')
 	pinfo.out_file.write('puts "ANALYSIS SUCCESSFULLY FINISHED"\n')
 
-def initialize_custom_functions(doc, pinfo):
-	
-	# outout file
-	f = pinfo.out_file
-	
-	# write the CustomFunctionCaller
-	f.write('\n# the main custom function caller that will call all actors in $STKO_VAR_MonitorFunctions and in $all_custom_functions list\n')
-	f.write('proc CustomFunctionCaller {} {\n')
-	f.write('\tglobal STKO_VAR_MonitorFunctions\n')
-	f.write('\tglobal all_custom_functions\n')
-	f.write('\t# Call monitors: we pass the parameters needed\n')
-	f.write('\tforeach p $STKO_VAR_MonitorFunctions {\n')
-	f.write('\t\t$p\n')
-	f.write('\t}\n')
-	f.write('\t# Call all other custom functions\n')
-	f.write('\tforeach p $all_custom_functions {\n')
-	f.write('\t\t$p\n')
-	f.write('\t}\n')
-	f.write('}\n')
-
 def initialize_first_monitor(doc, monitor_step, pinfo):
 	xobj = monitor_step.XObject
 	if(xobj is None):
