@@ -72,7 +72,7 @@ def __write_geom_domain_partition(partition_data, pinfo, domain_collection, phys
 			# set process id
 			pinfo.setProcessId(processor_id)
 			# open process scope
-			pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$process_id == ', processor_id, '} {'))
+			pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$STKO_VAR_process_id == ', processor_id, '} {'))
 			# write in process scope
 			for elem in part_elements:
 				try:
@@ -164,9 +164,9 @@ def write_inter_partition(doc, pinfo, element_file):
 	for partition in doc.mesh.partitionData.partitions:
 		pinfo.setProcessId(processor_id)
 		if processor_id == 0:
-			element_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$process_id == ', processor_id, '} {'))
+			element_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$STKO_VAR_process_id == ', processor_id, '} {'))
 		else:
-			element_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$process_id == ', processor_id, '} {'))
+			element_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$STKO_VAR_process_id == ', processor_id, '} {'))
 		for inter_id, inter in doc.interactions.items():
 			mesh_of_inter = doc.mesh.meshedInteractions[inter_id]
 			phys_prop = inter.physicalProperty

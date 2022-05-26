@@ -24,7 +24,8 @@ set trial_disp_incr __trial_disp_incr__
 # CALCULATION 
 # ======================================================================================
 
-if {$is_parallel == 1} {
+# choose the correct integrator
+if {$STKO_VAR_is_parallel == 1} {
 	set integrator_type ParallelDisplacementControl
 } else {
 	set integrator_type DisplacementControl
@@ -34,7 +35,7 @@ if {$is_parallel == 1} {
 set ncycles [expr [llength $time]-1]
 # total duration
 set total_duration [lindex $time $ncycles]
-if {$process_id == 0} {
+if {$STKO_VAR_process_id == 0} {
 	puts "TOTAL DURATION: $total_duration"
 }
 
@@ -56,50 +57,53 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 	# compute the actual displacement increment
 	set dU [expr $DU / $nsteps]
 	# compute the monothonic time step for this cycle
-	set dT [expr $DT / $nsteps]
+	set STKO_VAR_time_increment [expr $DT / $nsteps]
 	
-	if {$process_id == 0} {
+	if {$STKO_VAR_process_id == 0} {
 		puts "======================================================================"
-		puts "CYCLE $i : nsteps = $nsteps; dU = $dU; dT = $dT"
+		puts "CYCLE $i : nsteps = $nsteps; dU = $dU; dT = $STKO_VAR_time_increment"
 		puts "======================================================================"
 	}
 
-	set current_time $itime_old
-	for {set increment_counter 1} {$increment_counter <= $nsteps} {incr increment_counter} {
+	set STKO_VAR_time $itime_old
+	for {set STKO_VAR_increment 1} {$STKO_VAR_increment <= $nsteps} {incr STKO_VAR_increment} {
 		
-		
-		
+		# update integrator
 		integrator $integrator_type $control_node $control_dof $dU
-		set ok [analyze 1]
 		
-		if {$ok == 0} {
-			set num_iter [testIter]
-			
-			# print statistics
-			set current_time [expr $current_time + $dT]
+		# before analyze
+		STKO_CALL_OnBeforeAnalyze
+		
+		# perform this step
+		set STKO_VAR_analyze_done [analyze 1]
+		
+		# update common variables
+		if {$STKO_VAR_analyze_done == 0} {
+			set STKO_VAR_num_iter [testIter]
+			set STKO_VAR_time [expr $STKO_VAR_time + $STKO_VAR_time_increment]
+			set STKO_VAR_percentage [expr $STKO_VAR_time/$total_duration]
 			set norms [testNorms]
-			if {$num_iter > 0} {set last_norm [lindex $norms [expr $num_iter-1]]} else {set last_norm 0.0}
-			if {$process_id == 0} {
-				puts "Increment: $increment_counter - Iterations: $num_iter - Norm: $last_norm ( [expr $current_time/$total_duration*100.0] % )"
+			if {$STKO_VAR_num_iter > 0} {set STKO_VAR_error_norm [lindex $norms [expr $STKO_VAR_num_iter-1]]} else {set STKO_VAR_error_norm 0.0}
+		}
+		
+		# check convergence
+		if {$STKO_VAR_analyze_done == 0} {
+			# print statistics
+			if {$STKO_VAR_process_id == 0} {
+				puts [format "Increment: %6d | Iterations: %4d | Norm: %8.3e | Progress: %7.3f %%" $STKO_VAR_increment $STKO_VAR_num_iter  $STKO_VAR_error_norm [expr $STKO_VAR_percentage*100.0]]
 			}
-			
-			# Call Custom Functions
-			set perc [expr $current_time/$total_duration]
-			CustomFunctionCaller $increment_counter $dT $current_time $num_iter $last_norm $perc $process_id $is_parallel
-			
-			
 		} else {
+			# stop analysis
 			error "ERROR: the analysis did not converge"
 		}
 		
-		if {$increment_counter == $nsteps} {
-			if {$process_id == 0} {
-				puts "Target displacement has been reached. Current DU = $dU"
-				puts "SUCCESS."
-			}
-			break
-		}
+		# after analyze
+		STKO_CALL_OnAfterAnalyze
 	}
 	
-	# end of adaptive time stepping
+	# done with this cycle
+	if {$STKO_VAR_process_id == 0} {
+		puts "Target displacement has been reached. Current U = $iU"
+		puts "SUCCESS."
+	}
 }

@@ -175,7 +175,7 @@ def writeTcl(pinfo):
 			rem_eles_p = [i for i in rem_eles if pdata.elementPartition(i) == process_id]
 			if len(rem_nodes_p) + len(rem_eles_p) > 0:
 				pinfo.setProcessId(process_id)
-				pinfo.out_file.write('{}if {{$process_id == {}}} {{\n'.format(pinfo.indent, process_id))
+				pinfo.out_file.write('{}if {{$STKO_VAR_process_id == {}}} {{\n'.format(pinfo.indent, process_id))
 				_write(pinfo.out_file, '{}{}'.format(pinfo.indent, pinfo.tabIndent), rem_nodes_p, rem_eles_p)
 				pinfo.out_file.write('{}}}\n'.format(pinfo.indent))
 				pinfo.setProcessId(0)

@@ -7,43 +7,47 @@
 # ======================================================================================
 
 # duration and initial time step
-set total_time __total_time__
+set total_duration __total_time__
 set initial_num_incr __initial_num_incr__
 
-set time 0.0
-set time_increment [expr $total_time / $initial_num_incr]
+set STKO_VAR_time 0.0
+set STKO_VAR_time_increment [expr $total_duration / $initial_num_incr]
 integrator __integrator_type__ __more_int_data__
 
-for {set increment_counter 1} {$increment_counter <= $initial_num_incr} {incr increment_counter} {
+for {set STKO_VAR_increment 1} {$STKO_VAR_increment <= $initial_num_incr} {incr STKO_VAR_increment} {
 	
-	if {$process_id == 0} {
-		puts "Increment: $increment_counter. time_increment = $time_increment. Current time = $time"
+	# before analyze
+	STKO_CALL_OnBeforeAnalyze
+	
+	# perform this step
+	set STKO_VAR_analyze_done [analyze 1 $STKO_VAR_time_increment]
+	
+	# update common variables
+	if {$STKO_VAR_analyze_done == 0} {
+		set STKO_VAR_num_iter [testIter]
+		set STKO_VAR_time [expr $STKO_VAR_time + $STKO_VAR_time_increment]
+		set STKO_VAR_percentage [expr $STKO_VAR_time/$total_duration]
+		set norms [testNorms]
+		if {$STKO_VAR_num_iter > 0} {set STKO_VAR_error_norm [lindex $norms [expr $STKO_VAR_num_iter-1]]} else {set STKO_VAR_error_norm 0.0}
 	}
 	
-	set ok [analyze 1 $time_increment]
-	#barrier
-	
-	if {$ok == 0} {
-		set num_iter [testIter]
-		set time [expr $time + $time_increment]
+	# check convergence
+	if {$STKO_VAR_analyze_done == 0} {
 		# print statistics
-		set norms [testNorms]
-		if {$num_iter > 0} {set last_norm [lindex $norms [expr $num_iter-1]]} else {set last_norm 0.0}
-		if {$process_id == 0} {
-			puts "Increment: $increment_counter - Iterations: $num_iter - Norm: $last_norm ( [expr $time/$total_time*100.0] % )"
+		if {$STKO_VAR_process_id == 0} {
+			puts "Increment: $STKO_VAR_increment - Iterations: $STKO_VAR_num_iter - Norm: $STKO_VAR_error_norm ( [expr $STKO_VAR_percentage*100.0] % )"
 		}
-		
-		# Call Custom Functions
-		set perc [expr $time/$total_time]
-		CustomFunctionCaller $increment_counter $time_increment $time $num_iter $last_norm $perc $process_id $is_parallel
-		
 	} else {
+		# stop analysis
 		error "ERROR: the analysis did not converge"
 	}
 	
+	# after analyze
+	STKO_CALL_OnAfterAnalyze
 }
 
-if {$process_id == 0} {
-	puts "Target time has been reached. Current time = $time"
+# done
+if {$STKO_VAR_process_id == 0} {
+	puts "Target time has been reached. Current time = $STKO_VAR_time"
 	puts "SUCCESS."
 }
