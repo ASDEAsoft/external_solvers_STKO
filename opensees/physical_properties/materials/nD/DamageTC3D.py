@@ -65,6 +65,8 @@ def makeXObjectMetaData():
 		MpcAttributeType.String, dval="Implicit")
 	algo.sourceType = MpcAttributeSourceType.List
 	algo.setSourceList(['Implicit', 'IMPL-EX'])
+	implex_check = mka("implexCheckError", "Misc", "Check the IMPL-EX error making sure it is kept under a user-defined tolerance", MpcAttributeType.Boolean, dval=False)
+	implex_tol = mka("implexErrorTolerance", "Misc", "The maximum allowed relative IMPL-EX error (normalized w.r.t. ft)", MpcAttributeType.Real, dval=0.1)
 	reg = mka("autoRegularization", "Misc", ("When this flag is True (Default), the input fracture energies (Gt and Gc) "
 		"will be divided by the element characteristic length, in order to obtain a response which is mesh-size independent.<br/>"
 		"If turn this flag Off, the input fracture energies will be used as they are."), 
@@ -107,10 +109,24 @@ def makeXObjectMetaData():
 	xom.addAttribute(pdf_t)
 	xom.addAttribute(pdf_c)
 	xom.addAttribute(algo)
+	xom.addAttribute(implex_check)
+	xom.addAttribute(implex_tol)
 	xom.addAttribute(reg)
 	xom.addAttribute(ctype)
 	
 	return xom
+
+def _check_implex(xobj):
+	is_implex = xobj.getAttribute('integration').string == 'IMPL-EX'
+	xobj.getAttribute('implexCheckError').visible = is_implex
+	xobj.getAttribute('implexErrorTolerance').visible = is_implex
+
+def onEditBegin(editor, xobj):
+	_check_implex(xobj)
+
+def onAttributeChanged(editor, xobj, attribute_name):
+	if attribute_name == 'integration':
+		_check_implex(xobj)
 
 def writeTcl(pinfo):
 	
@@ -155,6 +171,8 @@ def writeTcl(pinfo):
 		('pdf_t', geta('pdf_t').real), 
 		('pdf_c', geta('pdf_c').real), 
 		('implex', (0 if geta('integration').string == 'Implicit' else 1)), 
+		('implexCheckError', (1 if geta('implexCheckError').boolean else 0)), 
+		('implexErrorTolerance', geta('implexErrorTolerance').real), 
 		('autoRegularization', (1 if geta('autoRegularization').boolean else 0)),
 		('constitutiveTensorType', getCtype(geta('constitutiveTensorType').string))
 	])
