@@ -3,7 +3,7 @@ import PyMpc.IO
 from PyMpc import *
 from mpc_utils_html import *
 import opensees.utils.tcl_input as tclin
-import opensees.physical_properties.utils.tester.GuiUtils as gu
+import opensees.utils.Gui.GuiUtils as gu
 from PySide2.QtCore import QCoreApplication
 import numpy as np
 import opensees.physical_properties.sections.ASDCoupledHinge_support_data.RectangularFiberSectionDomain as domain
