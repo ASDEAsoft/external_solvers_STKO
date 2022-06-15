@@ -143,7 +143,7 @@ def _update_graphics(db, bbox, do_center=False, scale=1.0, crd_scale=1.0,
 			displacement_data = displacement[:,:]
 		# compute transformartion matrix
 		# drm center
-		drm_center = np.mean(xyz_data, axis=0)
+		drm_center = db['/DRM_Metadata/drmbox_x0'][:]
 		# geom center
 		pmax = bbox.maxPoint
 		pmin = bbox.minPoint
