@@ -4,6 +4,21 @@ from PyMpc import *
 from mpc_utils_html import *
 import opensees.utils.tcl_input as tclin
 import importlib
+import numpy as np
+
+def _toNpArray(x):
+	y = [0.0]*len(x)
+	for i in range(len(x)):
+		y[i] = x[i]
+	return np.array(y)
+def _normalized(x):
+	n = np.linalg.norm(x)
+	if n > 0.0:
+		y = x.copy() / n
+	else:
+		y = x.copy()
+	return y
+
 
 def makeXObjectMetaData():
 	
@@ -82,5 +97,43 @@ def writeTcl(pinfo):
 	if distance_tolerance <= 0.0:
 		raise Exception('distance_tolerance should be strictly positive') 
 	
+	# rotation matrix
+	e1 = _toNpArray(cxobj.getAttribute('Local X').quantityVector3.value)
+	e2 = _toNpArray(cxobj.getAttribute('Local Y').quantityVector3.value)
+	e11 = _normalized(e1)
+	e22 = _normalized(e2)
+	e33 = _normalized(np.cross(e11, e22))
+	e22 = _normalized(np.cross(e33, e11))
+	
+	# translation
+	extra_T = _toNpArray(cxobj.getAttribute('Extra Translation').quantityVector3.value)
+	tx = extra_T[0]
+	ty = extra_T[1]
+	tz = extra_T[2]
+	do_center = cxobj.getAttribute('Center box').boolean
+	if do_center:
+		bbox = FxBndBox()
+		all_geom = cxobj.parent.assignment.geometries
+		for geom, subset in all_geom.items():
+			for i in subset.solids:
+				solid = geom.visualRepresentation.solids[i]
+				bbox.add(solid.boundingBox)
+		pmax = bbox.maxPoint
+		pmin = bbox.minPoint
+		center = (pmin+pmax)/2
+		print(center)
+		tx += center[0]
+		ty += center[1]
+		tz += center[2]
+	
 	# write
-	pinfo.out_file.write('{}pattern H5DRM {} "{}" {} {} {}\n'.format(pinfo.indent, tag, filename, factor, crd_scale, distance_tolerance))
+	do_transformation = 1
+	pinfo.out_file.write('{}pattern H5DRM {} "{}" {} {} {} {}   {} {} {} {} {} {} {} {} {}   {} {} {}\n'.format(
+		pinfo.indent, tag, filename, 
+		factor, crd_scale, distance_tolerance,
+		do_transformation,
+		e11[0], e22[0], e33[0],
+		e11[1], e22[1], e33[1],
+		e11[2], e22[2], e33[2],
+		tx, ty, tz
+		))
