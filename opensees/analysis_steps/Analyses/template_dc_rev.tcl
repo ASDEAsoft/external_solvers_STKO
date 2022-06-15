@@ -48,6 +48,7 @@ if {$STKO_VAR_process_id == 0} {
 }
 
 # for each cycle...
+set STKO_VAR_increment 1
 for {set i 1} {$i <= $ncycles} {incr i} {
 	set itime [lindex $time $i]
 	set itime_old [lindex $time [expr $i-1]]
@@ -75,7 +76,6 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 	}
 
 	# adaptive time stepping
-	set STKO_VAR_increment 1
 	set factor 1.0
 	set old_factor $factor
 	set dU_cumulative 0.0

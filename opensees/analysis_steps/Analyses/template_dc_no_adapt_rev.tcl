@@ -40,6 +40,7 @@ if {$STKO_VAR_process_id == 0} {
 }
 
 # for each cycle...
+set STKO_VAR_increment 1
 for {set i 1} {$i <= $ncycles} {incr i} {
 	set itime [lindex $time $i]
 	set itime_old [lindex $time [expr $i-1]]
@@ -66,7 +67,7 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 	}
 
 	set STKO_VAR_time $itime_old
-	for {set STKO_VAR_increment 1} {$STKO_VAR_increment <= $nsteps} {incr STKO_VAR_increment} {
+	for {set istep 1} {$istep <= $nsteps} {incr istep; incr STKO_VAR_increment} {
 		
 		# update integrator
 		integrator $integrator_type $control_node $control_dof $dU
