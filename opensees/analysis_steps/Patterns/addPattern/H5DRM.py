@@ -106,25 +106,10 @@ def writeTcl(pinfo):
 	e22 = _normalized(np.cross(e33, e11))
 	
 	# translation
-	extra_T = _toNpArray(cxobj.getAttribute('Extra Translation').quantityVector3.value)
-	tx = extra_T[0]
-	ty = extra_T[1]
-	tz = extra_T[2]
-	do_center = cxobj.getAttribute('Center box').boolean
-	if do_center:
-		bbox = FxBndBox()
-		all_geom = cxobj.parent.assignment.geometries
-		for geom, subset in all_geom.items():
-			for i in subset.solids:
-				solid = geom.visualRepresentation.solids[i]
-				bbox.add(solid.boundingBox)
-		pmax = bbox.maxPoint
-		pmin = bbox.minPoint
-		center = (pmin+pmax)/2
-		print(center)
-		tx += center[0]
-		ty += center[1]
-		tz += center[2]
+	user_location = _toNpArray(cxobj.getAttribute('Top-Center Location').quantityVector3.value)
+	tx = user_location[0]
+	ty = user_location[1]
+	tz = user_location[2]
 	
 	# write
 	do_transformation = 1

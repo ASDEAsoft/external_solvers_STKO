@@ -118,9 +118,9 @@ def _generate_visual_materials():
 	mat_qa.visibilityOptionsOverride = FxMaterialVisibilityOptions(True, True, True, True)
 	return (mat_in, mat_out, mat_qa)
 
-def _update_graphics(db, bbox, do_center=False, scale=1.0, crd_scale=1.0,
+def _update_graphics(db, bbox, scale=1.0, crd_scale=1.0,
 	e1 = np.array([1.0,0.0,0.0]), e2 = np.array([0.0, 1.0, 0.0]),
-	extra_T = np.zeros(3), time_id = 0):
+	user_location = np.zeros(3), time_id = 0):
 	try:
 		# create a STKO 3d graphics
 		doc = App.caeDocument()
@@ -142,32 +142,23 @@ def _update_graphics(db, bbox, do_center=False, scale=1.0, crd_scale=1.0,
 		if displacement:
 			displacement_data = displacement[:,:]
 		# compute transformartion matrix
-		# drm center
-		drm_center = db['/DRM_Metadata/drmbox_x0'][:]
-		# geom center
-		pmax = bbox.maxPoint
-		pmin = bbox.minPoint
-		center = (pmin+pmax)/2
-		# compute transformation
-		do_extra = np.linalg.norm(extra_T) > 0.0
+		# T0 : from drm original location to origin
+		drm_location = db['/DRM_Metadata/drmbox_x0'][:]
 		T0 = np.eye(4)
-		if do_center:
-			T0[0,3] = - drm_center[0]
-			T0[1,3] = - drm_center[1]
-			T0[2,3] = - drm_center[2]
+		T0[0,3] = - drm_location[0]
+		T0[1,3] = - drm_location[1]
+		T0[2,3] = - drm_location[2]
+		# S : scale
 		S = np.eye(4)
 		S[0,0] = crd_scale
 		S[1,1] = crd_scale
 		S[2,2] = crd_scale
+		# T : from origin to user-defined location
 		T1 = np.eye(4)
-		if do_center:
-			T1[0,3] = center[0]
-			T1[1,3] = center[1]
-			T1[2,3] = center[2]
-		if do_extra:
-			T1[0,3] += extra_T[0]
-			T1[1,3] += extra_T[1]
-			T1[2,3] += extra_T[2]
+		T1[0,3] = user_location[0]
+		T1[1,3] = user_location[1]
+		T1[2,3] = user_location[2]
+		# R : rotation
 		R = np.zeros((4,4))
 		e11 = _normalized(e1)
 		e22 = _normalized(e2)
@@ -183,6 +174,7 @@ def _update_graphics(db, bbox, do_center=False, scale=1.0, crd_scale=1.0,
 		R[0:3, 1] = e22
 		R[0:3, 2] = e33
 		R[3,3] = 1.0
+		# compound transformation
 		TT = T1 @ R @ S @ T0
 		# generate visual materials
 		mat_in, mat_out, _ = _generate_visual_materials()
@@ -480,12 +472,11 @@ class DRMWidget(QWidget):
 			_update_graphics(
 				self.db,
 				self.bbox,
-				do_center = self.xobj.getAttribute('Center box').boolean,
 				scale = _settings.locale.toDouble(self.dedit.text())[0],
 				crd_scale = self.xobj.getAttribute('crd_scale').real,
 				e1 = _toNpArray(self.xobj.getAttribute('Local X').quantityVector3.value),
 				e2 = _toNpArray(self.xobj.getAttribute('Local Y').quantityVector3.value),
-				extra_T = _toNpArray(self.xobj.getAttribute('Extra Translation').quantityVector3.value),
+				user_location = _toNpArray(self.xobj.getAttribute('Top-Center Location').quantityVector3.value),
 				time_id = self.tdrop.value()
 				)
 
@@ -523,13 +514,7 @@ def makeXObjectMetaData():
 	distance_tolerance = mka('distance_tolerance', MpcAttributeType.Real, 'Optional', 'Tolerance for searching the nearest node')
 	distance_tolerance.setDefault(1.0e-3)
 	
-	do_coordinate_transformation = mka('do_coordinate_transformation', MpcAttributeType.Boolean, 'Optional', '')
-	do_coordinate_transformation.setDefault(True)
-	
-	do_center = mka('Center box', MpcAttributeType.Boolean, 'Optional', 'If True, The DRM Box will be translated at the center of the STKO domain')
-	do_center.setDefault(True)
-	
-	xt = mka('Extra Translation', MpcAttributeType.QuantityVector3, 'Optional', 'An additional translation')
+	xt = mka('Top-Center Location', MpcAttributeType.QuantityVector3, 'Optional', 'The user-defined location of the top-center node of the DRM Box')
 	
 	vx = mka('Local X', MpcAttributeType.QuantityVector3, 'Optional', 'The Local X axis of the DRM Box (not necessarily a unit vector')
 	vy = mka('Local Y', MpcAttributeType.QuantityVector3, 'Optional', 'The Local Y axis of the DRM Box (not necessarily a unit vector')
@@ -540,11 +525,9 @@ def makeXObjectMetaData():
 	xom.addAttribute(factor)
 	xom.addAttribute(crd_scale)
 	xom.addAttribute(distance_tolerance)
-	xom.addAttribute(do_center)
 	xom.addAttribute(xt)
 	xom.addAttribute(vx)
 	xom.addAttribute(vy)
-	#xom.addAttribute(do_coordinate_transformation)
 	
 	return xom
 
@@ -624,5 +607,5 @@ def onAttributeChanged(editor, xobj, attribute_name):
 	# or you can use this to automatically trigger the update
 	if attribute_name == 'File Name':
 		_setDatabaseOnGui(xobj)
-	elif attribute_name in ('crd_scale', 'Center box', 'Extra Translation', 'Local X', 'Local Y'):
+	elif attribute_name in ('crd_scale', 'Top-Center Location', 'Local X', 'Local Y'):
 		_constants.gui.updateDRMGraphics()
