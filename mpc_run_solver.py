@@ -30,7 +30,7 @@ def run(wdir, command, script, np, do_pause):
 			subprocess.Popen(['gnome-terminal', '--', './{}'.format(runner_name)], cwd=wdir)
 			# launch monitor
 			monitor_name = '{}.sh'.format(monitor_base_name)
-			if monitor_name in getfiles(wdir):
+			if monitor_name in getfiles(os.getcwd()):
 				subprocess.Popen(['sh', './{}'.format(monitor_name)], cwd=wdir)
 			
 		else:
@@ -54,7 +54,7 @@ def run(wdir, command, script, np, do_pause):
 			subprocess.Popen(runner_name)
 			# launch monitor
 			monitor_name = '{}.bat'.format(monitor_base_name)
-			if monitor_name in getfiles(wdir):
+			if monitor_name in getfiles(os.getcwd()):
 				subprocess.Popen(monitor_name, creationflags=0x08000000)
 		finally:
 			os.chdir(current_wdir)
