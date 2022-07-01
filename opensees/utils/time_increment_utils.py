@@ -68,7 +68,8 @@ def process_document(pinfo):
 	doc = App.caeDocument()
 	if doc is None:
 		return
-	is_partitioned = (len(doc.mesh.partitionData.partitions) > 1)
+	
+	# a counter for target object in OpenSees with the IMPL-EX algorithm
 	
 	# find physical properties
 	phys_props = _find_phys_props(doc)
@@ -77,7 +78,7 @@ def process_document(pinfo):
 	geoms = {}
 	_find_geoms(doc, phys_props, geoms, lambda geom : geom.physicalPropertyAssignment)
 	
-	# get mesh
+	# get mesh elements
 	elements = []
 	mesh = doc.mesh
 	for geom_key, domain in geoms.items():
@@ -88,7 +89,7 @@ def process_document(pinfo):
 	# make file
 	if len(elements) == 0:
 		return
-	file = open('{}{}IMPLEX_tools.tcl'.format(pinfo.out_dir, os.sep), 'w+')
+	file = open(filename, 'w+')
 	
 	# print info
 	file.write('# IMPLEX-Utilty Stats\n#\n')
@@ -132,17 +133,21 @@ def process_document(pinfo):
 	p_dt_commit = paramutil.ParameterManager.IMPLEX_dTcommit
 	p_dt_0 = paramutil.ParameterManager.IMPLEX_dT0
 	file.write('\n\n# Parameters for updating the time-step variables in the IMPL-EX elements\n')
-	file.write('parameter {}; # dT\n'.format(p_dt))
-	file.write('parameter {}; # dTcommit\n'.format(p_dt_commit))
-	file.write('parameter {}; # dT0\n'.format(p_dt_0))
+	file.write('parameter {}; # dTime\n'.format(p_dt))
+	file.write('parameter {}; # dTimeCommit\n'.format(p_dt_commit))
+	file.write('parameter {}; # dTimeInitial\n'.format(p_dt_0))
 	file.write('''
 
 # Add elements to parameters
+set t0 [clock milliseconds]
 foreach STKO_IMPLEX_ele $STKO_IMPLEX_elements {
-	addToParameter %i element $STKO_IMPLEX_ele dT
-	addToParameter %i element $STKO_IMPLEX_ele dTcommit
-	addToParameter %i element $STKO_IMPLEX_ele dT0
-}''' % (p_dt, p_dt_commit, p_dt_0))
+	addToParameter %i element $STKO_IMPLEX_ele dTime
+	addToParameter %i element $STKO_IMPLEX_ele dTimeCommit
+	addToParameter %i element $STKO_IMPLEX_ele dTimeInitial
+}
+set t1 [clock milliseconds]
+set elap [expr ($t1-$t0)/1000.0]
+puts "\naddToParameter - time: $elap\n"''' % (p_dt, p_dt_commit, p_dt_0))
 	# write custom functions
 	file.write('''
 
@@ -150,7 +155,6 @@ foreach STKO_IMPLEX_ele $STKO_IMPLEX_elements {
 proc STKO_IMPLEX_OnBeforeAnalyze_UpdateParamFunction {} {
 	global STKO_VAR_increment
 	global STKO_VAR_time_increment
-	puts "My Before Function: Incr: $STKO_VAR_increment - dT: $STKO_VAR_time_increment"
 	# update the initial time and the committed time for the first time
 	if {$STKO_VAR_increment == 1} {
 		updateParameter %i $STKO_VAR_time_increment
@@ -167,7 +171,6 @@ lappend STKO_VAR_OnBeforeAnalyze_CustomFunctions STKO_IMPLEX_OnBeforeAnalyze_Upd
 proc STKO_IMPLEX_OnAfterAnalyze_UpdateParamFunction {} {
 	global STKO_VAR_time_increment
 	global STKO_VAR_analyze_done
-	puts "My After Function: Incr: DONE? $STKO_VAR_analyze_done"
 	# update the committed time increment
 	if {$STKO_VAR_analyze_done == 0} {
 		updateParameter %i $STKO_VAR_time_increment

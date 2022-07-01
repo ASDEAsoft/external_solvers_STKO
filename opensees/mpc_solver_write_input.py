@@ -14,7 +14,7 @@ import opensees.utils.write_analysis_steps as write_analysis_steps
 import opensees.utils.write_definitions as write_definitions
 import opensees.utils.write_element as write_element
 import opensees.utils.write_node as write_node
-import opensees.utils.IMPLEX_utils as implex_utils
+import opensees.utils.time_increment_utils as dt_utils
 from io import StringIO
 
 def write_tcl_int(out_dir):
@@ -180,9 +180,6 @@ def write_tcl_int(out_dir):
 	pinfo.next_conditions_id = doc.conditions.getlastkey(0)+1
 	pinfo.next_analysis_step_id = doc.analysisSteps.getlastkey(0)+1
 	
-	# implex utils
-	implex_utils.process_document(pinfo)
-	
 	# definitions.
 	# create a single file named definitions.tcl.
 	# write all definitions there, and then source it in the main script
@@ -335,7 +332,10 @@ def write_tcl_int(out_dir):
 			# pinfo.monitor = True # It is not needed because now I always call customFunction
 			write_analysis_steps.initialize_first_monitor(doc, step, pinfo)
 			break
-			
+	
+	# custom time-increment utils
+	dt_utils.process_document(pinfo)
+	
 	PyMpc.App.monitor().setRange(current_percentage, current_percentage + duration_steps)
 	num_items = len(doc.analysisSteps)
 	increment = duration_steps / max(num_items, 1)
