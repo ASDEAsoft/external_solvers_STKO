@@ -66,7 +66,7 @@ def makeXObjectMetaData():
 	algo.sourceType = MpcAttributeSourceType.List
 	algo.setSourceList(['Implicit', 'IMPL-EX'])
 	implex_check = mka("implexCheckError", "Misc", "Check the IMPL-EX error making sure it is kept under a user-defined tolerance", MpcAttributeType.Boolean, dval=False)
-	implex_tol = mka("implexErrorTolerance", "Misc", "The maximum allowed relative IMPL-EX error", MpcAttributeType.Real, dval=0.1)
+	implex_tol = mka("implexErrorTolerance", "Misc", "The maximum allowed relative IMPL-EX error", MpcAttributeType.Real, dval=0.05)
 	implex_red = mka("implexErrorTimeReductionLimit", "Misc", "The pseudo-time-step reduction limit under which the implex error check is not performed", MpcAttributeType.Real, dval=0.01)
 	reg = mka("autoRegularization", "Misc", ("When this flag is True (Default), the input fracture energies (Gt and Gc) "
 		"will be divided by the element characteristic length, in order to obtain a response which is mesh-size independent.<br/>"
