@@ -177,7 +177,7 @@ def writeTcl(pinfo):
 		ndm = 2
 		node_1_id = elem.nodes[0].id
 		if not node_1_id in pinfo.node_to_model_map:
-			raise Exception('first not of truss is not in the model map')
+			raise Exception('first node of truss is not in the model map')
 		value = pinfo.node_to_model_map[node_1_id]
 		ndf = value[1]
 		if ndm != value[0]:
@@ -186,7 +186,7 @@ def writeTcl(pinfo):
 		ndm = 3
 		node_1_id = elem.nodes[0].id
 		if not node_1_id in pinfo.node_to_model_map:
-			raise Exception('first not of truss is not in the model map')
+			raise Exception('first node of truss is not in the model map')
 		value = pinfo.node_to_model_map[node_1_id]
 		ndf = value[1]
 		if ndm != value[0]:

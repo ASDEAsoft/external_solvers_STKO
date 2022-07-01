@@ -85,7 +85,7 @@ def writeTcl(pinfo):
 	if(phys_prop is None):
 		raise Exception('Error: Null physical property. Please assign a physical property of type "BeamWithShearHingeProperty"')
 	if(elem_prop is None):
-		raise Exception('Error: Null element property. Please assign a physical property of type "BeamWithShearHinge"')
+		raise Exception('Error: Null element property. Please assign an element property of type "BeamWithShearHinge"')
 	
 	# get element properties
 	xobj_ep_beam_index = _get_xobj_attribute(elem_prop.XObject, 'Beam Element').index

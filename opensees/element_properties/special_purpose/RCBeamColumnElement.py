@@ -936,11 +936,11 @@ def writeTcl(pinfo):
 				if not pp_model.includeShearVy[0]:
 					raise Exception('No material was specified for hinge I for shear in Y local  axis. Please select a material for Vy')
 				if pp_model.materialP[0] == 0:
-					raise Excpetion('Automatic computation for P is not supported yet. Please select a uniaxial material')
+					raise Exception('Automatic computation for P is not supported yet. Please select a uniaxial material')
 				if pp_model.materialMy[0] == 0:
-					raise Excpetion('Automatic computation for My is not supported yet. Please select a uniaxial material')
+					raise Exception('Automatic computation for My is not supported yet. Please select a uniaxial material')
 				if pp_model.shearVy[0] == 0:
-					raise Excpetion('Automatic computation for Vy is not supported yet. Please select a uniaxial material')
+					raise Exception('Automatic computation for Vy is not supported yet. Please select a uniaxial material')
 				if Dimension2:
 					# 2D problem
 					mat_string = ' {} {} {}'.format(pp_model.materialP[0],pp_model.shearVy[0],pp_model.materialMy[0])
@@ -955,11 +955,11 @@ def writeTcl(pinfo):
 					if not pp_model.includeShearVz[0]:
 						raise Exception('No material was specified for hinge I for shear in Z local  axis. Please select a material for Vz')
 					if pp_model.torsion[0] == 0:
-						raise Excpetion('Automatic computation for T is not supported yet. Please select a uniaxial material')
+						raise Exception('Automatic computation for T is not supported yet. Please select a uniaxial material')
 					if pp_model.materialMz[0] == 0:
-						raise Excpetion('Automatic computation for Mz is not supported yet. Please select a uniaxial material')
+						raise Exception('Automatic computation for Mz is not supported yet. Please select a uniaxial material')
 					if pp_model.shearVz[0] == 0:
-						raise Excpetion('Automatic computation for Vz is not supported yet. Please select a uniaxial material')
+						raise Exception('Automatic computation for Vz is not supported yet. Please select a uniaxial material')
 					
 					mat_string = ' {} {} {} {} {} {}'.format(pp_model.materialP[0],pp_model.shearVy[0],pp_model.shearVz[0],pp_model.torsion[0],pp_model.materialMy[0],pp_model.materialMz[0])
 					dir_string = ' 1 2 3 4 5 6'
@@ -1007,11 +1007,11 @@ def writeTcl(pinfo):
 				if not pp_model.includeShearVy[2]:
 					raise Exception('No material was specified for hinge J for shear in Y local  axis. Please select a material for Vy')
 				if pp_model.materialP[2] == 0:
-					raise Excpetion('Automatic computation for P is not supported yet. Please select a uniaxial material')
+					raise Exception('Automatic computation for P is not supported yet. Please select a uniaxial material')
 				if pp_model.materialMy[2] == 0:
-					raise Excpetion('Automatic computation for My is not supported yet. Please select a uniaxial material')
+					raise Exception('Automatic computation for My is not supported yet. Please select a uniaxial material')
 				if pp_model.shearVy[2] == 0:
-					raise Excpetion('Automatic computation for Vy is not supported yet. Please select a uniaxial material')
+					raise Exception('Automatic computation for Vy is not supported yet. Please select a uniaxial material')
 				if Dimension2:
 					# 2D problem
 					mat_string = ' {} {} {}'.format(pp_model.materialP[2],pp_model.shearVy[2],pp_model.materialMy[2])
@@ -1026,11 +1026,11 @@ def writeTcl(pinfo):
 					if not pp_model.includeShearVz[2]:
 						raise Exception('No material was specified for hinge J for shear in Z local  axis. Please select a material for Vz')
 					if pp_model.torsion[2] == 0:
-						raise Excpetion('Automatic computation for T is not supported yet. Please select a uniaxial material')
+						raise Exception('Automatic computation for T is not supported yet. Please select a uniaxial material')
 					if pp_model.materialMz[2] == 0:
-						raise Excpetion('Automatic computation for Mz is not supported yet. Please select a uniaxial material')
+						raise Exception('Automatic computation for Mz is not supported yet. Please select a uniaxial material')
 					if pp_model.shearVz[2] == 0:
-						raise Excpetion('Automatic computation for Vz is not supported yet. Please select a uniaxial material')
+						raise Exception('Automatic computation for Vz is not supported yet. Please select a uniaxial material')
 					
 					mat_string = ' {} {} {} {} {} {}'.format(pp_model.materialP[2],pp_model.shearVy[2],pp_model.shearVz[2],pp_model.torsion[2],pp_model.materialMy[2],pp_model.materialMz[2])
 					dir_string = ' 1 2 3 4 5 6'
