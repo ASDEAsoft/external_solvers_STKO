@@ -14,6 +14,7 @@ import opensees.utils.write_analysis_steps as write_analysis_steps
 import opensees.utils.write_definitions as write_definitions
 import opensees.utils.write_element as write_element
 import opensees.utils.write_node as write_node
+import opensees.utils.IMPLEX_utils as implex_utils
 from io import StringIO
 
 def write_tcl_int(out_dir):
@@ -178,7 +179,10 @@ def write_tcl_int(out_dir):
 	pinfo.next_definitions_id = doc.definitions.getlastkey(0)+1
 	pinfo.next_conditions_id = doc.conditions.getlastkey(0)+1
 	pinfo.next_analysis_step_id = doc.analysisSteps.getlastkey(0)+1
-
+	
+	# implex utils
+	implex_utils.process_document(pinfo)
+	
 	# definitions.
 	# create a single file named definitions.tcl.
 	# write all definitions there, and then source it in the main script
