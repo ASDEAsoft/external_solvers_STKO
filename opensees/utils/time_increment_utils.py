@@ -4,7 +4,8 @@ from opensees.utils import parameter_utils as paramutil
 
 def _find_phys_props(doc):
 	'''
-	find all physical properties using the implex algorithm
+	find all physical properties using either the implex algorithm
+	or the viscosity. they need a proper monotonically increasing time-step
 	'''
 	# first search
 	direct = {}
@@ -13,7 +14,8 @@ def _find_phys_props(doc):
 		name = xobj.name
 		if name == 'DamageTC3D' or name == 'DamageTC1D':
 			implex = xobj.getAttribute('integration').string == 'IMPL-EX'
-			if implex:
+			viscosity = xobj.getAttribute('eta').real != 0.0
+			if implex or viscosity:
 				direct[prop.id] = prop
 	
 	# find referencing components
@@ -62,7 +64,7 @@ def process_document(pinfo):
 	find also in interactions
 	'''
 	
-	print('Running IMPL-EX Utility...')
+	print('Running Time-Increment Utility...')
 	
 	# check document
 	doc = App.caeDocument()
@@ -70,6 +72,8 @@ def process_document(pinfo):
 		return
 	
 	# a counter for target object in OpenSees with the IMPL-EX algorithm
+	# or with the Viscosity
+	target_count = 0
 	
 	# find physical properties
 	phys_props = _find_phys_props(doc)
@@ -78,108 +82,41 @@ def process_document(pinfo):
 	geoms = {}
 	_find_geoms(doc, phys_props, geoms, lambda geom : geom.physicalPropertyAssignment)
 	
-	# get mesh elements
-	elements = []
+	# find mesh elements
 	mesh = doc.mesh
 	for geom_key, domain in geoms.items():
-		for element in domain.elements:
-			elements.append(element.id)
-	elements = list(set(elements))
-	
-	# make file
-	if len(elements) == 0:
-		return
-	file = open(filename, 'w+')
+		target_count += len(domain.elements)
 	
 	# print info
-	file.write('# IMPLEX-Utilty Stats\n#\n')
-	file.write('# Found {} Physical Properties\n'.format(len(phys_props)))
+	pinfo.out_file.write('\n\n# Time-Increment Utility Stats\n#\n')
+	pinfo.out_file.write('# Found {} Physical Properties\n'.format(len(phys_props)))
 	for id, prop in phys_props.items():
-		file.write('#   [{}] {}\n'.format(id, prop.name))
-	file.write('# Found {} Geometries\n'.format(len(geoms)))
+		pinfo.out_file.write('#    [{}] {}\n'.format(id, prop.name))
+	pinfo.out_file.write('# Found {} Geometries\n'.format(len(geoms)))
 	for geom_key, domain in geoms.items():
-		file.write('#   [{}] {} (# Elements: {})\n'.format(geom_key, domain, len(domain.elements)))
+		pinfo.out_file.write('#    [{}] {} (# Elements: {})\n'.format(geom_key, domain, len(domain.elements)))
+	pinfo.out_file.write('# Found a total of {} elements\n'.format(target_count))
 	
-	# write element list
-	def write_elist(el, ind=''):
-		file.write('{}set STKO_IMPLEX_elements {{\\\n'.format(ind))
-		counter = 0
-		for i in el:
-			if counter == 0:
-				file.write('{}{}'.format(ind, pinfo.tabIndent))
-			file.write('{} '.format(i))
-			counter += 1
-			if counter == 10:
-				counter = 0
-				file.write('\\\n')
-		if counter != 0:
-			file.write('\\\n')
-		file.write('{}}}\n'.format(ind))
-	file.write('\n\n# List of elements with the IMPL-EX algorithm\n')
-	if is_partitioned:
-		# write by parition
-		for process_id in range(pinfo.process_count):
-			part_elements = [elem_id for elem_id in elements if doc.mesh.partitionData.elementPartition(elem_id) == process_id]
-			if len(part_elements) > 0:
-				file.write('if {{$STKO_VAR_process_id == {}}} {{\n'.format(process_id))
-				write_elist(part_elements, ind=pinfo.tabIndent)
-				file.write('}\n')
-	else:
-		# write all elements
-		write_elist(elements)
+	# quick return
+	if target_count == 0:
+		return
 	
-	# write parameters
-	p_dt = paramutil.ParameterManager.IMPLEX_dT
-	p_dt_commit = paramutil.ParameterManager.IMPLEX_dTcommit
-	p_dt_0 = paramutil.ParameterManager.IMPLEX_dT0
-	file.write('\n\n# Parameters for updating the time-step variables in the IMPL-EX elements\n')
-	file.write('parameter {}; # dTime\n'.format(p_dt))
-	file.write('parameter {}; # dTimeCommit\n'.format(p_dt_commit))
-	file.write('parameter {}; # dTimeInitial\n'.format(p_dt_0))
-	file.write('''
-
-# Add elements to parameters
-set t0 [clock milliseconds]
-foreach STKO_IMPLEX_ele $STKO_IMPLEX_elements {
-	addToParameter %i element $STKO_IMPLEX_ele dTime
-	addToParameter %i element $STKO_IMPLEX_ele dTimeCommit
-	addToParameter %i element $STKO_IMPLEX_ele dTimeInitial
-}
-set t1 [clock milliseconds]
-set elap [expr ($t1-$t0)/1000.0]
-puts "\naddToParameter - time: $elap\n"''' % (p_dt, p_dt_commit, p_dt_0))
 	# write custom functions
-	file.write('''
-
+	pinfo.out_file.write('''#
+# Time-Increment Utility Functions.
 # Define a function to be called before the current time step
-proc STKO_IMPLEX_OnBeforeAnalyze_UpdateParamFunction {} {
+proc STKO_DT_UTIL_OnBeforeAnalyze {} {
 	global STKO_VAR_increment
 	global STKO_VAR_time_increment
 	# update the initial time and the committed time for the first time
 	if {$STKO_VAR_increment == 1} {
-		updateParameter %i $STKO_VAR_time_increment
-		updateParameter %i $STKO_VAR_time_increment
+		setParameter -val $STKO_VAR_time_increment -ele dTimeCommit
+		setParameter -val $STKO_VAR_time_increment -ele dTimeInitial
 	}
 	# always update the current time increment
-	updateParameter %i $STKO_VAR_time_increment
+	setParameter -val $STKO_VAR_time_increment -ele dTime
 }
 # add it to the list of functions
-lappend STKO_VAR_OnBeforeAnalyze_CustomFunctions STKO_IMPLEX_OnBeforeAnalyze_UpdateParamFunction
+lappend STKO_VAR_OnBeforeAnalyze_CustomFunctions STKO_DT_UTIL_OnBeforeAnalyze
 
-
-# Define a function to be called after the current time step
-proc STKO_IMPLEX_OnAfterAnalyze_UpdateParamFunction {} {
-	global STKO_VAR_time_increment
-	global STKO_VAR_analyze_done
-	# update the committed time increment
-	if {$STKO_VAR_analyze_done == 0} {
-		updateParameter %i $STKO_VAR_time_increment
-	}
-}
-# add it to the list of functions
-lappend STKO_VAR_OnAfterAnalyze_CustomFunctions STKO_IMPLEX_OnAfterAnalyze_UpdateParamFunction
-''' % (p_dt_0, p_dt_commit, p_dt, p_dt_commit) )
-	
-	# done
-	file.close()
-	pinfo.out_file.write('# source IMPLEX_tools\nsource IMPLEX_tools.tcl\n')
+''')
