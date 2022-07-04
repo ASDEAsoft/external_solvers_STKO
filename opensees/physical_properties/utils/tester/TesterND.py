@@ -19,7 +19,7 @@ from PyMpc import *
 import opensees.utils.tcl_input as tclin
 import opensees.utils.write_physical_properties as write_physical_properties
 import opensees.utils.Gui.GuiUtils as gu
-import opensees.physical_properties.utils.tester.TesterUtils as tu
+import opensees.utils.Gui.TesterUtils as tu
 from opensees.physical_properties.utils.tester.StrainHistory import *
 
 from PySide2.QtCore import (
