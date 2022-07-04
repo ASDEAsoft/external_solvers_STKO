@@ -336,8 +336,8 @@ def writeTcl(pinfo):
 		
 		if do_hinge_j:
 			# hack elem nodal id!!!!
-			pinfo.elem.nodes[0].id = exterior_node_j # master
-			pinfo.elem.nodes[1].id = interior_node_j # slave
+			pinfo.elem.nodes[0].id = interior_node_j # master
+			pinfo.elem.nodes[1].id = exterior_node_j # slave
 			
 			# hack elements id
 			pinfo.elem.id = exterior_elem_j
