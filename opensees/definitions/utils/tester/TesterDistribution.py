@@ -18,7 +18,7 @@ from PyMpc import *
 
 import opensees.utils.tcl_input as tclin
 import opensees.utils.write_definitions as write_definitions
-import opensees.definitions.utils.tester.GuiUtils as gu
+import opensees.utils.Gui.GuiUtils as gu
 import opensees.definitions.utils.tester.TesterUtils as tu
 
 from PySide2.QtCore import (
