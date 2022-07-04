@@ -110,7 +110,7 @@ class ASDCoupledHinge_RectangularRCWidget(QWidget):
 		self.layout().addWidget(self.descr_label)
 		
 		# separator
-		self.separator_1 = gu.makeSeparator()
+		self.separator_1 = gu.makeHSeparator()
 		self.layout().addWidget(self.separator_1)
 		
 		# Section and options for computation of confinement
@@ -177,7 +177,7 @@ class ASDCoupledHinge_RectangularRCWidget(QWidget):
 		# self.strain_hist_layout.setColumnStretch(3, 2)
 		
 		# separator
-		self.separator_2 = gu.makeSeparator()
+		self.separator_2 = gu.makeHSeparator()
 		self.layout().addWidget(self.separator_2)
 		
 		# Chart for unconfined and confined concrete

@@ -5,7 +5,7 @@ import opensees.utils.tcl_input as tclin
 # import opensees.element_properties.beam_column_elements.internalBeamColumnElement as internalBeamColumnElement
 import opensees.physical_properties.special_purpose.beam_section_utils as bsutils
 import opensees.element_properties.utils.geomTransf as gtran
-import opensees.physical_properties.utils.GuiUtils as gu # TODO: Move Gui utils somewhere more useful?????
+import opensees.utils.Gui.GuiUtils as gu
 import json
 
 import PyMpc

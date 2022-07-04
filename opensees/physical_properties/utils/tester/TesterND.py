@@ -18,7 +18,7 @@ from PyMpc import *
 
 import opensees.utils.tcl_input as tclin
 import opensees.utils.write_physical_properties as write_physical_properties
-import opensees.physical_properties.utils.tester.GuiUtils as gu
+import opensees.utils.Gui.GuiUtils as gu
 import opensees.physical_properties.utils.tester.TesterUtils as tu
 from opensees.physical_properties.utils.tester.StrainHistory import *
 
@@ -308,7 +308,7 @@ class TesterNDWidget(QWidget):
 		self.layout().addWidget(self.descr_label)
 		
 		# separator
-		self.separator_1 = gu.makeSeparator()
+		self.separator_1 = gu.makeHSeparator()
 		self.layout().addWidget(self.separator_1)
 		
 		# Strain history
@@ -393,7 +393,7 @@ class TesterNDWidget(QWidget):
 		self.strain_hist_layout.setColumnStretch(2, 2)
 		
 		# separator
-		self.separator_2 = gu.makeSeparator()
+		self.separator_2 = gu.makeHSeparator()
 		self.layout().addWidget(self.separator_2)
 		
 		# add controls for other components
@@ -432,7 +432,7 @@ class TesterNDWidget(QWidget):
 		self.layout().addWidget(self.components_container)
 		
 		# separator
-		self.separator_3 = gu.makeSeparator()
+		self.separator_3 = gu.makeHSeparator()
 		self.layout().addWidget(self.separator_3)
 		
 		# stress-strain chart data (1 for each component)

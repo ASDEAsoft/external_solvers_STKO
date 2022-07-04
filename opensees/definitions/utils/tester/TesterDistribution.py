@@ -319,7 +319,7 @@ class TesterDistributionWidget(QWidget):
 		self.layout().addWidget(self.descr_label)
 
 		# separator
-		self.separator_1 = gu.makeSeparator()
+		self.separator_1 = gu.makeHSeparator()
 		self.layout().addWidget(self.separator_1)
 
 		# Parameters
@@ -342,7 +342,7 @@ class TesterDistributionWidget(QWidget):
 		self.layout().addWidget(self.parameters_container)
 
 		# separator
-		self.separator_2 = gu.makeSeparator()
+		self.separator_2 = gu.makeHSeparator()
 		self.layout().addWidget(self.separator_2)
 
 		# matplotlib

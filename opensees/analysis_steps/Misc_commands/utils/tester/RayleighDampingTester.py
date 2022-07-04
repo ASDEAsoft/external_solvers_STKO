@@ -256,7 +256,7 @@ class RayleighDampingTesterWidget(QWidget):
 		self.layout().addWidget(self.descr_label)
 
 		# separator
-		self.separator_1 = gu.makeSeparator()
+		self.separator_1 = gu.makeHSeparator()
 		self.layout().addWidget(self.separator_1)
 
 		# matplotlib
