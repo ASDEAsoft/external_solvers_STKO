@@ -127,6 +127,7 @@ def writeTcl(pinfo):
 		, geta('h0').real
 		, geta('emax').real
 		, geta('emin').real
+		, geta('nb').real
 		, geta('nd').real
 		, geta('Ado').real
 		, geta('z_max').real

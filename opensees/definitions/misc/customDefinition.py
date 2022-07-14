@@ -29,7 +29,7 @@ def makeXObjectMetaData():
 
 def writeTcl(pinfo):
 	
-	xobj = pinfo.analysis_step.XObject
+	xobj = pinfo.definition.XObject
 	at_script = xobj.getAttribute('TCLscript')
 	if(at_script is None):
 		raise Exception('Error: cannot find "TCLscript" attribute')

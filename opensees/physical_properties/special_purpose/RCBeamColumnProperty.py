@@ -15,7 +15,7 @@ from opensees.physical_properties.special_purpose.RCbeamColumnProperty_support_d
 from opensees.physical_properties.special_purpose.RCbeamColumnProperty_support_data.distributedWidgetPP import modelDistributed
 from opensees.physical_properties.special_purpose.RCbeamColumnProperty_support_data.lumpedFLWidgetPP import modelLumpedFL
 from opensees.physical_properties.special_purpose.RCbeamColumnProperty_support_data.lumpedZLWidgetPP import modelLumpedZL
-import opensees.physical_properties.utils.GuiUtils as gu
+import opensees.utils.Gui.GuiUtils as gu
 import json
 
 import os

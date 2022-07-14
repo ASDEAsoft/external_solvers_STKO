@@ -1,4 +1,4 @@
-from PySide2.QtCore import Qt, QObject, Signal, Slot, QThread, QEventLoop, QTimer
+from PySide2.QtCore import Qt, QObject, Signal, Slot, QThread, QEventLoop, QTimer, QSize
 from PySide2.QtWidgets import QMessageBox, QApplication, QDialog, QLabel, QProgressBar, QVBoxLayout, QTextEdit
 
 '''
@@ -34,7 +34,7 @@ A simple worker dialog, with a progres bar to track
 the percentage of an operation
 '''
 class WorkerDialog(QDialog):
-	def __init__(self, parent = None):
+	def __init__(self, parent = None, fadeIn = True, width = None, height = None):
 		# call base class constructor
 		super(WorkerDialog, self).__init__(parent)
 		# set up this dialog with the progress bar
@@ -46,14 +46,28 @@ class WorkerDialog(QDialog):
 		self.pbar.setRange(1, 100)
 		self.pbar.setTextVisible(True)
 		self.layout().addWidget(self.pbar)
-		self.tedit = QTextEdit()
-		self.layout().addWidget(self.tedit)
-		# add a timer for a delayed opacity
-		self.setWindowOpacity(0.0)
-		self.delay = 0.0
-		self.timer = QTimer(self)
-		self.timer.setInterval(25)
-		self.timer.timeout.connect(self.onTimerTimeOut)
+		self.console_text_edit = QTextEdit()
+		self.layout().addWidget(self.console_text_edit)
+		
+		# self.setMinimumSize(QSize(250,250))
+		if width is not None:
+			if height is not None:
+				self.setMinimumSize(QSize(width,height))
+			else:
+				self.setMinimumWidth(width)
+		else:
+			if height is not None:
+				self.setMinimumHeight(height)
+		
+		if fadeIn:
+			# if fadeIn (default), then 
+			# add a timer for a delayed opacity
+			# The window should appear in 0.5 seconds
+			self.setWindowOpacity(0.0)
+			self.delay = 0.0
+			self.timer = QTimer(self)
+			self.timer.setInterval(25)
+			self.timer.timeout.connect(self.onTimerTimeOut)
 		
 	def showEvent(self, event):
 		# call the base class method
@@ -81,6 +95,7 @@ class WorkerDialog(QDialog):
 			self.delay += 0.05
 		else:
 			self.setWindowOpacity(self.windowOpacity() + 0.05)
+			# self.update()
 			if self.windowOpacity() == 1.0:
 				self.timer.stop()
 				self.timer.timeout.disconnect(self.onTimerTimeOut)

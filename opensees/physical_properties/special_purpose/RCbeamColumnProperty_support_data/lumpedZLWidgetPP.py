@@ -1,5 +1,5 @@
 from PyMpc import *
-import opensees.physical_properties.utils.GuiUtils as gu
+import opensees.utils.Gui.GuiUtils as gu
 # Import the section navigator
 from opensees.physical_properties.special_purpose.RCbeamColumnProperty_support_data.sectionsNavigator import SectionsNavigator
 from PySide2 import QtCore, QtGui, QtWidgets

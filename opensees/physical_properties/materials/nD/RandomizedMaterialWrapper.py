@@ -103,9 +103,9 @@ def writeTcl(pinfo):
 	for iarg in rmt.args:
 		at = source_mat.XObject.getAttribute(iarg)
 		if at is None:
-			raise Exception(err('Cannot find Argument "{}" of {} in the Physical Property'.format(iarg, args)))
+			raise Exception(err('Cannot find Argument "{}" of {} in the Physical Property'.format(iarg, rmt.args)))
 		if at.type != MpcAttributeType.Real and at.type != MpcAttributeType.QuantityScalar and at.type != MpcAttributeType.QuantityVector:
-			raise Exception(err('Argument "{}" of {} in the Physical Property should be MpcAttributeType.Real, MpcAttributeType.QuantityScalar or MpcAttributeType.QuantityVector, not {}'.format(iarg, args, at.type)))
+			raise Exception(err('Argument "{}" of {} in the Physical Property should be MpcAttributeType.Real, MpcAttributeType.QuantityScalar or MpcAttributeType.QuantityVector, not {}'.format(iarg, rmt.args, at.type)))
 	
 	# write randomized materials to the materials.tcl file
 	pinfo.out_file.write('\n{}# BEGIN RandomizedMaterialWrapper ({}) generated materials\n'.format(pinfo.indent, phys_prop.id))

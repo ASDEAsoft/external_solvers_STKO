@@ -18,8 +18,8 @@ from PyMpc import *
 
 import opensees.utils.tcl_input as tclin
 import opensees.utils.write_definitions as write_definitions
-import opensees.definitions.utils.tester.GuiUtils as gu
-import opensees.definitions.utils.tester.TesterUtils as tu
+import opensees.utils.Gui.GuiUtils as gu
+import opensees.utils.Gui.TesterUtils as tu
 
 from PySide2.QtCore import (
 	QObject,
@@ -319,7 +319,7 @@ class TesterDistributionWidget(QWidget):
 		self.layout().addWidget(self.descr_label)
 
 		# separator
-		self.separator_1 = gu.makeSeparator()
+		self.separator_1 = gu.makeHSeparator()
 		self.layout().addWidget(self.separator_1)
 
 		# Parameters
@@ -342,7 +342,7 @@ class TesterDistributionWidget(QWidget):
 		self.layout().addWidget(self.parameters_container)
 
 		# separator
-		self.separator_2 = gu.makeSeparator()
+		self.separator_2 = gu.makeHSeparator()
 		self.layout().addWidget(self.separator_2)
 
 		# matplotlib

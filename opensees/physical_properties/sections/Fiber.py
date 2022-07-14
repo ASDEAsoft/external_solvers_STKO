@@ -82,6 +82,37 @@ def makeXObjectMetaData():
 	at_use_GJ.editable = False
 	at_use_GJ.setDefault(True)
 	
+	# -torsion
+	at_use_torsion = MpcAttributeMetaData()
+	at_use_torsion.type = MpcAttributeType.Boolean
+	at_use_torsion.name = '-torsion'
+	at_use_torsion.group = 'Optional parameters'
+	at_use_torsion.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('-torsion')+'<br/>') + 
+		html_par('Specify a uniaxial material for torsion') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Fiber_Section','Fiber Section')+'<br/>') +
+		html_end()
+		)
+	at_use_torsion.visible = False
+	at_use_torsion.editable = False
+	at_use_torsion.setDefault(False)
+	
+	# Torsion
+	at_Torsion = MpcAttributeMetaData()
+	at_Torsion.type = MpcAttributeType.String
+	at_Torsion.name = 'Torsion'
+	at_Torsion.group = 'Optional parameters'
+	at_Torsion.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('Torsion')+'<br/>') + 
+		html_par('Choose between -GJ and -torsion') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Fiber_Section','Fiber Section')+'<br/>') +
+		html_end()
+		)
+	at_Torsion.sourceType = MpcAttributeSourceType.List
+	at_Torsion.setSourceList(['-GJ', '-torsion'])
+	at_Torsion.setDefault('-GJ')
 	# GJ
 	at_GJ = MpcAttributeMetaData()
 	at_GJ.type = MpcAttributeType.QuantityScalar
@@ -90,12 +121,27 @@ def makeXObjectMetaData():
 	at_GJ.description = (
 		html_par(html_begin()) +
 		html_par(html_boldtext('GJ')+'<br/>') + 
-		html_par('linear-elastic torsional stiffness assigned to the section (optional, default = no torsional stiffness)') +
+		html_par('linear-elastic torsional stiffness assigned to the section') +
 		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Fiber_Section','Fiber Section')+'<br/>') +
 		html_end()
 		)
 	at_GJ.dimension = u.F/u.L**2 * u.L**4
 	
+	# torsionMatTag
+	at_mat_torsion = MpcAttributeMetaData()
+	at_mat_torsion.type = MpcAttributeType.Index
+	at_mat_torsion.name = 'torsionMatTag'
+	at_mat_torsion.group = 'Optional parameters'
+	at_mat_torsion.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('torsionMatTag')+'<br/>') + 
+		html_par('uniaxialMaterial tag assigned to the section for torsional response (can be nonlinear)') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Fiber_Section','Fiber Section')+'<br/>') +
+		html_end()
+		)
+	at_mat_torsion.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
+	at_mat_torsion.indexSource.addAllowedNamespace("materials.uniaxial")
+ 
 	xom = MpcXObjectMetaData()
 	xom.name = 'Fiber'
 	xom.addAttribute(at_Dimension)
@@ -103,17 +149,25 @@ def makeXObjectMetaData():
 	xom.addAttribute(at_3D)
 	xom.addAttribute(at_Section)
 	xom.addAttribute(at_use_GJ)
+	xom.addAttribute(at_use_torsion)
+	xom.addAttribute(at_Torsion)
 	xom.addAttribute(at_GJ)
-	
-	xom.setVisibilityDependency(at_use_GJ, at_GJ)
+	xom.addAttribute(at_mat_torsion)
 	
 	# auto-exclusive dependencies
+	# Dimension
 	xom.setBooleanAutoExclusiveDependency(at_Dimension, at_2D)
 	xom.setBooleanAutoExclusiveDependency(at_Dimension, at_3D)
+	# Torsion
+	xom.setBooleanAutoExclusiveDependency(at_Torsion, at_use_GJ)
+	xom.setBooleanAutoExclusiveDependency(at_Torsion, at_use_torsion)
 	
 	# add offset
 	ofu.addOffsetMetaData(xom, dep_3d = at_3D)
 	
+	# visibility dependencies
+	xom.setVisibilityDependency(at_use_GJ, at_GJ)
+	xom.setVisibilityDependency(at_use_torsion, at_mat_torsion)
 	return xom
 
 def makeExtrusionBeamDataCompoundInfo(xobj):
@@ -165,6 +219,16 @@ def writeTcl (pinfo):
 		GJ = at_GJ.quantityScalar
 		
 		sopt = ' -GJ {}'.format(GJ.value)
+	at_use_torsion = xobj.getAttribute('-torsion')
+	if(at_use_torsion is None):
+		raise Exception('Error: cannot find "-torsion" attribute')
+	if at_use_torsion.boolean:
+		at_mat_torsion = xobj.getAttribute('torsionMatTag')
+		if(at_mat_torsion is None):
+			raise Exception('Error: cannot find "torsionMatTag" attribute')
+		torsionMatTag = at_mat_torsion.index
+		
+		sopt = ' -torsion {}'.format(torsionMatTag)
 	
 	at_Section = xobj.getAttribute('Fiber section')
 	if(at_Section is None):

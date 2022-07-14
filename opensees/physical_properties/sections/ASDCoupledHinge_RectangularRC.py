@@ -3,12 +3,13 @@ import PyMpc.IO
 from PyMpc import *
 from mpc_utils_html import *
 import opensees.utils.tcl_input as tclin
-import opensees.physical_properties.sections.offset_utils as ofu
 import opensees.utils.Gui.GuiUtils as gu
-from opensees.physical_properties.utils.tester.StrainHistory import *
-from opensees.physical_properties.utils.tester.Tester1D import Tester1D
-from opensees.physical_properties.utils.tester.Tester1D import Tester1DMaterialConfinedSection
 from PySide2.QtCore import QCoreApplication
+import numpy as np
+import opensees.physical_properties.sections.ASDCoupledHinge_support_data.RectangularFiberSectionDomain as domain
+import opensees.utils.Gui.ThreadUtils as tu
+from time import sleep, time
+from math import pi
 
 import datetime
 
@@ -22,7 +23,11 @@ from PySide2.QtCore import (
 	QTimer,
 	QSize,
 	Slot,
-	QSignalBlocker
+	QSignalBlocker,
+	QThread, 
+	Qt,
+	Signal,
+	QObject
 	)
 from PySide2.QtWidgets import (
 	QWidget,
@@ -35,12 +40,16 @@ from PySide2.QtWidgets import (
 	QGridLayout,
 	QTextEdit,
 	QMessageBox,
-	QFrame
+	QDialog,
+	QFrame,
+	QPushButton,
+	QApplication
 	)
 import shiboken2
 # import random
 
-class __constants:
+class _constants:
+	verbose = False
 	groups_for_section_update = ([
 		'Section geometry',
 		'Rebars',
@@ -51,12 +60,28 @@ class __constants:
 	# gui
 	gui = None
 	
-class RectangularFiberSectionWidget(QWidget):
+class Serializer(object):
+	@staticmethod
+	def serialize(object):
+		def check(o):
+			for k,v in o.__dict__.items():
+				try:
+					_ = json.dumps(v)
+					o.__dict__[k] = v
+				except TypeError:
+					o.__dict__[k] = str(v)
+			return o
+		return json.dumps(check(object).__dict__, indent = 4)
+	
+class ASDCoupledHinge_RectangularRCWidget(QWidget):
+
+	exception = None
+	
 	# constructor
 	def __init__(self, editor, xobj, parent = None):
 		
 		# base class initialization
-		super(RectangularFiberSectionWidget, self).__init__(parent)
+		super(ASDCoupledHinge_RectangularRCWidget, self).__init__(parent)
 		# layout
 		self.setLayout(QVBoxLayout())
 		self.layout().setContentsMargins(0,0,0,0)
@@ -65,7 +90,7 @@ class RectangularFiberSectionWidget(QWidget):
 		self.descr_label = QLabel(
 			'<html><head/><body>'
 			'<p align="center"><span style=" font-size:11pt; color:#003399;">'
-			'Reinforced Concrete Rectangular Fiber Section'
+			'Simplified Reinforced Concrete Rectangular Fiber Section'
 			'</span></p>'
 			'<p align="center"><span style=" color:#000000;">'
 			'This widget represents the rectangular fiber section'
@@ -117,6 +142,8 @@ class RectangularFiberSectionWidget(QWidget):
 		for confinementModelName in ConfinementModelsFactory.getTypes():
 			self.confinementModel_cbox.addItem(confinementModelName)
 		self.sec_widget_layout.addWidget(self.confinementModel_cbox, 1, 1, 1, 1)
+		# default value
+		self.confinementModel_cbox.setCurrentText('EN1992-1')
 		
 		# # Option for computation of lateral pressure
 		# Label
@@ -154,18 +181,8 @@ class RectangularFiberSectionWidget(QWidget):
 		self.layout().addWidget(self.separator_2)
 		
 		# Chart for unconfined and confined concrete
-		# TO BE DELETED BEGIN ##############################################################
-		# As test and reference include mander law - TO BE DELETED
-		self.chart_data_unconfined_reference = gu.makeChartData("Unc-REF", "Strain", "Stress", 3)
-		# stress-strain chart item
-		chart_item = MpcChartDataGraphicItem(self.chart_data_unconfined_reference)
-		chart_item.color = MpcQColor(105, 188, 255, 125)
-		chart_item.thickness = 1.0
-		chart_item.penStyle = MpcQPenStyle.SolidLine
-		# TO BE DELETED END ##############################################################
 		# Create the stress-strain for concrete unconfined (cover) and confined (core) chart
 		self.chart = MpcChart(1)
-		self.chart.addItem(chart_item)
 		self.chart.name = "Stress-Strain response of concrete"
 		# Unconfined concrete - selected by user
 		self.chart_data_unconfined = gu.makeChartData("Unconfined", "Strain", "Stress", 1)
@@ -175,16 +192,6 @@ class RectangularFiberSectionWidget(QWidget):
 		chart_item.thickness = 1.5
 		chart_item.penStyle = MpcQPenStyle.SolidLine
 		self.chart.addItem(chart_item)
-		# TO BE DELETED BEGIN ##############################################################
-		# As test and reference include mander law for confined concrete - TO BE DELETED
-		self.chart_data_confined_reference = gu.makeChartData("Conf-REF", "Strain", "Stress", 4)
-		# stress-strain chart item
-		chart_item = MpcChartDataGraphicItem(self.chart_data_confined_reference)
-		chart_item.color = MpcQColor(255, 136, 183, 125)
-		chart_item.thickness = 1.0
-		chart_item.penStyle = MpcQPenStyle.SolidLine
-		self.chart.addItem(chart_item)
-		# TO BE DELETED END ##############################################################
 		# Confined concrete - selected by user or autocomputed
 		self.chart_data_confined = gu.makeChartData("Confined", "Strain", "Stress", 2)
 		# stress-strain chart item
@@ -202,6 +209,11 @@ class RectangularFiberSectionWidget(QWidget):
 		# self.mpc_chart_widget.removeLegend()
 		self.chart_widget = shiboken2.wrapInstance(self.mpc_chart_widget.getPtr(), QWidget)
 		self.chart_frame.layout().addWidget(self.chart_widget)
+		
+		# Temporary test button
+		self.run_button = QPushButton('Test')
+		self.layout().addWidget(self.run_button)
+		self.run_button.clicked.connect(self.onTestClicked)
 		
 		# sc = MyStaticMplCanvas()
 		# self.layout().addWidget(sc)
@@ -230,7 +242,7 @@ class RectangularFiberSectionWidget(QWidget):
 		ds = a.string
 		try:
 			jds = json.loads(ds)
-			jds = jds['ConfinedRectangulaSection']
+			jds = jds['ConfinedRectangularSection']
 			class_name = jds['name']
 			self.confinementModel_cbox.setCurrentText(class_name)
 			# call this to set up default values (no connections here)
@@ -266,6 +278,84 @@ class RectangularFiberSectionWidget(QWidget):
 		# p.setX(p.x() + self.parent().size().width())
 		# self.move(p)
 		
+	# a worker class for running the domain
+	
+	class Worker(QObject):
+		# A Class for computing the domain
+		def __init__(self, xobj, materials):
+			# base class initialization
+			super(ASDCoupledHinge_RectangularRCWidget.Worker, self).__init__()
+			self.xobj = xobj
+			self.materials = materials
+			self.domainBuild = None
+		
+		#signals
+		sendPercentage = Signal(int)
+		finished = Signal()
+		sendTextLine = Signal(str)
+		clearTextEdit = Signal()
+		
+		@Slot()
+		def run(self):
+			try:
+				t1 = time()
+				self.domainBuild = computeDomain(self.xobj,self.materials, emitterPercentage = self.sendPercentage.emit, emitterText = self.sendTextLine.emit)
+				t2 = time()
+				if _constants.verbose: print('Time used in Worker run: {} s'.format(t2-t1))
+			except Exception as ex1:
+				ASDCoupledHinge_RectangularRCWidget.exception = ex1
+			finally:
+				# Done
+				self.finished.emit()
+	
+	def onTestClicked(self):
+		# if _constants.verbose: print(self.materials)
+		t1 = time()
+		# Check that the materials are defined
+		if self.materials.fc < 0.0:
+			if self.materials.fcc < 0.0:
+				if self.materials.fy > 0.0:
+					# Basic check: we need to assess that materials are well defined
+					# Create a worker that computes the domain (may be a long operation, so it's better to do on a separate thread)
+					try:
+						domainBuildWorker = ASDCoupledHinge_RectangularRCWidget.Worker(self.xobj,self.materials)
+						parentPtr = shiboken2.wrapInstance(self.editor.getPtr(), QWidget)
+						tu.runOnWorkerThread(domainBuildWorker ,dialog = tu.WorkerDialog(parent = parentPtr, fadeIn = False, width = 500))
+						# if _constants.verbose: print('Exception object: {}\n'.format(str(ASDCoupledHinge_RectangularRCWidget.exception)))
+						if ASDCoupledHinge_RectangularRCWidget.exception is not None:
+							tb = traceback.TracebackException.from_exception(ASDCoupledHinge_RectangularRCWidget.exception)
+							PyMpc.IO.write_cerr(''.join(tb.format()))
+							ASDCoupledHinge_RectangularRCWidget.exception = None
+					except:
+						exdata = traceback.format_exc().splitlines()
+						PyMpc.IO.write_cerr('Error:\n{}\n'.format('\n'.join(exdata)))
+					domainBuild = domainBuildWorker.domainBuild
+					if domainBuild is None:
+						raise Exception('Something gone wrong during creation of domain')
+					# if _constants.verbose: print('Obtained results: ')
+					# if _constants.verbose: print('For N = 0: My = {} - Mz = {}'.format(domainBuild.getMyForN(0),domainBuild.getMzForN(0)))
+					t2 = time()
+					# if _constants.verbose: print('Time used in TestClicked: {} s'.format(t2-t1))
+					try:
+						# @note Some widgets used here comes from STKO Python API, they are C++ classes exposed to Python via Boost.Python
+						# while all other widgets are part of PySide2 and thus exposed via Shiboken2. Since they are incompatible, we use
+						# the shiboken2.wrapInstance method on the raw C++ pointer.
+						parentPtr = shiboken2.wrapInstance(self.editor.getPtr(), QWidget)
+						dialog = domain.DomainResultWidget(domainBuild, parent = parentPtr)
+						# I am not actually using the result
+						res = dialog.exec()
+						if _constants.verbose: print('Result from dialog: {}'.format(res))
+					except:
+						exdata = traceback.format_exc().splitlines()
+						PyMpc.IO.write_cerr('Error:\n{}\n'.format('\n'.join(exdata)))
+					# if _constants.verbose: print(res)
+					return
+		PyMpc.IO.write_cerr('Materials are not defined correctly. Impossibile to test the section behavior. Please check materials\n')
+		# Message box
+		msg = QMessageBox()
+		msg.setText('Materials are not defined correctly. Impossibile to test the section behavior. Please check materials\n')
+		msg.exec()
+		
 	def onSectionChanged(self):
 		# This method is called when section attributes are changed
 		# (e.g. width, height, cover, bars, ecc)
@@ -274,19 +364,19 @@ class RectangularFiberSectionWidget(QWidget):
 		
 		# rebuild the section
 		try:
-			self.__build_section()
+			self._build_section()
 		except:
 			exdata = traceback.format_exc().splitlines()
 			PyMpc.IO.write_cerr('Error:\n{}\n'.format('\n'.join(exdata)))
 			
 	def onMaterialChanged(self):
 		# This method is called when cover material is changed
-		# rebuild the section
 		try:
+			# get Material properties (from simplified design materials
 			self.getMaterialProperties()
-			if self.confinementModel_params.peakStressConcrete < 0:
+			if self.materials.fc < 0:
 				# Unconfined material was sucesfully provided
-				self.runTesterUnconfined()
+				self.drawCurveUnconfined()
 			else:
 				# Delete unconfined curve
 				self.chart_data_unconfined.x = PyMpc.Math.double_array()
@@ -304,7 +394,7 @@ class RectangularFiberSectionWidget(QWidget):
 		for key, value in lateral_pressure_computation_description.items():
 			if value == lateral_pressure_description:
 				lateral_pressure = key
-		# print('****** Lateral pressure ** : ', lateral_pressure)
+		# if _constants.verbose: print('****** Lateral pressure ** : ', lateral_pressure)
 		self.confinementModel_params.lat_press_computation = lateral_pressure
 		try:
 			outputString = self.confinementModel.computeConfinement(self.confinementModel_params)
@@ -312,18 +402,21 @@ class RectangularFiberSectionWidget(QWidget):
 			_get_xobj_attribute(self.xobj, 'fcc').quantityScalar.referenceValue = self.confinementModel.fcc
 			_get_xobj_attribute(self.xobj, 'epscc0').real = self.confinementModel.epscc0
 			_get_xobj_attribute(self.xobj, 'epsccu').real = self.confinementModel.epsccu
+			
+			if self.autoComputeConfinement:
+				self.materials.fcc = self.confinementModel.fcc
+				self.materials.eps_cc = self.confinementModel.epscc0
+				self.materials.eps_ccu = self.confinementModel.epsccu
 		except:
 			exdata = traceback.format_exc().splitlines()
 			PyMpc.IO.write_cerr('Error:\n{}\n'.format('\n'.join(exdata)))
 		# Clear the console edit text
 		self.console_text_edit.clear()
 		self.console_text_edit.append(outputString)
-		# Update Mander (Reference) Curves
-		self.updateManderCurves()
 		# Update the Confined Curves
 		try:
-			if self.confinementModel.fcc < 0:
-				self.runTesterConfined()
+			if self.materials.fcc < 0:
+				self.drawCurveConfined()
 			else:
 				# Delete confined curve
 				self.chart_data_confined.x = PyMpc.Math.double_array()
@@ -354,66 +447,102 @@ class RectangularFiberSectionWidget(QWidget):
 		if doc is None:
 			raise Exception('no active cae document')
 		mat_cover = doc.getPhysicalProperty(_get_xobj_attribute(self.xobj, 'Concrete (Cover) Material').index)
-		mat_core = doc.getPhysicalProperty(_get_xobj_attribute(self.xobj, 'Concrete (Core) Material').index)
-		fy = _get_xobj_attribute(self.xobj, 'fy').quantityScalar.value
-		epssu = _get_xobj_attribute(self.xobj, 'epssu').real
+		mat_core =  doc.getPhysicalProperty(_get_xobj_attribute(self.xobj, 'Concrete (Core) Material').index)
+		mat_reinf = doc.getPhysicalProperty(_get_xobj_attribute(self.xobj, 'Reinforcement Material').index)
 		
+		# Assume default parameters
 		fc = 0.0
 		epsc0 = 0.0
 		epscu = 0.0
+		fcc = 0.0
+		epscc0 = 0.0
+		epsccu = 0.0
 		Ec = 0.0
-		if mat_core is None:	
-			if mat_cover is not None:
-				# import the module of the material and if the function exists get the parameters
-				module_name = 'opensees.physical_properties.{}.{}'.format(mat_cover.XObject.Xnamespace, mat_cover.XObject.name)
-				module = importlib.import_module(module_name)
-				if hasattr(module, 'getMaterialProperties'):
-					fc, epsc0, epscu, Ec = module.getMaterialProperties(mat_cover.XObject)
-				else:
-					PyMpc.IO.write_cerr('Material {} not suported for automatic computation of confinement. Impossibile to compute automatically confined law. Provide it manually\n'.format(mat_cover.XObject.name))
-					# Message box
-					msg = QMessageBox()
-					msg.setText("Material {} not supported for automatic computation of confinement. Impossibile to compute automatically confined law. Provide it manually\n".format(mat_cover.XObject.name))
-					msg.exec()
-
-		self.confinementModel_params.yieldStressSteel = fy
-		self.confinementModel_params.ultimateStrainSteel = epssu
-
-		self.confinementModel_params.peakStressConcrete = fc
-		self.confinementModel_params.peakStrainConcrete = epsc0
-		self.confinementModel_params.ultimateStrainConcrete = epscu
-		self.confinementModel_params.elasticModulusConcrete = Ec
-		# Save Ec in the xobj
-		_get_xobj_attribute(self.xobj, 'Ec').quantityScalar.referenceValue = Ec
+		fy = 0.0
+		epssu = 0.0
+		n = 2.0
+		nc = 2.0
+		Es = 0.0
+		if mat_core is not None:	
+			# The user provided its own material for core
+			if (mat_core.XObject.Xnamespace == 'materials.uniaxial.Design') and (mat_core.XObject.name == 'Concrete'):
+				# Be sure the values are negative
+				fcc = _get_xobj_attribute(mat_core.XObject, 'fc').quantityScalar.value
+				if fcc > 0:
+					fcc *= -1
+				epscc0 = _get_xobj_attribute(mat_core.XObject, 'eps_c').real
+				if epscc0 > 0:
+					epscc0 *= -1
+				epsccu = _get_xobj_attribute(mat_core.XObject, 'eps_cu').real
+				if epsccu > 0:
+					epsccu *= -1
+				nc = _get_xobj_attribute(mat_core.XObject, 'n').real
+			else:
+				PyMpc.IO.write_cerr('Material {} not suported for automatic computation of section. Impossibile to compute automatically interaction domain. Provide it a materials.uniaxial.Design.Concrete material\n'.format(mat_core.XObject.name))
+				# Message box
+				msg = QMessageBox()
+				msg.setText("Material {} not suported for automatic computation of section. Impossibile to compute automatically interaction domain. Provide it a materials.uniaxial.Design.Concrete material\n".format(mat_core.XObject.name))
+				msg.exec()
+		if (mat_cover is not None):
+			if (mat_cover.XObject.Xnamespace == 'materials.uniaxial.Design') and (mat_cover.XObject.name == 'Concrete'):
+				# Be sure the values are negative
+				fc = _get_xobj_attribute(mat_cover.XObject, 'fc').quantityScalar.value
+				if fc > 0:
+					fc *= -1
+				epsc0 = _get_xobj_attribute(mat_cover.XObject, 'eps_c').real
+				if epsc0 > 0:
+					epsc0 *= -1
+				epscu = _get_xobj_attribute(mat_cover.XObject, 'eps_cu').real
+				if epscu > 0:
+					epscu *= -1
+				Ec = _get_xobj_attribute(mat_cover.XObject, 'Ec').quantityScalar.value
+				n = _get_xobj_attribute(mat_cover.XObject, 'n').real
+			else:
+				PyMpc.IO.write_cerr('Material {} not suported for automatic computation of section. Impossibile to compute automatically interaction domain. Provide it a materials.uniaxial.Design.Concrete material\n'.format(mat_cover.XObject.name))
+				# Message box
+				msg = QMessageBox()
+				msg.setText("Material {} not suported for automatic computation of section. Impossibile to compute automatically interaction domain. Provide it a materials.uniaxial.Design.Concrete material\n".format(mat_cover.XObject.name))
+				msg.exec()
+		if (mat_reinf is not None):
+			if (mat_reinf.XObject.Xnamespace == 'materials.uniaxial.Design') and (mat_reinf.XObject.name == 'ReinforcingSteel'): 
+				fy = _get_xobj_attribute(mat_reinf.XObject, 'fy').quantityScalar.value
+				epssu = _get_xobj_attribute(mat_reinf.XObject, 'eps_su').real
+				Es = _get_xobj_attribute(mat_reinf.XObject, 'Es').quantityScalar.value
+			else:
+				PyMpc.IO.write_cerr('Material {} not suported for automatic computation of section. Impossibile to compute automatically interaction domain. Provide it a materials.uniaxial.Design.ReinforcingSteel material\n'.format(mat_reinf.XObject.name))
+				# Message box
+				msg = QMessageBox()
+				msg.setText("Material {} not suported for automatic computation of section. Impossibile to compute automatically interaction domain. Provide it a materials.uniaxial.Design.ReinforcingSteel material\n".format(mat_reinf.XObject.name))
+				msg.exec()
+			
+				
+		# Save the material properties in a proper object
+		self.materials = domain.MaterialsForRectangularSection(fc, epsc0, epscu, n, fcc, epscc0, epsccu, nc, Es, fy, epssu)
 		
-	def updateManderCurves(self):
-		# compute Mander curve for unconfined concrete
-		fc = self.confinementModel_params.peakStressConcrete
-		epsc0 = self.confinementModel_params.peakStrainConcrete
-		epscu = self.confinementModel_params.ultimateStrainConcrete
-		Ec = self.confinementModel_params.elasticModulusConcrete
-		eps = []
-		sig = []
-		if fc < 0.0:
-			eps, sig = self.__compute_Mander_Law(Ec, fc, epsc0, epscu, False)
-		# Update chart data
-		# self.chart_data_unconfined_reference.x = PyMpc.Math.double_array()
-		self.chart_data_unconfined_reference.x = PyMpc.Math.double_array(eps)
-		self.chart_data_unconfined_reference.y = PyMpc.Math.double_array(sig)
-		# compute Mander curve for confined concrete
-		fcc = self.confinementModel.fcc
-		epscc0 = self.confinementModel.epscc0
-		epsccu = self.confinementModel.epsccu
-		eps = []
-		sig = []
-		if fcc < 0.0:
-			eps, sig = self.__compute_Mander_Law(Ec, fcc, epscc0, epsccu, True)
-		# Update chart data
-		self.chart_data_confined_reference.x = PyMpc.Math.double_array(eps)
-		self.chart_data_confined_reference.y = PyMpc.Math.double_array(sig)
-		# set chart
-		self.mpc_chart_widget.chart = self.chart
-		self.mpc_chart_widget.autoScale()
+		# Save the parameters needed for automatic confinement computation
+		if mat_core is None:	
+			self.autoComputeConfinement = True
+			self.confinementModel_params.yieldStressSteel = fy
+			self.confinementModel_params.ultimateStrainSteel = epssu
+
+			self.confinementModel_params.peakStressConcrete = fc
+			self.confinementModel_params.peakStrainConcrete = epsc0
+			self.confinementModel_params.ultimateStrainConcrete = epscu
+			self.confinementModel_params.elasticModulusConcrete = Ec
+			# Save Ec in the xobj
+			_get_xobj_attribute(self.xobj, 'Ec').quantityScalar.referenceValue = Ec
+		else:
+			self.autoComputeConfinement = False
+			self.confinementModel_params.yieldStressSteel = 0.0
+			self.confinementModel_params.ultimateStrainSteel = 0.0
+
+			self.confinementModel_params.peakStressConcrete = 0.0
+			self.confinementModel_params.peakStrainConcrete = 0.0
+			self.confinementModel_params.ultimateStrainConcrete = 0.0
+			self.confinementModel_params.elasticModulusConcrete = 0.0
+			# Save Ec in the xobj
+			_get_xobj_attribute(self.xobj, 'Ec').quantityScalar.referenceValue = Ec
+
 		
 	def onEditFinished(self):
 		#################################################### $JSON
@@ -429,32 +558,15 @@ class RectangularFiberSectionWidget(QWidget):
 		# Creation of dictionary with intial values to store
 		class_name = self.confinementModel_cbox.currentText()
 		lat_press_computation = self.lateralPresssure_cbox.currentText()
-		jds['ConfinedRectangulaSection'] = {'name': class_name, 'lat_press': lat_press_computation}
+		jds['ConfinedRectangularSection'] = {'name': class_name, 'lat_press': lat_press_computation}
+		jds['Materials'] = Serializer.serialize(self.materials)
 		a.string = json.dumps(jds, indent=4)
 		#################################################### $JSON
 	
-	def __compute_Mander_Law(self, Ec, fc, epsc0, epscu, confined):
-		eps = [x * epscu/100.0 for x in range(0,102)]
-		sig = [0] * len(eps)
-		if fc < 0.0:
-			for i in range(1,len(eps)):
-				e = -eps[i]
-				x = e / (-epsc0)
-				Esec = fc / epsc0
-				r = Ec / (Ec - Esec)
-				s = -fc * x * r / (r - 1 + x**r)
-				if not confined:
-					if e >= (-2*epsc0):
-						s = 2*(-fc)*r/(r-1+2**r)*(-epscu-e)/(-epscu-2*(-epsc0))
-				if e >= (-epscu):
-					s = 0
-				sig[i] = -s
-		return eps, sig
-	
-	def __build_section(self):
+	def _build_section(self):
 		import opensees.physical_properties.sections.RectangulaFiberSection_support_data.RectangularFiberSectionChecks as checks
 		
-		pi = 3.14159265359
+		# pi = 3.14159265359
 
 		# get document, we need it to get materials
 		doc = App.caeDocument()
@@ -462,7 +574,8 @@ class RectangularFiberSectionWidget(QWidget):
 			raise Exception('no active cae document')
 		mat_core = doc.getPhysicalProperty(_get_xobj_attribute(self.xobj, 'Concrete (Core) Material').index)
 		mat_cover = doc.getPhysicalProperty(_get_xobj_attribute(self.xobj, 'Concrete (Cover) Material').index)
-		mat_rebars = doc.getPhysicalProperty(_get_xobj_attribute(self.xobj, 'Rebars Material').index)
+		mat_reinf = doc.getPhysicalProperty(_get_xobj_attribute(self.xobj, 'Reinforcement Material').index)
+		if _constants.verbose: print('Reinforcement material: ',mat_reinf)
 
 		# get fiber section
 		sec = _get_xobj_attribute(self.xobj, 'Fiber section').customObject;
@@ -482,6 +595,7 @@ class RectangularFiberSectionWidget(QWidget):
 		subdvs = _get_xobj_attribute(self.xobj, 'Mesh Subdivisions').integer
 		if subdvs < 1:
 			subdvs = 15
+			
 		# lambda for 4node face
 		mesh_size = max(W,H)/subdvs
 		# TO DO: Option selectable by user (number of divisions / mesh_size)
@@ -569,21 +683,21 @@ class RectangularFiberSectionWidget(QWidget):
 		numBars = 4
 		
 		# Draw corner bars
-		line2(-Wcc/2.0, -Hcc/2.0, Wcc/2.0, -Hcc/2.0, mat_rebars, phi_corner, 2)
-		line2(-Wcc/2.0,  Hcc/2.0, Wcc/2.0,  Hcc/2.0, mat_rebars, phi_corner, 2)
+		line2(-Wcc/2.0, -Hcc/2.0, Wcc/2.0, -Hcc/2.0, mat_reinf, phi_corner, 2)
+		line2(-Wcc/2.0,  Hcc/2.0, Wcc/2.0,  Hcc/2.0, mat_reinf, phi_corner, 2)
 		if num_corner > 1:
 			# Assume 2 bars
 			Wcc_mod = Wcc
 			Wcc_mod -= 2*phi_corner 
-			line2(-Wcc_mod/2.0, -Hcc/2.0, Wcc_mod/2.0, -Hcc/2.0, mat_rebars, phi_corner, 2)
-			line2(-Wcc_mod/2.0,  Hcc/2.0, Wcc_mod/2.0,  Hcc/2.0, mat_rebars, phi_corner, 2)
+			line2(-Wcc_mod/2.0, -Hcc/2.0, Wcc_mod/2.0, -Hcc/2.0, mat_reinf, phi_corner, 2)
+			line2(-Wcc_mod/2.0,  Hcc/2.0, Wcc_mod/2.0,  Hcc/2.0, mat_reinf, phi_corner, 2)
 			AsLong += 4.0*(pi*(phi_corner**2)/4.0)
 			if num_corner > 2:
 				# 3 bars on the corner
 				Hcc_mod = Hcc
 				Hcc_mod -= 2*phi_corner
-				line2(-Wcc/2.0, Hcc_mod/2.0, -Wcc/2.0, -Hcc_mod/2.0, mat_rebars, phi_corner, 2)
-				line2(Wcc/2.0, Hcc_mod/2.0, Wcc/2.0, -Hcc_mod/2.0, mat_rebars, phi_corner, 2)
+				line2(-Wcc/2.0, Hcc_mod/2.0, -Wcc/2.0, -Hcc_mod/2.0, mat_reinf, phi_corner, 2)
+				line2(Wcc/2.0, Hcc_mod/2.0, Wcc/2.0, -Hcc_mod/2.0, mat_reinf, phi_corner, 2)
 				AsLong += 4.0*(pi*(phi_corner**2)/4.0)
 		# draw bottom bars
 		if num_bottom > 0:
@@ -593,7 +707,7 @@ class RectangularFiberSectionWidget(QWidget):
 				bi2 += (((Wcc-Wcc_mod)/2.0)**2) * (num_bottom + 1)
 			else:
 				bi2 += ((Wcc/2.0)**2) * (num_bottom + 1)
-			line2(-Wcc_mod/2.0, -Hcc/2.0, Wcc_mod/2.0, -Hcc/2.0, mat_rebars, phi_bottom, num_bottom)
+			line2(-Wcc_mod/2.0, -Hcc/2.0, Wcc_mod/2.0, -Hcc/2.0, mat_reinf, phi_bottom, num_bottom)
 			AsLong += num_bottom * pi * (phi_bottom**2) / 4
 		else:
 			bi2 += Wcc**2 
@@ -605,7 +719,7 @@ class RectangularFiberSectionWidget(QWidget):
 				bi2 += (((Wcc-Wcc_mod)/2.0)**2) * (num_top + 1)
 			else:
 				bi2 += ((Wcc/2.0)**2) * (num_top + 1)
-			line2(-Wcc_mod/2.0, Hcc/2.0, Wcc_mod/2.0, Hcc/2.0, mat_rebars, phi_top, num_top)
+			line2(-Wcc_mod/2.0, Hcc/2.0, Wcc_mod/2.0, Hcc/2.0, mat_reinf, phi_top, num_top)
 			AsLong += num_top * pi * (phi_top**2) / 4
 		else:
 			bi2 += Wcc**2
@@ -617,7 +731,7 @@ class RectangularFiberSectionWidget(QWidget):
 				bi2 += (((Hcc-Hcc_mod)/2.0)**2) * (num_left + 1)
 			else:
 				bi2 += ((Hcc/2.0)**2) * (num_left + 1)
-			line2(-Wcc/2.0, -Hcc_mod/2.0, -Wcc/2.0, Hcc_mod/2.0, mat_rebars, phi_left, num_left)
+			line2(-Wcc/2.0, -Hcc_mod/2.0, -Wcc/2.0, Hcc_mod/2.0, mat_reinf, phi_left, num_left)
 			AsLong += num_left * pi * (phi_left**2) / 4
 		else:
 			bi2 += Hcc**2
@@ -629,12 +743,12 @@ class RectangularFiberSectionWidget(QWidget):
 				bi2 += (((Hcc-Hcc_mod)/2.0)**2) * (num_right + 1)
 			else:
 				bi2 += ((Hcc/2.0)**2) * (num_right + 1)
-			line2(Wcc/2.0, -Hcc_mod/2.0, Wcc/2.0, Hcc_mod/2.0, mat_rebars, phi_right, num_right)
+			line2(Wcc/2.0, -Hcc_mod/2.0, Wcc/2.0, Hcc_mod/2.0, mat_reinf, phi_right, num_right)
 			AsLong += num_right * pi * (phi_right**2) / 4
 		else:
 			bi2 += Hcc**2
 
-		# print('bi^2 = {} mm2\n'.format(bi2))
+		# if _constants.verbose: print('bi^2 = {} mm2\n'.format(bi2))
 		
 		rhoCC = AsLong/Ac # Longitudinal steel ratio
 		
@@ -660,255 +774,54 @@ class RectangularFiberSectionWidget(QWidget):
 		self.sec_widget.scene.updateBoundingBox()
 		self.sec_widget.fitAll()
 	
-	def runTesterUnconfined(self):
-		# Create a strain history Monotonic for now - in the future we could add the possibility to select monotonic or cyclic
-		self.strain_hist = StrainHistoryFactory.make('Monotonic')
-		self.strain_hist_params = self.strain_hist.getDefaultParams()
-		self.strain_hist_params.target_strain = self.confinementModel_params.ultimateStrainConcrete*1.05; #self.confinementModel.epsccu
-		self.strain_hist.build(self.strain_hist_params)
-		# make the total analysis last 1 (pseudo) seconds.
-		# this is not mandatory now, but for future works it can be useful for rate dependent models
-		dtime = 0.0
-		self.strain_hist_time = [0.0]*len(self.strain_hist.strain)
-		if len(self.strain_hist.strain) > 1:
-			dtime = 1.0/float(len(self.strain_hist.strain) - 1)
-		for i in range(len(self.strain_hist.strain)):
-			self.strain_hist_time[i] = float(i)*dtime
-		# reset chart data
-		self.chart_data_unconfined.x = PyMpc.Math.double_array()
-		self.chart_data_unconfined.y = PyMpc.Math.double_array()
-		
-		# reset percentage data
-		self.old_percentage = 0.0
-		self.delta_percentage = 0.0
-		
-		# Create a tester object
-		try:
-			# check the xobject
-			if self.xobj is None:
-				raise Exception("The current XObject is NULL")
-			# if self.xobj.parent is None:
-				# raise Exception("The current XObject has no parent component")
-			
-			# get document, we need it to get the materials
-			doc = PyMpc.App.caeDocument()
-			if doc is None:
-				raise Exception("No current document")
-			
-			# Get the cover material
-			mat_cover = doc.getPhysicalProperty(_get_xobj_attribute(self.xobj, 'Concrete (Cover) Material').index)
-			if mat_cover is not None:
-				
-				# get a unique set of all components referenced directly or indirectly
-				# by parent_component.
-				# this is mandatory in case the user wants to test materials that depends on other materials
-				# defined previously.
-				# this is a physical property so it can only reference other physical properties
-				# that were defined previously, i.e. with a lower id
-				ref_comp_vec = PyMpc.App.getReferencedComponents(mat_cover)
-				
-				# put them in an ordered map
-				# so they stay ordered as in STKO.
-				# this is mandatory for writing them in the correct order!
-				materials = MpcPropertyCollection()
-				for item in ref_comp_vec:
-					if item.indexSourceType != MpcAttributeIndexSourceType.PhysicalProperty:
-						raise Exception(
-							'One of the referenced component\'s source type is "{}"'
-							'while it should be "{}".\n'
-							'This should never happen. Please contact the developers.'.format(
-								item.indexSourceType,
-								MpcAttributeIndexSourceType.PhysicalProperty)
-							)
-					materials[item.id] = item
-				
-				# put the materials we want to test as the last item
-				materials[mat_cover.id] = mat_cover
-				
-				# now we can run the tester
-				self.tester = Tester1D(materials, self.strain_hist_time, self.strain_hist.strain)
-				self.tester.testProcessUpdated.connect(self.onTestUnconfinedProcessUpdated)
-				parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
-				parent_dialog.setEnabled(False)
-				self.editor.setCanClose(False)
-				try:
-					self.tester.run()
-				finally:
-					parent_dialog.setEnabled(True)
-					self.editor.setCanClose(True)
-					self.tester.deleteLater()
-					self.tester = None
-				
-		except:
-			exdata = traceback.format_exc().splitlines()
-			PyMpc.IO.write_cerr('Error:\n{}\n'.format('\n'.join(exdata)))
-			
-	@Slot(float, float, float)
-	def onTestUnconfinedProcessUpdated(self, iperc, istrain, istress):
-		# update strain/stress data
-		self.chart_data_unconfined.x.append(istrain)
-		self.chart_data_unconfined.y.append(istress)
-		# update gui:
-		# note: this is visual appealing and capture the user attention while
-		# a job is beeing done. however it slows down the job execution, so
-		# we update the gui only at certain points
-		self.delta_percentage += iperc - self.old_percentage
-		self.old_percentage = iperc
-		if self.delta_percentage > 0.0099 or iperc > 0.9999:
-			self.delta_percentage = 0.0
-			# update chart
-			self.mpc_chart_widget.chart = self.chart
-			self.mpc_chart_widget.autoScale()
-			# update progress bar
-			# self.run_progress_bar.setValue(int(round(iperc*100.0)))
-			# process all events to prevent gui from freezing
-			QCoreApplication.processEvents()
-			
-	def runTesterConfined(self):
-		# Create a strain history Monotonic for now - in the future we could add the possibility to select monotonic or cyclic
-		self.strain_hist = StrainHistoryFactory.make('Monotonic')
-		self.strain_hist_params = self.strain_hist.getDefaultParams()
-		self.strain_hist_params.target_strain = self.confinementModel.epsccu*1.05;
-		self.strain_hist.build(self.strain_hist_params)
-		# make the total analysis last 1 (pseudo) seconds.
-		# this is not mandatory now, but for future works it can be useful for rate dependent models
-		dtime = 0.0
-		self.strain_hist_time = [0.0]*len(self.strain_hist.strain)
-		if len(self.strain_hist.strain) > 1:
-			dtime = 1.0/float(len(self.strain_hist.strain) - 1)
-		for i in range(len(self.strain_hist.strain)):
-			self.strain_hist_time[i] = float(i)*dtime
-		# reset chart data
-		self.chart_data_confined.x = PyMpc.Math.double_array()
-		self.chart_data_confined.y = PyMpc.Math.double_array()
-		
-		# reset percentage data
-		self.old_percentage = 0.0
-		self.delta_percentage = 0.0
-		
-		# Create a tester object
-		try:
-			# check the xobject
-			if self.xobj is None:
-				raise Exception("The current XObject is NULL")
-			# if self.xobj.parent is None:
-				# raise Exception("The current XObject has no parent component")
-			
-			# get document, we need it to get the materials
-			doc = PyMpc.App.caeDocument()
-			if doc is None:
-				raise Exception("No current document")
-				
-			# Get the core material
-			mat_core = doc.getPhysicalProperty(_get_xobj_attribute(self.xobj, 'Concrete (Core) Material').index)
-			if mat_core is not None:
-				# get a unique set of all components referenced directly or indirectly
-				# by parent_component.
-				# this is mandatory in case the user wants to test materials that depends on other materials
-				# defined previously.
-				# this is a physical property so it can only reference other physical properties
-				# that were defined previously, i.e. with a lower id
-				ref_comp_vec = PyMpc.App.getReferencedComponents(mat_core)
-				
-				# put them in an ordered map
-				# so they stay ordered as in STKO.
-				# this is mandatory for writing them in the correct order!
-				materials = MpcPropertyCollection()
-				for item in ref_comp_vec:
-					if item.indexSourceType != MpcAttributeIndexSourceType.PhysicalProperty:
-						raise Exception(
-							'One of the referenced component\'s source type is "{}"'
-							'while it should be "{}".\n'
-							'This should never happen. Please contact the developers.'.format(
-								item.indexSourceType,
-								MpcAttributeIndexSourceType.PhysicalProperty)
-							)
-					materials[item.id] = item
-				
-				# put the materials we want to test as the last item
-				materials[mat_core.id] = mat_core
-				
-				# now we can run the tester
-				self.tester = Tester1D(materials, self.strain_hist_time, self.strain_hist.strain)
-				self.tester.testProcessUpdated.connect(self.onTestConfinedProcessUpdated)
-				parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
-				parent_dialog.setEnabled(False)
-				self.editor.setCanClose(False)
-				try:
-					self.tester.run()
-				finally:
-					parent_dialog.setEnabled(True)
-					self.editor.setCanClose(True)
-					self.tester.deleteLater()
-					self.tester = None
-			else: 
-				# Get the cover material
-				mat_cover = doc.getPhysicalProperty(_get_xobj_attribute(self.xobj, 'Concrete (Cover) Material').index)
-				if mat_cover is not None:
-					# I try to create on the fly the confined material
-					# import the module of the material and if the function exists get the parameters
-					module_name = 'opensees.physical_properties.{}.{}'.format(mat_cover.XObject.Xnamespace, mat_cover.XObject.name)
-					module = importlib.import_module(module_name)
-					if hasattr(module, 'getParamsConfinedVersion'):
-						# Compute stress corresponding to ultimate strain with Mander Law
-						epsccu = self.confinementModel.epsccu
-						fcc = self.confinementModel.fcc
-						epscc0 = self.confinementModel.epscc0
-						Ec = self.confinementModel_params.elasticModulusConcrete
-						e = -epsccu*0.9999
-						x = e / (-epscc0)
-						Esec = fcc / epscc0
-						r = Ec / (Ec - Esec)
-						s = -fcc * x * r / (r - 1 + x**r)
-						fccu = -s
-						params = module.getParamsConfinedVersion(mat_cover.XObject, fcc, epscc0, epsccu, fccu)
-						materialTclString = "uniaxialMaterial {} 1".format(mat_cover.XObject.name)
-						for param in params:
-							materialTclString += " {}".format(param)
-						# now we can run the tester
-						self.tester = Tester1DMaterialConfinedSection(materialTclString, self.strain_hist_time, self.strain_hist.strain)
-						self.tester.testProcessUpdated.connect(self.onTestConfinedProcessUpdated)
-						parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
-						parent_dialog.setEnabled(False)
-						self.editor.setCanClose(False)
-						try:
-							self.tester.run()
-						finally:
-							parent_dialog.setEnabled(True)
-							self.editor.setCanClose(True)
-							self.tester.deleteLater()
-							self.tester = None
-					else:
-						PyMpc.IO.write_cerr('Error: uniaxialMaterial {} for cover not recognized for computing core concrete.\n'.format(mat_cover.XObject.name))
-				else:
-					# I cannot create the confined material because the cover is not provided
-					pass	
-		except:
-			exdata = traceback.format_exc().splitlines()
-			PyMpc.IO.write_cerr('Error:\n{}\n'.format('\n'.join(exdata)))
-			
-	
-	@Slot(float, float, float)
-	def onTestConfinedProcessUpdated(self, iperc, istrain, istress):
-		# update strain/stress data
-		self.chart_data_confined.x.append(istrain)
-		self.chart_data_confined.y.append(istress)
-		# update gui:
-		# note: this is visual appealing and capture the user attention while
-		# a job is beeing done. however it slows down the job execution, so
-		# we update the gui only at certain points
-		self.delta_percentage += iperc - self.old_percentage
-		self.old_percentage = iperc
-		if self.delta_percentage > 0.0099 or iperc > 0.9999:
-			self.delta_percentage = 0.0
-			# update chart
-			self.mpc_chart_widget.chart = self.chart
-			self.mpc_chart_widget.autoScale()
-			# update progress bar
-			# self.run_progress_bar.setValue(int(round(iperc*100.0)))
-			# process all events to prevent gui from freezing
-			QCoreApplication.processEvents()
+	def drawCurveUnconfined(self):
+		# draw the stress-strain curve for unconfined concrete
 
+		# Properties of unconfined concrete:
+		fc = -self.materials.fc
+		epsc2 = -self.materials.eps_c
+		epscu = -self.materials.eps_cu
+		n = self.materials.n
+		
+		# Create a strain history
+		eps = np.concatenate([np.linspace(0,epsc2,20), np.linspace(epsc2*1.001,epscu,2), np.linspace(epscu*1.001,epscu*1.1,2)])
+		# Compute parabola-rectangle:
+		sig = fc * (1- (1 - eps/epsc2)**n)
+		sig[eps>epsc2] = fc
+		sig[eps>epscu] = 0
+		
+		#update chart_data
+		self.chart_data_unconfined.x = PyMpc.Math.double_array(eps.tolist())
+		self.chart_data_unconfined.y = PyMpc.Math.double_array(sig.tolist())
+		# set chart
+		self.mpc_chart_widget.chart = self.chart
+		self.mpc_chart_widget.autoScale()
+			
+	def drawCurveConfined(self):
+		# draw the stress-strain curve for confined concrete
+
+		# Properties of unconfined concrete:
+		fc = -self.materials.fcc
+		epsc2 = -self.materials.eps_cc
+		epscu = -self.materials.eps_ccu
+		n = self.materials.nc
+		if _constants.verbose: print('Drawing curve with: ',fc,epsc2,epscu,n)
+		
+		# Create a strain history
+		eps = np.concatenate([np.linspace(0,epsc2,20), np.linspace(epsc2*1.001,epscu,2), np.linspace(epscu*1.001,epscu*1.1,2)])
+		# Compute parabola-rectangle:
+		sig = fc * (1- (1 - eps/epsc2)**n)
+		sig[eps>epsc2] = fc
+		sig[eps>epscu] = 0
+		
+		#update chart_data
+		self.chart_data_confined.x = PyMpc.Math.double_array(eps.tolist())
+		self.chart_data_confined.y = PyMpc.Math.double_array(sig.tolist())
+		# set chart
+		self.mpc_chart_widget.chart = self.chart
+		self.mpc_chart_widget.autoScale()
+
+# Definition of the xobj
 def makeXObjectMetaData():
 	
 	def make_attr(name, group, descr):
@@ -919,7 +832,7 @@ def makeXObjectMetaData():
 			html_par(html_begin()) +
 			html_par(html_boldtext(name)+'<br/>') + 
 			html_par(descr) +
-			html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Fiber_Section','Rectangular Fiber Section')+'<br/>') +
+			html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Fiber_Section','SimplifiedRectangular Fiber Section')+'<br/>') +
 			html_end()
 			)
 		return at
@@ -932,39 +845,6 @@ def makeXObjectMetaData():
 	at_Section.indexSource.addAllowedNamespace('materials.uniaxial') # we want uniaxial materials for fibers
 	at_Section.editable = False
 	
-	# -GJ
-	at_use_GJ = make_attr('-GJ', 'Optional parameters', 'use linear-elastic torsional')
-	at_use_GJ.type = MpcAttributeType.Boolean
-	at_use_GJ.visible = False
-	at_use_GJ.editable = False
-	at_use_GJ.setDefault(True)
-	
-	# -torsion
-	at_use_torsion = make_attr('-torsion', 'Optional parameters', 'Specify a uniaxial material for torsion')
-	at_use_torsion.type = MpcAttributeType.Boolean
-	at_use_torsion.visible = False
-	at_use_torsion.editable = False
-	at_use_torsion.setDefault(False)
-	
-	# Torsion selection
-	at_Torsion = make_attr('Torsion', 'Optional parameters', 'Choose between -GJ and -torsion')
-	at_Torsion.type = MpcAttributeType.String
-	at_Torsion.sourceType = MpcAttributeSourceType.List
-	at_Torsion.setSourceList(['-GJ', '-torsion'])
-	at_Torsion.setDefault('-GJ')
-
-	# GJ
-	at_GJ = make_attr('GJ', 'Optional parameters', 
-				   'linear-elastic torsional stiffness assigned to the section')
-	at_GJ.type = MpcAttributeType.QuantityScalar
-	at_GJ.dimension = u.F/u.L**2 * u.L**4
-	
-	# torsionMatTag
-	at_mat_torsion = make_attr('torsionMatTag', 'Optional parameters', 
-				'uniaxialMaterial tag assigned to the section for torsional response (can be nonlinear)')
-	at_mat_torsion.type = MpcAttributeType.Index
-	at_mat_torsion.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
-	at_mat_torsion.indexSource.addAllowedNamespace("materials.uniaxial")
 	# geometry --------------------------------------------------------
 	
 	#2D
@@ -994,7 +874,7 @@ def makeXObjectMetaData():
 	at_H = make_attr('Height', 'Section geometry', '')
 	at_H.type = MpcAttributeType.QuantityScalar
 	at_H.dimension = u.L
-	at_H.setDefault(400.0)
+	at_H.setDefault(800.0)
 
 	# C
 	at_C = make_attr('Cover', 'Section geometry', '')
@@ -1011,7 +891,7 @@ def makeXObjectMetaData():
 	at_CR_diam = make_attr('Corner Rebars Diam', 'Rebars', 'Number of bars used in corner (from 1 to 3).')
 	at_CR_diam.type = MpcAttributeType.QuantityScalar
 	at_CR_diam.dimension = u.L
-	at_CR_diam.setDefault(16.0)
+	at_CR_diam.setDefault(18.0)
 	at_CR_num = make_attr('Corner Rebars Number', 'Rebars', '')
 	at_CR_num.type = MpcAttributeType.Integer
 	at_CR_num.setDefault(1)
@@ -1019,80 +899,74 @@ def makeXObjectMetaData():
 	at_BR_diam = make_attr('Bottom Rebars Diam', 'Rebars', '')
 	at_BR_diam.type = MpcAttributeType.QuantityScalar
 	at_BR_diam.dimension = u.L
-	at_BR_diam.setDefault(16.0)
+	at_BR_diam.setDefault(18.0)
 	at_BR_num = make_attr('Bottom Rebars Number', 'Rebars', '')
 	at_BR_num.type = MpcAttributeType.Integer
-	at_BR_num.setDefault(1)
+	at_BR_num.setDefault(2)
 
 	at_TR_diam = make_attr('Top Rebars Diam', 'Rebars', '')
 	at_TR_diam.type = MpcAttributeType.QuantityScalar
 	at_TR_diam.dimension = u.L
-	at_TR_diam.setDefault(16.0)
+	at_TR_diam.setDefault(18.0)
 	at_TR_num = make_attr('Top Rebars Number', 'Rebars', '')
 	at_TR_num.type = MpcAttributeType.Integer
-	at_TR_num.setDefault(1)
+	at_TR_num.setDefault(2)
 
 	at_LR_diam = make_attr('Left Rebars Diam', 'Rebars', '')
 	at_LR_diam.type = MpcAttributeType.QuantityScalar
 	at_LR_diam.dimension = u.L
-	at_LR_diam.setDefault(16.0)
+	at_LR_diam.setDefault(18.0)
 	at_LR_num = make_attr('Left Rebars Number', 'Rebars', '')
 	at_LR_num.type = MpcAttributeType.Integer
-	at_LR_num.setDefault(1)
+	at_LR_num.setDefault(4)
 
 	at_RR_diam = make_attr('Right Rebars Diam', 'Rebars', '')
 	at_RR_diam.type = MpcAttributeType.QuantityScalar
 	at_RR_diam.dimension = u.L
-	at_RR_diam.setDefault(16.0)
+	at_RR_diam.setDefault(18.0)
 	at_RR_num = make_attr('Right Rebars Number', 'Rebars', '')
 	at_RR_num.type = MpcAttributeType.Integer
-	at_RR_num.setDefault(1)
+	at_RR_num.setDefault(4)
 
 	# geometry --------------------------------------------------------
 	at_S_diam = make_attr('Stirrup Diam', 'Stirrups', '')
 	at_S_diam.type = MpcAttributeType.QuantityScalar
 	at_S_diam.dimension = u.L
-	at_S_diam.setDefault(8.0)
+	at_S_diam.setDefault(10.0)
 
 	at_S_spac = make_attr('Stirrup Spacing', 'Stirrups', '')
 	at_S_spac.type = MpcAttributeType.QuantityScalar
 	at_S_spac.dimension = u.L
-	at_S_spac.setDefault(150.0)
+	at_S_spac.setDefault(50.0)
 
 	at_S_legs_y = make_attr('Stirrup Legs Y', 'Stirrups', 'Number of legs parallel to Y axis')
 	at_S_legs_y.type = MpcAttributeType.Integer
-	at_S_legs_y.setDefault(2)
+	at_S_legs_y.setDefault(6)
 
 	at_S_legs_z = make_attr('Stirrup Legs Z', 'Stirrups', 'Number of legs parallel to Z axis')
 	at_S_legs_z.type = MpcAttributeType.Integer
-	at_S_legs_z.setDefault(2)
+	at_S_legs_z.setDefault(4)
 
 	# materials --------------------------------------------------------
 	# core (confined) can be explicit or auto-computed with a confinement model
 	at_mat_core = make_attr('Concrete (Core) Material', 'Materials', '')
 	at_mat_core.type = MpcAttributeType.Index
 	at_mat_core.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
-	at_mat_core.indexSource.addAllowedNamespace("materials.uniaxial")
+	at_mat_core.indexSource.addAllowedNamespace("materials.uniaxial.Design")
+	at_mat_core.indexSource.addAllowedClass("Concrete")
 	# cover (unconfined) is mandatory
 	at_mat_cover = make_attr('Concrete (Cover) Material', 'Materials', '')
 	at_mat_cover.type = MpcAttributeType.Index
 	at_mat_cover.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
-	at_mat_cover.indexSource.addAllowedNamespace("materials.uniaxial")
-	# rebars
-	at_mat_rebars = make_attr('Rebars Material', 'Materials', '')
-	at_mat_rebars.type = MpcAttributeType.Index
-	at_mat_rebars.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
-	at_mat_rebars.indexSource.addAllowedNamespace("materials.uniaxial")
-	#Stirrups
-	# Yield strength of steel stirrups
-	at_fy = make_attr('fy', 'Stirrups', 'Yield stress for stirrups')
-	at_fy.type = MpcAttributeType.QuantityScalar
-	at_fy.dimension = u.F/u.L**2
-	at_fy.setDefault(450)
-	# Ultimate strain of Stirrups
-	at_epssu = make_attr('epssu', 'Stirrups', 'Ultimate strain for stirrups')
-	at_epssu.type = MpcAttributeType.Real
-	at_epssu.setDefault(0.15)
+	at_mat_cover.indexSource.addAllowedNamespace("materials.uniaxial.Design")
+	at_mat_cover.indexSource.addAllowedClass("Concrete")
+	# rebars & stirrups: we assume the same material for them? Attention: eps_su for stirrups and rebars may be assumed differently by designers?
+	# For now no, I continue assuming the same material. They share the same eps_su
+	at_mat_reinf = make_attr('Reinforcement Material', 'Materials', '')
+	at_mat_reinf.type = MpcAttributeType.Index
+	at_mat_reinf.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
+	at_mat_reinf.indexSource.addAllowedNamespace("materials.uniaxial.Design")
+	at_mat_reinf.indexSource.addAllowedClass("ReinforcingSteel")
 	
 	# Results of confinement
 	# Elastic modulus of concrete
@@ -1121,15 +995,64 @@ def makeXObjectMetaData():
 	at_epsccu.visible = False
 	at_epsccu.editable = False
 	
+	# Optional parameters for definition of the hinge
+	# Kax
+	at_Kax = make_attr('Kax', 'Optional parameters', 'Axial stiffness (penalty approach)')
+	at_Kax.type = MpcAttributeType.QuantityScalar
+	at_Kax.setDefault(1e12)
+	at_Kax.dimension = u.F / u.L
+	
+	# Ktor
+	at_Ktor = make_attr('Ktor', 'Optional parameters', 'Torsional stiffness (penalty approach)')
+	at_Ktor.type = MpcAttributeType.QuantityScalar
+	at_Ktor.setDefault(1e12)
+	at_Ktor.dimension = u.F * u.L
+	
+	# Kvy
+	at_Kvy = make_attr('Kvy', 'Optional parameters', 'Shear stiffness in local y (penalty approach)')
+	at_Kvy.type = MpcAttributeType.QuantityScalar
+	at_Kvy.setDefault(1e12)
+	at_Kvy.dimension = u.F / u.L
+	
+	# Kvz
+	at_Kvz = make_attr('Kvz', 'Optional parameters', 'Shear stiffness in local z (penalty approach)')
+	at_Kvz.type = MpcAttributeType.QuantityScalar
+	at_Kvz.setDefault(1e12)
+	at_Kvz.dimension = u.F / u.L
+	
+	# as
+	at_as = make_attr('as', 'Optional parameters', 'Hardening ratio used to define maximum strength: Mmax = as * My')
+	at_as.type = MpcAttributeType.Real
+	at_as.setDefault(1.08)
+	
+	# Ky
+	at_Ky = make_attr('Ky', 'Hinge parameters', 'Expression for the definition of initial stiffness in y direction.\nInsert a valid tcl expression that will be evaluated step by step')
+	at_Ky.type = MpcAttributeType.String
+	
+	# Kz
+	at_Kz = make_attr('Kz', 'Hinge parameters', 'Expression for the definition of initial stiffness in z direction.\nInsert a valid tcl expression that will be evaluated step by step')
+	at_Kz.type = MpcAttributeType.String
+	
+	# thetaPy
+	at_thetaPy = make_attr('thetaPy', 'Hinge parameters', 'Expression for the definition of plastic rotation at peak in y direction')
+	at_thetaPy.type = MpcAttributeType.String
+	
+	# thetaPz
+	at_thetaPz = make_attr('thetaPz', 'Hinge parameters', 'Expression for the definition of plastic rotation at peak in z direction')
+	at_thetaPz.type = MpcAttributeType.String
+	
+	# thetaPCy
+	at_thetaPCy = make_attr('thetaPCy', 'Hinge parameters', 'Expression for the definition of ultimate plastic rotation in y direction')
+	at_thetaPCy.type = MpcAttributeType.String
+	
+	# thetaPCz
+	at_thetaPCz = make_attr('thetaPCz', 'Hinge parameters', 'Expression for the definition of ultimate plastic rotation in z direction')
+	at_thetaPCz.type = MpcAttributeType.String
+		
 	# make the XObject meta data
 	xom = MpcXObjectMetaData()
-	xom.name = 'RectangularFiberSection'
+	xom.name = 'ASDCoupledHinge_RectangularRC'
 	xom.addAttribute(at_Section)
-	xom.addAttribute(at_use_GJ)
-	xom.addAttribute(at_use_torsion)
-	xom.addAttribute(at_Torsion)
-	xom.addAttribute(at_GJ)
-	xom.addAttribute(at_mat_torsion)
 	
 	xom.addAttribute(at_Dimension)
 	xom.addAttribute(at_2D)
@@ -1150,34 +1073,34 @@ def makeXObjectMetaData():
 	xom.addAttribute(at_RR_num)
 	xom.addAttribute(at_mat_core)
 	xom.addAttribute(at_mat_cover)
-	xom.addAttribute(at_mat_rebars)
+	xom.addAttribute(at_mat_reinf)
 	
 	xom.addAttribute(at_S_diam)
 	xom.addAttribute(at_S_spac)
 	xom.addAttribute(at_S_legs_y)
 	xom.addAttribute(at_S_legs_z)
-	xom.addAttribute(at_fy)
-	xom.addAttribute(at_epssu)
 	
 	xom.addAttribute(at_Ec)
 	xom.addAttribute(at_fcc)
 	xom.addAttribute(at_epscc0)
 	xom.addAttribute(at_epsccu)
 	
-	# Visibility dependecies
-	xom.setVisibilityDependency(at_use_GJ, at_GJ)
-	xom.setVisibilityDependency(at_use_torsion, at_mat_torsion)
+	xom.addAttribute(at_Kax)
+	xom.addAttribute(at_Ktor)
+	xom.addAttribute(at_Kvy)
+	xom.addAttribute(at_Kvz)
+	xom.addAttribute(at_as)
+	
+	xom.addAttribute(at_Ky)
+	xom.addAttribute(at_Kz)
+	xom.addAttribute(at_thetaPy)
+	xom.addAttribute(at_thetaPz)
+	xom.addAttribute(at_thetaPCy)
+	xom.addAttribute(at_thetaPCz)
 	
 	# auto-exclusive dependencies
-	# Dimension
 	xom.setBooleanAutoExclusiveDependency(at_Dimension, at_2D)
 	xom.setBooleanAutoExclusiveDependency(at_Dimension, at_3D)
-	# Torsion
-	xom.setBooleanAutoExclusiveDependency(at_Torsion, at_use_GJ)
-	xom.setBooleanAutoExclusiveDependency(at_Torsion, at_use_torsion)
-	
-	# add offset
-	ofu.addOffsetMetaData(xom, dep_3d = at_3D)
 	
 	return xom
 
@@ -1187,22 +1110,22 @@ def _get_xobj_attribute(xobj, at_name):
 		raise Exception('Error: cannot find "{}" attribute'.format(at_name))
 	return attribute
 
-def __removeGui():
-	if __constants.gui is not None:
-		__constants.gui.setParent(None)
-		__constants.gui.deleteLater()
-		__constants.gui = None
+def _removeGui():
+	if _constants.gui is not None:
+		_constants.gui.setParent(None)
+		_constants.gui.deleteLater()
+		_constants.gui = None
 
 def onEditorClosing(editor, xobj):
-	__removeGui()
+	_removeGui()
 
 def onEditFinished(editor, xobj):
-	if __constants.gui is not None:
-		__constants.gui.onEditFinished()
+	if _constants.gui is not None:
+		_constants.gui.onEditFinished()
 
 def onEditBegin(editor, xobj):
-	__removeGui()
-	__constants.gui = RectangularFiberSectionWidget(editor, xobj)
+	_removeGui()
+	_constants.gui = ASDCoupledHinge_RectangularRCWidget(editor, xobj)
 
 def onAttributeChanged(editor, xobj, attribute_name):
 
@@ -1215,11 +1138,11 @@ def onAttributeChanged(editor, xobj, attribute_name):
 	# PyMpc.IO.write_cerr('on attribute changed - {} ({})\n'.format(attribute_name, datetime.datetime.now()))
 	attribute = _get_xobj_attribute(xobj, attribute_name)
 
-	if attribute.group in __constants.groups_for_section_update:
+	if attribute.group in _constants.groups_for_section_update:
 		# Da fare su un altro thread? Per ora no.
-		__constants.gui.onSectionChanged()
-		__constants.gui.onMaterialChanged()
-		__constants.gui.onConfinementParamsChanged()
+		_constants.gui.onSectionChanged()
+		_constants.gui.onMaterialChanged()
+		_constants.gui.onConfinementParamsChanged()
 		
 
 def makeExtrusionBeamDataCompoundInfo(xobj):
@@ -1231,7 +1154,7 @@ def makeExtrusionBeamDataCompoundInfo(xobj):
 	# common
 	is_param = True
 	is_gap = False
-	offset_y, offset_z = getSectionOffset(xobj)
+	offset_y, offset_z = 0, 0
 	
 	info = MpcSectionExtrusionBeamDataCompoundInfo()
 	'''
@@ -1246,17 +1169,8 @@ def makeExtrusionBeamDataCompoundInfo(xobj):
 	
 	return info
 	
-def getSectionOffset(xobj):
-	offset_y = 0.0
-	offset_z = 0.0
-	odata = ofu.getOffsetData(xobj)
-	if odata:
-		offset_y = odata.y
-		offset_z = odata.z
-	return offset_y, offset_z
-	
-def computeDomain(xobj, theta = None):
-	import opensees.physical_properties.sections.RectangulaFiberSection_support_data.RectangularFiberSectionDomain as domain
+def computeDomain(xobj, materials = None, theta = None, emitterPercentage = None, emitterText = None, onlyUltimate = False):
+	t1 = time()
 	# get fiber section
 	sec = _get_xobj_attribute(xobj, 'Fiber section').customObject;
 	# Section data
@@ -1275,115 +1189,220 @@ def computeDomain(xobj, theta = None):
 	yReinf = [-Wcc/2.0, Wcc/2.0, Wcc/2.0, -Wcc/2.0]
 	zReinf = [-Hcc/2.0, -Hcc/2.0, Hcc/2.0, Hcc/2.0]
 	phiReinf = [phi_corner]*4
+	# get materials from datastore
+	if materials is None:
+		a = self.xobj.getAttribute(MpcXObjectMetaData.dataStoreAttributeName())
+		if a is None:
+			raise Exception("Cannot find dataStore Attribute")
+		ds = a.string
+		try:
+			jds = json.loads(ds)
+		except:
+			jds = {}
+		json_mat = jds.get('materials')
+		if json_mat is not None:
+			materials = domain.MaterialsForRectangularSection(**json.loads(json_mat))
+		else:
+			raise Exception("Could not get the materials from datastore")
+	
 	# Call domain construction
+	rectSecDomain = domain.RectangularSectionDomain(W, H, C, SD, yReinf, zReinf, phiReinf, sec, materials)
+	t2 = time()
+	# if _constants.verbose: print('Time used for object creation: {} s'.format(t2-t1))
+	if emitterText is not None:
+		emitterText('Computig strain profiles corresponding to ultimate conditions...')
 	if theta is None:
-		print('Compute without theta')
-		eps_a, kappa_y, kappa_z = domain.computeUltimateStrainConditions(W,H,C,SD,yReinf,zReinf,phiReinf,sec)
+		if _constants.verbose: emitterText('Compute without theta. Use all thetas')
+		t0 = time()
+		rectSecDomain.computeUltimateStrainConditions(emitterPercentage = emitterPercentage)
+		if _constants.verbose: emitterText('Time required for computing ultimate strain conditions: {} s'.format(time()-t0))
+		if not onlyUltimate:
+			t0 = time()
+			rectSecDomain.computeYieldStrainConditions(emitterPercentage = emitterPercentage)
+			if _constants.verbose: emitterText('Time required for computing yield strain conditions: {} s'.format(time()-t0))
 	else:
-		print('Compute with theta = {}'.format(theta))
-		eps_a, kappa_y, kappa_z = domain.computeUltimateStrainConditions(W,H,C,SD,yReinf,zReinf,phiReinf,sec,theta)
-	N, My, Mz = domain.computeDomainForUltimateConditions(sec,eps_a,kappa_y,kappa_z)
-	return N, My, Mz
+		if _constants.verbose: emitterText('Compute with theta = {}'.format(theta))
+		rectSecDomain.computeUltimateStrainConditions(theta, emitterPercentage = emitterPercentage)
+		
+	t0 = time()
+	rectSecDomain.computeDomainForCondition(emitterPercentage = emitterPercentage, emitterText = emitterText, condition = 'U')
+	if _constants.verbose: emitterText('Time used for computing ultimate domain: {} s'.format(time()-t0))
+	if not onlyUltimate:
+		t0 = time()
+		rectSecDomain.computeDomainForCondition(emitterPercentage = emitterPercentage, emitterText = emitterText, condition = 'Y')
+		if _constants.verbose: emitterText('Time used for computing ultimate domain: {} s'.format(time()-t0))
+	return rectSecDomain
 
 def writeTcl (pinfo):
+	
+	# The function write Tcl creates the section ASDCoupledHinge_RectangularRC - 2D (TODO 2D yet)
+	# First it needs also to run the domain computation as before... in a separate thread? Chiedere a Massimo
+	
 	xobj = pinfo.phys_prop.XObject
 	tag = xobj.parent.componentId
+	if _constants.verbose: print('writing section {}...'.format(tag))
 	
 	doc = App.caeDocument()
 	if doc is None:
 		raise Exception('no active cae document')
-	mat_core = doc.getPhysicalProperty(_get_xobj_attribute(xobj, 'Concrete (Core) Material').index)
-	ConfinedMaterialId = 0
-	if mat_core is None:
-		# if material for core is None, then create a new material on the fly with automatic confinement computation
-		# I need to create a new material with the same class of the cover material
-		mat_cover = doc.getPhysicalProperty(_get_xobj_attribute(xobj, 'Concrete (Cover) Material').index)
-		if mat_cover is not None:
-			# import the module of the material and if the function exists get the parameters
-			module_name = 'opensees.physical_properties.{}.{}'.format(mat_cover.XObject.Xnamespace, mat_cover.XObject.name)
-			module = importlib.import_module(module_name)
-			if hasattr(module, 'getParamsConfinedVersion'):
-				# Compute stress corresponding to ultimate strain with Mander law
-				epsccu = _get_xobj_attribute(xobj, 'epsccu').real
-				fcc = _get_xobj_attribute(xobj, 'fcc').quantityScalar.referenceValue
-				epscc0 = _get_xobj_attribute(xobj, 'epscc0').real
-				Ec = _get_xobj_attribute(xobj, 'Ec').quantityScalar.referenceValue
-				e = -epsccu*0.9999
-				x = e / (-epscc0)
-				Esec = fcc / epscc0
-				r = Ec / (Ec - Esec)
-				s = -fcc * x * r / (r - 1 + x**r)
-				fccu = -s
-				params = module.getParamsConfinedVersion(mat_cover.XObject,fcc,epscc0,epsccu,fccu)
-				# uniaxialMaterial {} $matTag [PARAMETERS]
-				ConfinedMaterialId = pinfo.next_physicalProperties_id # auto-generated material
-				pinfo.next_physicalProperties_id += 1
-				str_tcl_mat_confined = '{}{}\n'.format(pinfo.indent,'\n# Automatically generated material for confined concrete core\n')
-				str_tcl_mat_confined += '{}uniaxialMaterial {} {} '.format(pinfo.indent, mat_cover.XObject.name, ConfinedMaterialId)
-				for p in params:
-					str_tcl_mat_confined += '{} '.format(p)
-				str_tcl_mat_confined += '\n'
-				pinfo.out_file.write(str_tcl_mat_confined)
-			else:
-				str_exc = 'uniaxialMaterial {} for cover not recognized. Provide material for core manually'.format(mat_cover.XObject.name)
-				raise Exception(str_exc)
-	
-	sopt = ''
-	
-	at_use_GJ = xobj.getAttribute('-GJ')
-	if(at_use_GJ is None):
-		raise Exception('Error: cannot find "-GJ" attribute')
-	if at_use_GJ.boolean:
-		at_GJ = xobj.getAttribute('GJ')
-		if(at_GJ is None):
-			raise Exception('Error: cannot find "GJ" attribute')
-		GJ = at_GJ.quantityScalar
 		
-		sopt = ' -GJ {}'.format(GJ.value)
-	at_use_torsion = xobj.getAttribute('-torsion')
-	if(at_use_torsion is None):
-		raise Exception('Error: cannot find "-torsion" attribute')
-	if at_use_torsion.boolean:
-		at_mat_torsion = xobj.getAttribute('torsionMatTag')
-		if(at_mat_torsion is None):
-			raise Exception('Error: cannot find "torsionMatTag" attribute')
-		torsionMatTag = at_mat_torsion.index
-		
-		sopt = ' -torsion {}'.format(torsionMatTag)
+	# Compute the domain (same thing done when pressing test)
 	
-	at_Section = xobj.getAttribute('Fiber section')
-	if(at_Section is None):
-		raise Exception('Error: cannot find "Fiber section" attribute')
-	Section = at_Section.customObject
+	# 1. Get the materials from the datastore
+	ds = _get_xobj_attribute(xobj, MpcXObjectMetaData.dataStoreAttributeName()).string
+	if _constants.verbose: print('Datastore string: ',ds)
+	try:
+		jds = json.loads(ds)
+	except:
+		jds = {}
+	if _constants.verbose: print('jds: ',jds)
+	json_mat = jds.get('Materials')
+	if _constants.verbose: print('Materials json: ',json_mat)
+	if json_mat is not None:
+		materials = domain.MaterialsForRectangularSection(**json.loads(json_mat))
+	else:
+		raise Exception("Could not get the materials from datastore")
 	
-	if Section is None:
-		raise Exception('Error: Section is None')
+	# 2. Create the ultimate domain (not computing the yield domain)
+	domainBuilt = computeDomain(xobj, materials = materials, onlyUltimate = True)
+	if domainBuilt is None:
+		raise Exception('Something went wrong during creation of domain')
 	
-	cx = Section.centroid.x
-	cy = Section.centroid.y
-	sopt1 = ''
-	for group in Section.punctualFibers:
-		for fiber in group.fibers.fibers:
-			sopt1 +='\nfiber {} {} {} {}'.format(fiber.x-cx, fiber.y-cy, fiber.area, group.material.id)
-	sopt2 = ''
-	for i in range(len(Section.surfaceFibers)):
-		group = Section.surfaceFibers[i]
-		for fiber in group.fibers.fibers:
-			if (i == 0) and (group.material is None):
-				# Core not assigned, must be the newly created one
-				matid = ConfinedMaterialId
+	# 3. Write the tcl file for the lists
+	# write a comment with the name of the document components this xobject belongs to.
+	ClassName = xobj.name
+	if pinfo.currentDescription != ClassName:
+		pinfo.out_file.write('\n{}# {} {}\n'.format(pinfo.indent, xobj.Xnamespace, ClassName))
+		pinfo.currentDescription = ClassName
+	pinfo.out_file.write('\n{}# Section Coupled {}: {}\n'.format(pinfo.indent, tag, xobj.parent.componentName))
+	
+	#Create the arrays
+	structListN = domainBuilt.domain_U.flatten().tolist()[0::6]
+	structListMy = domainBuilt.domain_U.flatten().tolist()[1::6]
+	structListMz = domainBuilt.domain_U.flatten().tolist()[2::6]
+	
+	nN = domainBuilt.nAxial
+	nTheta = domainBuilt.nTheta
+	nTot = nN * nTheta
+	if _constants.verbose: print('nN = {} - nTheta = {} - nN * nTheta = {}'.format(nN,nTheta,nTot))
+	if nTot != len(structListN):
+		raise Excpetion('The length of the structured list for N is not as expected')
+	
+	thingsToPrint = [structListN, structListMy, structListMz]
+	names = ['N_list_', 'My_list_', 'Mz_list_']
+	for idx, thing in enumerate(thingsToPrint):
+		# write the list in Tcl
+		list_str = 'set {0}{1}'.format(names[idx],tag)+' {'
+		nLetters = len(list_str)
+		nTab = nLetters // 4
+			
+		n = 1
+		for i in range(len(thing)):
+			if (i == (10*n)):
+				list_str += '\\\n{}{}'.format(pinfo.indent, tclin.utils.nIndent(nTab))
+				n += 1
+			if (i != len(thing)-1):
+				list_str += '{} '.format(thing[i])
 			else:
-				matid = group.material.id
-			sopt2 +='\nfiber {} {} {} {}'.format(fiber.x-cx, fiber.y-cy, fiber.area, matid)
-	sopt3 = ''
-	for group in Section.linearFibers:
-		for fiber in group.fibers.fibers:
-			sopt3 +='\nfiber {} {} {} {}'.format(fiber.x-cx, fiber.y-cy, fiber.area, group.material.id)
+				list_str += '{}'.format(thing[i])
+			
+		list_str += '}\n'
+		pinfo.out_file.write(list_str)
 	
-	str_tcl = '\n{}section Fiber {}{}'.format(pinfo.indent, tag, sopt)
-	str_tcl += '{}{}{}{}{}\n'.format(' {',sopt1,sopt2,sopt3,'}')
+	# 4. Write the tcl file for the section
+	# "Want: section ASDCoupledHinge3D tag? Ktor? Kvy? Kvz? Kax? -initialFlexuralStiffness \"Ky?\" \"Kz?\""
+            # "<-simpleStrengthDomain Nmin? Nmax? MyMax? NMyMax? MzMax? NMzMax?> <-strengthDomainByPoints nN? nTheta? {listN} {listMy} {listMz}> <-hardening as?>"
+            # "-thetaP \"thetaPy?\" \"thetaPz?\" -thetaPC \"thetaPCy?\" \"thetaPCz?\"\n";
 	
-	# now write the string into the file
+	str_tcl = '{}section ASDCoupledHinge3D {} '.format(pinfo.indent, tag)
+	nTab = len(str_tcl) // 4
+	
+	# get the penalty parameters
+	Kax = _get_xobj_attribute(xobj, "Kax").quantityScalar.value
+	Ktor = _get_xobj_attribute(xobj, "Ktor").quantityScalar.value
+	Kvy = _get_xobj_attribute(xobj, "Kvy").quantityScalar.value
+	Kvz = _get_xobj_attribute(xobj, "Kvz").quantityScalar.value
+	
+	str_tcl += '{} {} {} {} '.format(Kax,Ktor,Kvy,Kvz)
+	str_tcl += '-strengthDomainByPoints {} {} {} {} {} '.format(nN, nTheta,"$N_list_{}".format(tag), "$My_list_{}".format(tag), "$Mz_list_{}".format(tag))
+	# Get hardening parameter
+	alpha_s = _get_xobj_attribute(xobj, "as").real
+	str_tcl +=  '-hardening {} '.format(alpha_s)
+	str_tcl += '\\\n{}{}'.format(pinfo.indent, tclin.utils.nIndent(nTab))
+	
+	# Get some geometric properties from the section
+	# This will be used for substitution of following geometric properties in the Tcl expressions
+	# __W__ 
+	W = _get_xobj_attribute(xobj, 'Width').quantityScalar.value
+	H = _get_xobj_attribute(xobj, 'Height').quantityScalar.value
+	Ec = _get_xobj_attribute(xobj, 'Ec').quantityScalar.value
+	if _constants.verbose: print(Ec)
+	Ag = W * H
+	fc = abs(materials.fc)
+	IgY = W * H**3 /12.0
+	IgZ = H * W**3 / 12.0
+	EIgY = Ec * IgY
+	EIgZ = Ec * IgZ
+	SD = _get_xobj_attribute(xobj, 'Stirrup Diam').quantityScalar.value
+	Ast = SD * SD * pi / 4.0
+	s = _get_xobj_attribute(xobj, 'Stirrup Spacing').quantityScalar.value
+	AsY = Ast * _get_xobj_attribute(xobj, 'Stirrup Legs Y').integer
+	AsZ = Ast * _get_xobj_attribute(xobj, 'Stirrup Legs Z').integer
+	rhoY = AsY / (s * H)
+	rhoZ = AsZ / (s * W)
+	
+	# Dictionary of recognized quantities
+	sec_properties_dict = {'__W__': W, '__H__': H, '__Ec__': Ec, '__Ag__': Ag,
+						'__EIgY__': EIgY, '__EIgZ__': EIgZ, '__rhoY__': rhoY,
+						'__rhoZ__': rhoZ, '__fc__': fc}
+	os_recognized_words = ['__N__', '__Vy__', '__Vz__', '__V__', '__My__', '__Mz__', '__M__']
+	
+	# Function for processing a tcl expression string
+	def processTclString(process_string, fieldName):
+		from re import search, findall, split
+		keywords = findall(r"__\w+__", process_string)
+		
+		out_string = process_string
+		for key in keywords:
+			# for each keyword
+			if key in os_recognized_words:
+				continue
+			val = sec_properties_dict.get(key)
+			if val is not None:
+				# if _constants.verbose: print('substitute {} with {}'.format(key,val))
+				out_string = out_string.replace(key,str(val))
+			else:
+				raise Exception('Keyword {} not recognized. Please check the string for the field {}: {}'.format(key,fieldName,process_string))
+		out_string = out_string.replace("[","\[")
+		out_string = '"\[expr ' + out_string + '\]"'
+		if _constants.verbose: print(out_string)
+		return out_string
+		
+	# Get the expressions for Ky and Kz
+	# Note: it is user responsability to have a correct tcl expression
+	Ky = _get_xobj_attribute(xobj, "Ky").string
+	Ky_string = processTclString(Ky,"Ky")
+	Kz = _get_xobj_attribute(xobj, "Kz").string
+	Kz_string = processTclString(Kz,"Kz")
+	str_tcl += '-initialFlexuralStiffness {} {} \\\n{}{}'.format(Ky_string,Kz_string,pinfo.indent, tclin.utils.nIndent(nTab))
+
+	# Get the expressions for thetaPy and thePz
+	# Note: it is user responsability to have a correct tcl expression
+	thetaPy = _get_xobj_attribute(xobj, "thetaPy").string
+	thetaPy_string = processTclString(thetaPy,"thetaPy")
+	thetaPz = _get_xobj_attribute(xobj, "thetaPz").string
+	thetaPz_string = processTclString(thetaPz,"thetaPz")
+	str_tcl += '-thetaP {} {} \\\n{}{}'.format(thetaPy_string,thetaPz_string,pinfo.indent, tclin.utils.nIndent(nTab))
+	
+	# Get the expressions for thetaPCy and thePCz
+	# Note: it is user responsability to have a correct tcl expression
+	thetaPCy = _get_xobj_attribute(xobj, "thetaPCy").string
+	thetaPCy_string = processTclString(thetaPCy,"thetaPCy")
+	thetaPCz = _get_xobj_attribute(xobj, "thetaPCz").string
+	thetaPCz_string = processTclString(thetaPCz,"thetaPCz")
+	str_tcl += '-thetaPC {} {}'.format(thetaPCy_string,thetaPCz_string)
+
+	
 	pinfo.out_file.write(str_tcl)
 	
 
@@ -1521,7 +1540,7 @@ class ConfinementManderModel:
 			outputString += "<tr><td><b><i>epscc0</b></i></td><td><b><i>Peak strain of confined concrete</b></i></td><td><b><i>{:.3f} ‰</b></i></td></tr>".format(epscc0*1000)
 			outputString += "<tr><td><b><i>epsccu</b></i></td><td><b><i>Ultimate strain of confined concrete</b></i></td><td><b><i>{:.3f} ‰</b></i></td></tr>".format(epsccu*1000)
 		else:
-			# If settings are wrong use unconfind also for core
+			# If settings are wrong use unconfined also for core
 			outputString += "<tr><td><b><i>No Confinement computation</i></b></td></tr>"
 			fcc = fc
 			epscc0 = epsc0
@@ -1799,7 +1818,8 @@ class ConfinementModelsFactory:
 	supportedTypes = {
 		"Mander et al. 1988" : ConfinementManderModel,
 		"EN1998-3" : ConfinementEN1998_3Model,
-		"NTC 2018" : ConfinementNTC2018Model
+		"NTC 2018" : ConfinementNTC2018Model,
+		"EN1992-1" : ConfinementNTC2018Model,
 		}
 	
 	## Gives a list of names of all supported strain history types
@@ -1875,7 +1895,7 @@ def willam_warnke(s2, s3, fc):
 	
 	# Computation of lateral pressure to give sig_3 = fcc
 	if i >= maxIter:
-		print("WARNING: Solution of Willam and Warnke surface not found, used weighted average")
+		if _constants.verbose: print("WARNING: Solution of Willam and Warnke surface not found, used weighted average")
 		s_lat = weighted_average(-s1,-s2,fc)
 		K = 2.254*(math.sqrt(1+7.94*s_lat/fc)-1)-2*s_lat/fc
 		fcc = fc * (1 + K)

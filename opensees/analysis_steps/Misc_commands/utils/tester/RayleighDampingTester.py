@@ -18,8 +18,7 @@ from PyMpc.Units import MpcQuantityVector
 from PyMpc import *
 
 import opensees.utils.tcl_input as tclin
-import opensees.definitions.utils.tester.GuiUtils as gu
-import opensees.definitions.utils.tester.TesterUtils as tu
+import opensees.utils.Gui.GuiUtils as gu
 
 from PySide2.QtCore import (
 	QObject,
@@ -256,7 +255,7 @@ class RayleighDampingTesterWidget(QWidget):
 		self.layout().addWidget(self.descr_label)
 
 		# separator
-		self.separator_1 = gu.makeSeparator()
+		self.separator_1 = gu.makeHSeparator()
 		self.layout().addWidget(self.separator_1)
 
 		# matplotlib
