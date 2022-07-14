@@ -478,8 +478,12 @@ class RectangularFiberSectionWidget(QWidget):
 		checks.geometry_check(W, H, C, SD)
 		Ac = Wc * Hc # Area of concrete core measured from centerline to centerline of confinement steel
 		
+		# mesh subdivision
+		subdvs = _get_xobj_attribute(self.xobj, 'Mesh Subdivisions').integer
+		if subdvs < 1:
+			subdvs = 15
 		# lambda for 4node face
-		mesh_size = max(W,H)/15.0
+		mesh_size = max(W,H)/subdvs
 		# TO DO: Option selectable by user (number of divisions / mesh_size)
 		def face4(x,y,w,h,mat):
 			face = FxOccFactory.surfaces().rectangle(x,y,w,h)
@@ -555,7 +559,7 @@ class RectangularFiberSectionWidget(QWidget):
 			msg.setText("Negative number of bars is not allowed")
 			msg.exec()
 			_get_xobj_attribute(self.xobj, 'Right Rebars Number').integer = 0
-		phi_max = max(phi_bottom, max(phi_top, max(phi_left, phi_right)))
+		phi_max = max(phi_corner,max(phi_bottom, max(phi_top, max(phi_left, phi_right))))
 		Wcc = Wc - phi_max - SD 
 		Hcc = Hc - phi_max - SD
 		
@@ -934,13 +938,33 @@ def makeXObjectMetaData():
 	at_use_GJ.visible = False
 	at_use_GJ.editable = False
 	at_use_GJ.setDefault(True)
+	
+	# -torsion
+	at_use_torsion = make_attr('-torsion', 'Optional parameters', 'Specify a uniaxial material for torsion')
+	at_use_torsion.type = MpcAttributeType.Boolean
+	at_use_torsion.visible = False
+	at_use_torsion.editable = False
+	at_use_torsion.setDefault(False)
+	
+	# Torsion selection
+	at_Torsion = make_attr('Torsion', 'Optional parameters', 'Choose between -GJ and -torsion')
+	at_Torsion.type = MpcAttributeType.String
+	at_Torsion.sourceType = MpcAttributeSourceType.List
+	at_Torsion.setSourceList(['-GJ', '-torsion'])
+	at_Torsion.setDefault('-GJ')
 
 	# GJ
 	at_GJ = make_attr('GJ', 'Optional parameters', 
-				   'linear-elastic torsional stiffness assigned to the section (optional, default = no torsional stiffness)')
+				   'linear-elastic torsional stiffness assigned to the section')
 	at_GJ.type = MpcAttributeType.QuantityScalar
 	at_GJ.dimension = u.F/u.L**2 * u.L**4
 	
+	# torsionMatTag
+	at_mat_torsion = make_attr('torsionMatTag', 'Optional parameters', 
+				'uniaxialMaterial tag assigned to the section for torsional response (can be nonlinear)')
+	at_mat_torsion.type = MpcAttributeType.Index
+	at_mat_torsion.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
+	at_mat_torsion.indexSource.addAllowedNamespace("materials.uniaxial")
 	# geometry --------------------------------------------------------
 	
 	#2D
@@ -970,19 +994,24 @@ def makeXObjectMetaData():
 	at_H = make_attr('Height', 'Section geometry', '')
 	at_H.type = MpcAttributeType.QuantityScalar
 	at_H.dimension = u.L
-	at_H.setDefault(800.0)
+	at_H.setDefault(400.0)
 
 	# C
 	at_C = make_attr('Cover', 'Section geometry', '')
 	at_C.type = MpcAttributeType.QuantityScalar
 	at_C.dimension = u.L
 	at_C.setDefault(20.0)
+	
+	# meshSize
+	at_meshSubdvs = make_attr('Mesh Subdivisions', 'Section geometry', 'Number of subdivisions in the longest side')
+	at_meshSubdvs.type = MpcAttributeType.Integer
+	at_meshSubdvs.setDefault(15)
 
 	# geometry --------------------------------------------------------
 	at_CR_diam = make_attr('Corner Rebars Diam', 'Rebars', 'Number of bars used in corner (from 1 to 3).')
 	at_CR_diam.type = MpcAttributeType.QuantityScalar
 	at_CR_diam.dimension = u.L
-	at_CR_diam.setDefault(18.0)
+	at_CR_diam.setDefault(16.0)
 	at_CR_num = make_attr('Corner Rebars Number', 'Rebars', '')
 	at_CR_num.type = MpcAttributeType.Integer
 	at_CR_num.setDefault(1)
@@ -990,53 +1019,53 @@ def makeXObjectMetaData():
 	at_BR_diam = make_attr('Bottom Rebars Diam', 'Rebars', '')
 	at_BR_diam.type = MpcAttributeType.QuantityScalar
 	at_BR_diam.dimension = u.L
-	at_BR_diam.setDefault(18.0)
+	at_BR_diam.setDefault(16.0)
 	at_BR_num = make_attr('Bottom Rebars Number', 'Rebars', '')
 	at_BR_num.type = MpcAttributeType.Integer
-	at_BR_num.setDefault(2)
+	at_BR_num.setDefault(1)
 
 	at_TR_diam = make_attr('Top Rebars Diam', 'Rebars', '')
 	at_TR_diam.type = MpcAttributeType.QuantityScalar
 	at_TR_diam.dimension = u.L
-	at_TR_diam.setDefault(18.0)
+	at_TR_diam.setDefault(16.0)
 	at_TR_num = make_attr('Top Rebars Number', 'Rebars', '')
 	at_TR_num.type = MpcAttributeType.Integer
-	at_TR_num.setDefault(2)
+	at_TR_num.setDefault(1)
 
 	at_LR_diam = make_attr('Left Rebars Diam', 'Rebars', '')
 	at_LR_diam.type = MpcAttributeType.QuantityScalar
 	at_LR_diam.dimension = u.L
-	at_LR_diam.setDefault(18.0)
+	at_LR_diam.setDefault(16.0)
 	at_LR_num = make_attr('Left Rebars Number', 'Rebars', '')
 	at_LR_num.type = MpcAttributeType.Integer
-	at_LR_num.setDefault(4)
+	at_LR_num.setDefault(1)
 
 	at_RR_diam = make_attr('Right Rebars Diam', 'Rebars', '')
 	at_RR_diam.type = MpcAttributeType.QuantityScalar
 	at_RR_diam.dimension = u.L
-	at_RR_diam.setDefault(18.0)
+	at_RR_diam.setDefault(16.0)
 	at_RR_num = make_attr('Right Rebars Number', 'Rebars', '')
 	at_RR_num.type = MpcAttributeType.Integer
-	at_RR_num.setDefault(4)
+	at_RR_num.setDefault(1)
 
 	# geometry --------------------------------------------------------
 	at_S_diam = make_attr('Stirrup Diam', 'Stirrups', '')
 	at_S_diam.type = MpcAttributeType.QuantityScalar
 	at_S_diam.dimension = u.L
-	at_S_diam.setDefault(10.0)
+	at_S_diam.setDefault(8.0)
 
 	at_S_spac = make_attr('Stirrup Spacing', 'Stirrups', '')
 	at_S_spac.type = MpcAttributeType.QuantityScalar
 	at_S_spac.dimension = u.L
-	at_S_spac.setDefault(50.0)
+	at_S_spac.setDefault(150.0)
 
 	at_S_legs_y = make_attr('Stirrup Legs Y', 'Stirrups', 'Number of legs parallel to Y axis')
 	at_S_legs_y.type = MpcAttributeType.Integer
-	at_S_legs_y.setDefault(6)
+	at_S_legs_y.setDefault(2)
 
 	at_S_legs_z = make_attr('Stirrup Legs Z', 'Stirrups', 'Number of legs parallel to Z axis')
 	at_S_legs_z.type = MpcAttributeType.Integer
-	at_S_legs_z.setDefault(4)
+	at_S_legs_z.setDefault(2)
 
 	# materials --------------------------------------------------------
 	# core (confined) can be explicit or auto-computed with a confinement model
@@ -1063,7 +1092,7 @@ def makeXObjectMetaData():
 	# Ultimate strain of Stirrups
 	at_epssu = make_attr('epssu', 'Stirrups', 'Ultimate strain for stirrups')
 	at_epssu.type = MpcAttributeType.Real
-	at_epssu.setDefault(0.17)
+	at_epssu.setDefault(0.15)
 	
 	# Results of confinement
 	# Elastic modulus of concrete
@@ -1097,7 +1126,10 @@ def makeXObjectMetaData():
 	xom.name = 'RectangularFiberSection'
 	xom.addAttribute(at_Section)
 	xom.addAttribute(at_use_GJ)
+	xom.addAttribute(at_use_torsion)
+	xom.addAttribute(at_Torsion)
 	xom.addAttribute(at_GJ)
+	xom.addAttribute(at_mat_torsion)
 	
 	xom.addAttribute(at_Dimension)
 	xom.addAttribute(at_2D)
@@ -1105,6 +1137,7 @@ def makeXObjectMetaData():
 	xom.addAttribute(at_W)
 	xom.addAttribute(at_H)
 	xom.addAttribute(at_C)
+	xom.addAttribute(at_meshSubdvs)
 	xom.addAttribute(at_CR_diam)
 	xom.addAttribute(at_CR_num)
 	xom.addAttribute(at_BR_diam)
@@ -1131,11 +1164,17 @@ def makeXObjectMetaData():
 	xom.addAttribute(at_epscc0)
 	xom.addAttribute(at_epsccu)
 	
+	# Visibility dependecies
 	xom.setVisibilityDependency(at_use_GJ, at_GJ)
+	xom.setVisibilityDependency(at_use_torsion, at_mat_torsion)
 	
 	# auto-exclusive dependencies
+	# Dimension
 	xom.setBooleanAutoExclusiveDependency(at_Dimension, at_2D)
 	xom.setBooleanAutoExclusiveDependency(at_Dimension, at_3D)
+	# Torsion
+	xom.setBooleanAutoExclusiveDependency(at_Torsion, at_use_GJ)
+	xom.setBooleanAutoExclusiveDependency(at_Torsion, at_use_torsion)
 	
 	# add offset
 	ofu.addOffsetMetaData(xom, dep_3d = at_3D)
@@ -1301,6 +1340,16 @@ def writeTcl (pinfo):
 		GJ = at_GJ.quantityScalar
 		
 		sopt = ' -GJ {}'.format(GJ.value)
+	at_use_torsion = xobj.getAttribute('-torsion')
+	if(at_use_torsion is None):
+		raise Exception('Error: cannot find "-torsion" attribute')
+	if at_use_torsion.boolean:
+		at_mat_torsion = xobj.getAttribute('torsionMatTag')
+		if(at_mat_torsion is None):
+			raise Exception('Error: cannot find "torsionMatTag" attribute')
+		torsionMatTag = at_mat_torsion.index
+		
+		sopt = ' -torsion {}'.format(torsionMatTag)
 	
 	at_Section = xobj.getAttribute('Fiber section')
 	if(at_Section is None):
