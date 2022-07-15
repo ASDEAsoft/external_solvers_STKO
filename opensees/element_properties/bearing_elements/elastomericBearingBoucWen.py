@@ -422,10 +422,9 @@ def writeTcl(pinfo):
 		node_vect.append(node.id)
 		nstr += '{} '.format(node.id)
 	
-	# check element
-	if (elem.geometryFamilyType()) != MpcElementGeometryFamilyType.Line or len(elem.nodes)!=2:
-		raise Exception('Error: invalid type of element or number of nodes, It should be a Line with 2 nodes, not a {} with {} nodes'
-				.format(elem.geometryFamilyType(), len(elem.nodes)))
+	if (len(node_vect)!=2): 													#CONTROLLARE: elem.geometryFamilyType() != MpcElementGeometryFamilyType.Quadrilateral or 
+		raise Exception('Error: invalid type of element or number of nodes')	#CONTROLLARE IL FamilyType
+	
 	
 	# mandatory parameters
 	kInit_at = xobj.getAttribute('kInit')
