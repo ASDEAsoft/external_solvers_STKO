@@ -124,9 +124,10 @@ def writeTcl(pinfo):
 		node_vect.append(node.id)
 		nstr += ' {}'.format(node.id)
 	
-	if (len(node_vect)!=4):
-		raise Exception('Error: invalid number of nodes')
-	
+	# check element type
+	if (elem.geometryFamilyType()) != MpcElementGeometryFamilyType.Quadrilateral or len(elem.nodes)!=4:
+		raise Exception('Error: invalid type of element or number of nodes, It should be a Quadrilateral with 4 nodes, not a {} with {} nodes'
+				.format(elem.geometryFamilyType(), len(elem.nodes)))
 	
 	# mandatory parameters
 	at_E = xobj.getAttribute('E')
