@@ -171,7 +171,9 @@ def _list_subdirs_name(current_dir, to_skip = []):
 def _get_external_solvers_names():
 	solvers_dir = PyMpc.Utils.get_external_solvers_dir()
 	skip_directories = ([
-		'__pycache__'
+		'__pycache__',
+		'.git',
+		'STKOMonitor',
 		])
 	ext_solvers = _list_subdirs_name(solvers_dir, skip_directories)
 	return ext_solvers
