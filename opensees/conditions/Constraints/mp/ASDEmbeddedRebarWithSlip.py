@@ -66,7 +66,7 @@ def makeXObjectMetaData():
 		html_par(html_boldtext('Bar-Slip Material')+'<br/>') + 
 		html_par(
 			"A previously defined uniaxial material to represent the bar-slip behavior.<br/>"
-			"It should be given as a Force-Displacement law. The force should correspond to the ."
+			"It should be given as a Stress-Displacement law."
 			) +
 		html_par(html_href(dp,'ASDEmbeddedRebarWithSlip')+'<br/>') +
 		html_end()
