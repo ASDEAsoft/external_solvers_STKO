@@ -500,24 +500,24 @@ def makeXObjectMetaData():
 	
 	# mandatory parameters
 	
-	filename = mka('File Name', MpcAttributeType.String, 'Mandatory', 'The HDF5 file containing...')
+	filename = mka('File Name', MpcAttributeType.String, 'Mandatory', 'The path to the H5DRM dataset.')
 	filename.stringType = 'OpenFilePath H5DRM Input database (*.h5drm *.H5DRM)'
 	
 	# optional paramrters
 	
-	factor = mka('factor', MpcAttributeType.Real, 'Optional', 'Load scale factor')
+	factor = mka('factor', MpcAttributeType.Real, 'Optional', 'Load scale factor. Multiply the dataset displacements and accelerations by this value. ')
 	factor.setDefault(1.0)
 	
-	crd_scale = mka('crd_scale', MpcAttributeType.Real, 'Optional', 'Coordinate scale factor')
+	crd_scale = mka('crd_scale', MpcAttributeType.Real, 'Optional', 'Coordinate scale factor. Scale all DRM boundary node coordinates by this value. For example, datasets coming from ShakerMaker are probably in kilometers, this value should be 1000 for a local-scale finite-element model in meters. ')
 	crd_scale.setDefault(1.0)
 	
-	distance_tolerance = mka('distance_tolerance', MpcAttributeType.Real, 'Optional', 'Tolerance for searching the nearest node')
+	distance_tolerance = mka('distance_tolerance', MpcAttributeType.Real, 'Optional', 'Tolerance for searching the nearest node. Set to a large-value to get a nearest neighbor search (will always match but might be wrong). A good idea is to give a value comparable to the local size (node separation) of the mesh where the DRM boundary points are. ')
 	distance_tolerance.setDefault(1.0e-3)
 	
-	xt = mka('Top-Center Location', MpcAttributeType.QuantityVector3, 'Optional', 'The user-defined location of the top-center node of the DRM Box')
+	xt = mka('Top-Center Location', MpcAttributeType.QuantityVector3, 'Optional', 'The user-defined location of the top-center node of the DRM Box.')
 	
-	vx = mka('Local X', MpcAttributeType.QuantityVector3, 'Optional', 'The Local X axis of the DRM Box (not necessarily a unit vector')
-	vy = mka('Local Y', MpcAttributeType.QuantityVector3, 'Optional', 'The Local Y axis of the DRM Box (not necessarily a unit vector')
+	vx = mka('Local X', MpcAttributeType.QuantityVector3, 'Optional', 'The Local X axis of the DRM Box (not necessarily a unit vector. For ShakerMaker datasets this would be (0, 1, 0). ')
+	vy = mka('Local Y', MpcAttributeType.QuantityVector3, 'Optional', 'The Local Y axis of the DRM Box (not necessarily a unit vector.  For ShakerMaker datasets this would be (1, 0, 0). ')
 	
 	xom = MpcXObjectMetaData()
 	xom.name = 'H5DRM'
