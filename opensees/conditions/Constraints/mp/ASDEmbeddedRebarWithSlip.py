@@ -358,7 +358,7 @@ def writeTcl_mpConstraints(pinfo):
 					)
 				stats[0] += 1
 				
-			print(CUMA)
+			#print(CUMA)
 		# end-for-each-interaction
 		# update process block count
 		if is_partitioned:
