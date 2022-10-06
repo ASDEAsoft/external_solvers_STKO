@@ -338,7 +338,8 @@ def writeTcl_mpConstraints(pinfo):
 				tributary_area = tributary_length * circum
 				CUMA += tributary_area
 				aux_mat_id = next_prop_id()
-				pinfo.out_file.write('{}{}uniaxialMaterial Multiplier {} {} {}\n'.format(pinfo.indent, block_indent, aux_mat_id, slip_tag, FMT(tributary_area)))
+				#pinfo.out_file.write('{}{}uniaxialMaterial Multiplier {} {} {}\n'.format(pinfo.indent, block_indent, aux_mat_id, slip_tag, FMT(tributary_area)))
+				pinfo.out_file.write('{}{}uniaxialMaterial Parallel {} {} -factors {}\n'.format(pinfo.indent, block_indent, aux_mat_id, slip_tag, FMT(tributary_area)))
 				# make the zero-length element
 				# element zeroLength $eleTag $iNode $jNode -mat $matTag1 $matTag2 ... -dir $dir1 $dir2 ... <-orient $x1 $x2 $x3 $yp1 $yp2 $yp3>
 				Vx = Cnode_data[0]
