@@ -217,6 +217,14 @@ def writeTcl_mpConstraints(pinfo):
 						'   '.join( '{} {} {}'.format(Rnodes[i], int(Rdofs[i]), Rfact[i]) for i in range(NM) )
 						)
 					)
+		# end-for-each-interaction
+		# update process block count
+		if is_partitioned:
+			if first_done:
+				process_block_count += 1
+			if process_block_count > 0 and first_done:
+				pinfo.out_file.write('{}{}'.format(pinfo.indent, '}'))
+		return process_block_count
 		
 	# write description
 	description = '\n{}# element ASDConstraintEquationElement $tag $K $cNode $cDof <$rNode1 $rDof1 $rFact1 ... $rNodeN $rDofN $rFactN>\n'.format(pinfo.indent)

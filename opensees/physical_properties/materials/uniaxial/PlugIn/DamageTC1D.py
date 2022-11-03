@@ -1,6 +1,3 @@
-# enable default 3D tester for this module
-from opensees.physical_properties.utils.tester.EnableTester1D import *
-
 import PyMpc.Units as u
 from PyMpc import *
 from mpc_utils_html import *
@@ -165,3 +162,6 @@ def writeTcl(pinfo):
 			pinfo.indent, tag, 
 			' '.join( ['-{} {}'.format(item[0], item[1]) for item in params] ))
 		)
+
+# enable default 3D tester for this module
+from opensees.physical_properties.utils.tester.EnableTester1D import *

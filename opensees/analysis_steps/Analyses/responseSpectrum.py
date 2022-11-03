@@ -17,7 +17,7 @@ def makeXObjectMetaData():
 			html_par(html_begin()) +
 			html_par(html_boldtext(name)+'<br/>') +
 			html_par(descr) +
-			html_par(html_href("https://opensees.github.io/OpenSeesDocumentation/user/manual/analysis/responseSpectrum.html",'responseSpectrum Command')+'<br/>') +
+			html_par(html_href("https://opensees.github.io/OpenSeesDocumentation/user/manual/analysis/responseSpectrumAnalysis.html",'responseSpectrumAnalysis Command')+'<br/>') +
 			html_end()
 			)
 		return at
@@ -64,7 +64,7 @@ def makeXObjectMetaData():
 def writeTcl(pinfo):
 	
 	'''
-	responseSpectrum $tsTag $direction <-scale $scale> <-mode $mode>
+	responseSpectrumAnalysis $tsTag $direction <-scale $scale> <-mode $mode>
 	'''
 	
 	xobj = pinfo.analysis_step.XObject
@@ -80,11 +80,11 @@ def writeTcl(pinfo):
 	at_mode_flag = geta('-mode').boolean
 	at_mode = geta('mode').integer
 	
-	str_tcl = '{}responseSpectrum {} {}'.format(pinfo.indent, at_tsTag, at_direction)
+	str_tcl = '{}responseSpectrumAnalysis {} {}'.format(pinfo.indent, at_tsTag, at_direction)
 	if at_mode_flag:
 		str_tcl += ' -mode {}'.format(at_mode)
 	str_tcl += '\n'
 	
 	# now write the string into the file
-	pinfo.out_file.write('\n{}# responseSpectrum $tsTag $direction <-scale $scale> <-mode $mode>\n'.format(pinfo.indent))
+	pinfo.out_file.write('\n{}# responseSpectrumAnalysis $tsTag $direction <-scale $scale> <-mode $mode>\n'.format(pinfo.indent))
 	pinfo.out_file.write(str_tcl)

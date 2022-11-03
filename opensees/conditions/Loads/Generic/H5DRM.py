@@ -570,7 +570,8 @@ class _constants:
 
 def _removeGui():
 	if _constants.gui is not None:
-		_constants.gui.db.close()
+		if _constants.gui.db:
+			_constants.gui.db.close()
 		_constants.gui.setParent(None)
 		_constants.gui.deleteLater()
 		_constants.gui = None
