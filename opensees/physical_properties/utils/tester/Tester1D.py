@@ -684,7 +684,6 @@ class Tester1DWidget(QWidget):
 		reference_stress = []
 		for i in range(len(self.reference_stress)):
 			reference_stress.append(self.reference_stress.referenceValueAt(i))
-			
 		jds['Tester1D'] = {
 			'name': class_name, 
 			'num_cycl': num_cycles, 
@@ -697,7 +696,6 @@ class Tester1DWidget(QWidget):
 			'reference_stress': reference_stress 
 			}
 		a.string = json.dumps(jds, indent=4)
-		
 		#################################################### $JSON
 	
 	def onStrainHistoryTypeChanged(self):
