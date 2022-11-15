@@ -91,20 +91,20 @@ def makeXObjectMetaData():
 		)
 	
 	#aex_option
-	at_aex_option = MpcAttributeMetaData()
-	at_aex_option.type = MpcAttributeType.String
-	at_aex_option.name = 'Option'
-	at_aex_option.group = 'Non-linear'
-	at_aex_option.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('Option')+'<br/>') + 
-		html_par('Choose between -GABuck, -DMBuck, -CMFatigue, -MPCurveParams and -IsoHard') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Reinforcing_Steel_Material','ReinforcingSteel Material')+'<br/>') +
-		html_end()
-		)
-	at_aex_option.sourceType = MpcAttributeSourceType.List
-	at_aex_option.setSourceList(['-GABuck', '-DMBuck', '-CMFatigue', '-MPCurveParams', '-IsoHard'])
-	at_aex_option.setDefault('-GABuck')
+	# at_aex_option = MpcAttributeMetaData()
+	# at_aex_option.type = MpcAttributeType.String
+	# at_aex_option.name = 'Option'
+	# at_aex_option.group = 'Non-linear'
+	# at_aex_option.description = (
+		# html_par(html_begin()) +
+		# html_par(html_boldtext('Option')+'<br/>') + 
+		# html_par('Choose between -GABuck, -DMBuck, -CMFatigue, -MPCurveParams and -IsoHard') +
+		# html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Reinforcing_Steel_Material','ReinforcingSteel Material')+'<br/>') +
+		# html_end()
+		# )
+	# at_aex_option.sourceType = MpcAttributeSourceType.List
+	# at_aex_option.setSourceList(['-GABuck', '-DMBuck', '-CMFatigue', '-MPCurveParams', '-IsoHard'])
+	# at_aex_option.setDefault('-GABuck')
 	
 	# -GABuck
 	at_GABuck = MpcAttributeMetaData()
@@ -118,7 +118,7 @@ def makeXObjectMetaData():
 		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Reinforcing_Steel_Material','ReinforcingSteel Material')+'<br/>') +
 		html_end()
 		)
-	at_GABuck.editable = False
+	#at_GABuck.editable = False
 	
 	# -DMBuck
 	at_DMBuck = MpcAttributeMetaData()
@@ -132,7 +132,7 @@ def makeXObjectMetaData():
 		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Reinforcing_Steel_Material','ReinforcingSteel Material')+'<br/>') +
 		html_end()
 		)
-	at_DMBuck.editable = False
+	#at_DMBuck.editable = False
 	
 	# -CMFatigue
 	at_CMFatigue = MpcAttributeMetaData()
@@ -146,7 +146,7 @@ def makeXObjectMetaData():
 		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Reinforcing_Steel_Material','ReinforcingSteel Material')+'<br/>') +
 		html_end()
 		)
-	at_CMFatigue.editable = False
+	#at_CMFatigue.editable = False
 	
 	# -MPCurveParams
 	at_MPCurveParams = MpcAttributeMetaData()
@@ -160,7 +160,7 @@ def makeXObjectMetaData():
 		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Reinforcing_Steel_Material','ReinforcingSteel Material')+'<br/>') +
 		html_end()
 		)
-	at_MPCurveParams.editable = False
+	#at_MPCurveParams.editable = False
 	
 	# -IsoHard
 	at_IsoHard = MpcAttributeMetaData()
@@ -174,7 +174,7 @@ def makeXObjectMetaData():
 		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Reinforcing_Steel_Material','ReinforcingSteel Material')+'<br/>') +
 		html_end()
 		)
-	at_IsoHard.editable = False
+	#at_IsoHard.editable = False
 	
 	#Parameters for the optional parameters -GABuck
 	# lsr1
@@ -379,7 +379,7 @@ def makeXObjectMetaData():
 	xom.addAttribute(at_Esh)
 	xom.addAttribute(at_esh)
 	xom.addAttribute(at_eult)
-	xom.addAttribute(at_aex_option)
+	#xom.addAttribute(at_aex_option)
 	xom.addAttribute(at_GABuck)
 	xom.addAttribute(at_lsr1)
 	xom.addAttribute(at_beta)
@@ -428,11 +428,11 @@ def makeXObjectMetaData():
 	
 	# auto-exclusive dependencies
 	# -GABuck, -DMBuck, -CMFatigue, -MPCurveParams, -IsoHard
-	xom.setBooleanAutoExclusiveDependency(at_aex_option, at_GABuck)
-	xom.setBooleanAutoExclusiveDependency(at_aex_option, at_DMBuck)
-	xom.setBooleanAutoExclusiveDependency(at_aex_option, at_CMFatigue)
-	xom.setBooleanAutoExclusiveDependency(at_aex_option, at_MPCurveParams)
-	xom.setBooleanAutoExclusiveDependency(at_aex_option, at_IsoHard)
+	#xom.setBooleanAutoExclusiveDependency(at_aex_option, at_GABuck)
+	#xom.setBooleanAutoExclusiveDependency(at_aex_option, at_DMBuck)
+	#xom.setBooleanAutoExclusiveDependency(at_aex_option, at_CMFatigue)
+	#xom.setBooleanAutoExclusiveDependency(at_aex_option, at_MPCurveParams)
+	#xom.setBooleanAutoExclusiveDependency(at_aex_option, at_IsoHard)
 	
 	
 	return xom
