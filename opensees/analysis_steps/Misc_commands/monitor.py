@@ -326,7 +326,7 @@ def writeTcl(pinfo):
 		return a
 	
 	def writeBackgroundPlot(xLabel, yLabel):
-		with open("{}/{}.pltbg".format(pinfo.out_dir, _get_plot_name(xobj)), "w") as f:
+		with open("{}/{}.pltbg".format(pinfo.out_dir, _get_plot_name(xobj)), "w", encoding='utf-8') as f:
 			f.write('{}\t{}\n'.format(xLabel, yLabel))
 			for i in range (n):
 				f.write('{}\t {}\n'.format(xAxis.valueAt(i), yAxis.valueAt(i)))
@@ -607,11 +607,11 @@ def initializeMonitor(pinfo):
 	
 	# write tcl command to run the monitor
 	if sys.platform == 'win32':
-		with open('{}/LaunchSTKOMonitor.bat'.format(pinfo.out_dir), 'w+') as fmon:
+		with open('{}/LaunchSTKOMonitor.bat'.format(pinfo.out_dir), 'w+', encoding='utf-8') as fmon:
 			fmon.write('.\\STKOMonitor\\STKOMonitor.bat')
 	elif sys.platform == 'linux':
 		launcher_name = '{}/LaunchSTKOMonitor.sh'.format(pinfo.out_dir)
-		with open(launcher_name, 'w+') as fmon:
+		with open(launcher_name, 'w+', encoding='utf-8') as fmon:
 			fmon.write('./STKOMonitor/STKOMonitor.sh')
 		os.chmod(launcher_name, 0o777)
 	

@@ -512,7 +512,7 @@ def writeTcl(pinfo):
 			os.remove(filename)
 	# create the OOP-IIP tcl file needed by the recorder
 	OOP_IIP_filename = 'OOP_IIP_curve_wall_{}.tcl'.format(elem.id) # we use the quad element id for this wall file
-	with open('{}/{}'.format(pinfo.out_dir, OOP_IIP_filename), 'w') as OOP_IIP_file:
+	with open('{}/{}'.format(pinfo.out_dir, OOP_IIP_filename), 'w', encoding='utf-8') as OOP_IIP_file:
 		for i in range(Ninteraction):
 			OOP_IIP_file.write('{}\t{}\n'.format(OOPv[i]/L, IIPv[i]/L))
 	# write recorders for removal

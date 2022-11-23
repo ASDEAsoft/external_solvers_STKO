@@ -310,7 +310,7 @@ def preProcessElements(pinfo):
 	FMT = pinfo.get_double_formatter()
 	
 	# now we can write a ASDAbsorbingBoundary2D.tcl file to source before the elements
-	the_file = open('{}{}{}'.format(pinfo.out_dir, os.sep, 'ASDAbsorbingBoundary2D.tcl'), 'w+')
+	the_file = open('{}{}{}'.format(pinfo.out_dir, os.sep, 'ASDAbsorbingBoundary2D.tcl'), 'w+', encoding='utf-8')
 	save_file = pinfo.out_file
 	pinfo.out_file = the_file
 	
