@@ -939,9 +939,9 @@ def _process_load (doc, pinfo, all_geom, F, is_partitioned, process_id, process_
 
 		mesh_of_geom = doc.mesh.getMeshedGeometry(geom.id)
 		for i in subset.faces:
-			pinfo.out_file.write('# Processing face {}\n'.format(i))
+			pinfo.out_file.write('# Processing face {}\n'.format(i))
 			print('Processing face {}...'.format(i))
-			# Step 1: perform global checks (if not met, skip to next face)
+			# Step 1: perform global checks (if not met, skip to next face)
 			if not _globalChecksFace(i,geom,pinfo):
 				continue
 
@@ -1006,7 +1006,7 @@ def _process_load (doc, pinfo, all_geom, F, is_partitioned, process_id, process_
 		return process_block_count
 
 def onEditFinished(editor, xobj):
-	# DEBUG - TO BE ERASED
+	# DEBUG - TO BE ERASED
 	print('*****************************************')
 	print('Edit Fineshed - summary of results:\n')
 	print('Type: {}'.format(_get_xobj_attribute(xobj, 'Type').string))
@@ -1027,7 +1027,7 @@ def writeTcl_Load(pinfo, xobj):
 		pinfo.out_file.write('\n{}# {} {}\n'.format(pinfo.indent, xobj.Xnamespace, ClassName))
 		pinfo.currentDescription = ClassName
 
-	# Get all geometries to which the condition is applied
+	# Get all geometries to which the condition is applied
 	all_geom = pinfo.condition.assignment.geometries
 	if len(all_geom) == 0:
 		return
