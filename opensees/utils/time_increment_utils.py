@@ -12,7 +12,7 @@ def _find_phys_props(doc):
 	for id, prop in doc.physicalProperties.items():
 		xobj = prop.XObject
 		name = xobj.name
-		if name == 'DamageTC3D' or name == 'DamageTC1D':
+		if name == 'DamageTC3D' or name == 'DamageTC1D' or name == 'ASDConcrete3D':
 			implex = xobj.getAttribute('integration').string == 'IMPL-EX'
 			viscosity = xobj.getAttribute('eta').real != 0.0
 			if implex or viscosity:
