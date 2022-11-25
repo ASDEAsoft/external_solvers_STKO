@@ -124,6 +124,7 @@ class _globals:
 
 def _check_implex(xobj):
 	is_implex = xobj.getAttribute('integration').string == 'IMPL-EX'
+	xobj.getAttribute('implexAlpha').visible = is_implex
 	xobj.getAttribute('implexCheckError').visible = is_implex
 	do_check = xobj.getAttribute('implexCheckError').boolean
 	xobj.getAttribute('implexErrorTolerance').visible = is_implex and do_check
@@ -225,6 +226,7 @@ def makeXObjectMetaData():
 		MpcAttributeType.String, dval="Implicit")
 	algo.sourceType = MpcAttributeSourceType.List
 	algo.setSourceList(['Implicit', 'IMPL-EX'])
+	implex_alpha = mka("implexAlpha", "Integration", "The scale factor for IMPL-EX extrapolation in the range (0, 1). Use 0 if you experience instabilities due to the explicit extrapolation", MpcAttributeType.Real, dval=1.0)
 	implex_check = mka("implexCheckError", "Integration", "Check the IMPL-EX error making sure it is kept under a user-defined tolerance", MpcAttributeType.Boolean, dval=False)
 	implex_tol = mka("implexErrorTolerance", "Integration", "The maximum allowed relative IMPL-EX error", MpcAttributeType.Real, dval=0.05)
 	implex_red = mka("implexErrorTimeReductionLimit", "Integration", "The pseudo-time-step reduction limit under which the implex error check is not performed", MpcAttributeType.Real, dval=0.01)
@@ -286,6 +288,7 @@ def makeXObjectMetaData():
 	xom.addAttribute(Cd)
 	# Integration
 	xom.addAttribute(algo)
+	xom.addAttribute(implex_alpha)
 	xom.addAttribute(implex_check)
 	xom.addAttribute(implex_tol)
 	xom.addAttribute(implex_red)
@@ -330,12 +333,13 @@ def writeTcl(pinfo):
 	
 	if _geta(xobj, 'integration').string == 'IMPL-EX':
 		if _geta(xobj, 'implexCheckError').boolean:
-			command += ' \\\n{}\t-implex -implexControl {} {}'.format(
+			command += ' \\\n{}\t-implex -implexAlpha {} -implexControl {} {}'.format(
 				pinfo.indent,
+				_geta(xobj, 'implexAlpha').real,
 				_geta(xobj, 'implexErrorTolerance').real,
 				_geta(xobj, 'implexErrorTimeReductionLimit').real)
 		else:
-			command += ' \\\n{}\t-implex'.format(pinfo.indent)
+			command += ' \\\n{}\t-implex -implexAlpha {}'.format(pinfo.indent, _geta(xobj, 'implexAlpha').real)
 	
 	if _geta(xobj, '-crackPlanes').boolean:
 		command += ' \\\n{}\t-crackPlanes {} {} {}'.format(pinfo.indent, 
