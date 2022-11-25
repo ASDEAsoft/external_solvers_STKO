@@ -1,6 +1,6 @@
 from PyMpc import *
 import os
-from opensees.utils import parameter_utils as paramutil
+from opensees.utils.parameter_utils import ParameterManager
 
 def _find_phys_props(doc):
 	'''
@@ -87,6 +87,10 @@ def process_document(pinfo):
 	for geom_key, domain in geoms.items():
 		target_count += len(domain.elements)
 	
+	# quick return
+	if target_count == 0:
+		return
+	
 	# print info
 	pinfo.out_file.write('\n\n# Time-Increment Utility Stats\n#\n')
 	pinfo.out_file.write('# Found {} Physical Properties\n'.format(len(phys_props)))
@@ -97,26 +101,70 @@ def process_document(pinfo):
 		pinfo.out_file.write('#    [{}] {} (# Elements: {})\n'.format(geom_key, domain, len(domain.elements)))
 	pinfo.out_file.write('# Found a total of {} elements\n'.format(target_count))
 	
-	# quick return
-	if target_count == 0:
-		return
+	# define parameters for IMPLEX time increments
+	pinfo.out_file.write('parameter {}; # parameter for dTime\n'.format(ParameterManager.IMPLEX_dT))
+	pinfo.out_file.write('parameter {}; # parameter for dTimeCommit\n'.format(ParameterManager.IMPLEX_dTcommit))
+	pinfo.out_file.write('parameter {}; # parameter for dTimeInitial\n'.format(ParameterManager.IMPLEX_dT0))
+	
+	# write the loop based on partitioning
+	def write_loop(all_eles, indent):
+		count = 0
+		total_count = 0
+		N = len(all_eles)
+		if N > 0:
+			pinfo.out_file.write('{}foreach ele_id [list \\\n'.format(indent))
+			for ele_id in all_eles:
+				count += 1
+				total_count += 1
+				if count == 1:
+					pinfo.out_file.write('{}{}'.format(indent, pinfo.tabIndent))
+				pinfo.out_file.write('{} '.format(ele_id))
+				if count == 20 and total_count < N:
+					count = 0
+					pinfo.out_file.write('\\\n')
+			pinfo.out_file.write('] {\n')
+			pinfo.out_file.write('{}{}addToParameter {} element $ele_id dTime\n'.format(indent, pinfo.tabIndent, ParameterManager.IMPLEX_dT))
+			pinfo.out_file.write('{}{}addToParameter {} element $ele_id dTimeCommit\n'.format(indent, pinfo.tabIndent, ParameterManager.IMPLEX_dTcommit))
+			pinfo.out_file.write('{}{}addToParameter {} element $ele_id dTimeInitial\n'.format(indent, pinfo.tabIndent, ParameterManager.IMPLEX_dT0))
+			pinfo.out_file.write('{}}}\n'.format(indent))
+	# get element list
+	if pinfo.process_count > 1:
+		all_eles = [[] for i in range(pinfo.process_count)]
+		for geom_key, domain in geoms.items():
+			for element in domain.elements:
+				pid = doc.mesh.partitionData.elementPartition(element.id)
+				all_eles[pid].append(element.id)
+		for partition_id in range(pinfo.process_count):
+			pinfo.out_file.write('{}if {{$STKO_VAR_process_id == {}}} {{\n'.format(pinfo.indent, partition_id))
+			write_loop(all_eles[partition_id], pinfo.indent+pinfo.tabIndent)
+			pinfo.out_file.write('{}}}\n'.format(pinfo.indent))
+	else:
+		all_eles = []
+		for geom_key, domain in geoms.items():
+			for element in domain.elements:
+				all_eles.append(element.id)
+		write_loop(all_eles, pinfo.indent)
 	
 	# write custom functions
 	pinfo.out_file.write('''#
 # Time-Increment Utility Functions.
 # Define a function to be called before the current time step
-proc STKO_DT_UTIL_OnBeforeAnalyze {} {
+proc STKO_DT_UTIL_OnBeforeAnalyze {{}} {{
 	global STKO_VAR_increment
 	global STKO_VAR_time_increment
 	# update the initial time and the committed time for the first time
-	if {$STKO_VAR_increment == 1} {
-		setParameter -val $STKO_VAR_time_increment -ele dTimeCommit
-		setParameter -val $STKO_VAR_time_increment -ele dTimeInitial
-	}
+	if {{$STKO_VAR_increment == 1}} {{
+		updateParameter {} $STKO_VAR_time_increment; # dTimeCommit
+		updateParameter {} $STKO_VAR_time_increment; # dTimeInitial
+	}}
 	# always update the current time increment
-	setParameter -val $STKO_VAR_time_increment -ele dTime
-}
+	updateParameter {} $STKO_VAR_time_increment; # dTime
+}}
 # add it to the list of functions
 lappend STKO_VAR_OnBeforeAnalyze_CustomFunctions STKO_DT_UTIL_OnBeforeAnalyze
 
-''')
+'''.format(
+	ParameterManager.IMPLEX_dTcommit,
+	ParameterManager.IMPLEX_dT0,
+	ParameterManager.IMPLEX_dT
+	))

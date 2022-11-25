@@ -2,6 +2,7 @@ import PyMpc.Units as u
 from PyMpc import *
 from mpc_utils_html import *
 import opensees.utils.tcl_input as tclin
+from opensees.utils.parameter_utils import ParameterManager
 
 def _err(msg):
 	return 'Error in "ASDAbsorbingBoundaryActivate" :\n{}'.format(msg)
@@ -31,7 +32,8 @@ def writeTcl(pinfo):
 	# make command string
 	def commandstring(eles, indent):
 		stream = StringIO()
-		stream.write('{}setParameter -val 1 -ele \\\n'.format(indent))
+		stream.write('{}parameter {}\n'.format(indent, ParameterManager.ABSORBING_STAGE))
+		stream.write('{}foreach ele_id [list \\\n'.format(indent))
 		count = 0
 		n = len(eles)
 		for i in range(n):
@@ -42,7 +44,11 @@ def writeTcl(pinfo):
 			if count == 10 and i < n-1:
 				count = 0
 				stream.write('\\\n')
-		stream.write(' stage\n')
+		stream.write('] {\n')
+		stream.write('{}{}addToParameter {} element $ele_id stage\n'.format(pinfo.indent, pinfo.tabIndent, ParameterManager.ABSORBING_STAGE))
+		stream.write('{}}}\n'.format(pinfo.indent))
+		stream.write('{}updateParameter {} 1\n'.format(pinfo.indent, ParameterManager.ABSORBING_STAGE))
+		stream.write('{}remove parameter {}\n'.format(pinfo.indent, ParameterManager.ABSORBING_STAGE))
 		return stream.getvalue()
 	
 	# comment
