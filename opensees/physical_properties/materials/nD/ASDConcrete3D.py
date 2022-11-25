@@ -41,22 +41,32 @@ def _make_hl_concrete_plain(xobj):
 	ft = fc / 10.0
 	# fracture energies
 	Gt = 0.073 * (fc**0.18)
-	Gc = ((fc/ft)**2) * Gt * 4.0
+	Gc = ((fc/ft)**2) * Gt
 	# Tensile law
 	ft1 = ft * 0.7
 	ft2 = ft * 0.1
-	ft3 = ft * 1.0e-6
+	ft3 = ft * 1.0e-4
 	e0 = ft / E
-	e1 = e0 * 1.001
+	e1 = e0 * 1.01
 	G1 = ft * e0 / 2.0
 	G2 = max(G1 * 1.0e-4, Gt-G1)
 	G21 = 0.8 * G2
 	G22 = G2 - G21
 	e2 = e0 + G21 / (ft2 + (ft1-ft2)/2.0)
 	e3 = e2 + 2.0*G22/ft2
-	Te = [0.0,  e0,   e1,  e2,  e3, e3*1.1]
-	Ts = [0.0,  ft,  ft1, ft2, ft3,    ft3]
-	Td = [0.0, 0.0,  1.0, 1.0, 0.9,    0.9]
+	e4 = e3*5.0
+	Te = [0.0,  e0,   e1,  e2,   e3,       e4]
+	Ts = [0.0,  ft,  ft1, ft2,  ft3,      ft3]
+	Td = [0.0]*len(Te)
+	Tpl = [0.0, 0.0, 0.0, e2*0.9, e3*0.8, e3*0.8]
+	for i in range(2, len(Te)):
+		xi = Te[i]
+		si = Ts[i]
+		xipl = Tpl[i]
+		xipl_max = xi-si/E
+		xipl = min(xipl, xipl_max)
+		qi = (xi-xipl)*E
+		Td[i] = 1.0-si/qi
 	# Compressive Law
 	damage_c_end = 0.9
 	damage_c_peak = 0.3
@@ -64,13 +74,13 @@ def _make_hl_concrete_plain(xobj):
 	fc0 = fc/2.0
 	ec0 = fc0/E
 	ec1 = fc/E
-	fcr = fc/10.0
-	ec_pl = max(0.0, ec - fc/((1.0 - damage_c_peak)*E))
+	fcr = fc*1.0e-2
+	ec_pl = 0.0
+	if damage_c_peak < 1.0:
+		max(0.0, ec - fc/((1.0 - damage_c_peak)*E))
 	Gc1 = fc*(ec-ec_pl)/2.0
 	Gc2 = max(Gc1*1.0e-2, Gc-Gc1)
-	decr = Gc2*2.0/fc
-	decu = (fc-fcr)/fc*decr
-	ecr = ec + decr - decu
+	ecr = ec + 2.0*Gc2/(fc+fcr)
 	Cs = [0.0, fc0]
 	Ce = [0.0, ec0]
 	Cd = [0.0, 0.0]
@@ -88,6 +98,7 @@ def _make_hl_concrete_plain(xobj):
 	Cs.append(fcr)
 	Cd.append(damage_c_end)
 	Cd.append(damage_c_end)
+	# Done
 	return (Te, Ts, Td, Ce, Cs, Cd)
 
 def _make_hl_user(xobj):
