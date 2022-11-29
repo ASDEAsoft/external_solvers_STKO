@@ -33,15 +33,7 @@ def _bezier3 (xi,   x0, x1, x2,   y0, y1, y2):
 	t = (math.sqrt(D) - B) / (2.0 * A)
 	return (y0 - 2.0 * y1 + y2) * t * t + 2.0 * (y1 - y0) * t + y0
 
-def _make_hl_concrete_plain(xobj):
-	# minimal parameters
-	E = _geta(xobj, 'E').quantityScalar.value
-	fc = _geta(xobj, 'fcp').quantityScalar.value
-	# tensile strength
-	ft = fc / 10.0
-	# fracture energies
-	Gt = 0.073 * (fc**0.18)
-	Gc = ((fc/ft)**2) * Gt
+def _make_hl_concrete_base(xobj, E, ft, fc, Gt, Gc):
 	# Tensile law
 	ft1 = ft * 0.7
 	ft2 = ft * 0.1
@@ -100,6 +92,56 @@ def _make_hl_concrete_plain(xobj):
 	Cd.append(damage_c_end)
 	# Done
 	return (Te, Ts, Td, Ce, Cs, Cd)
+def _make_hl_concrete_1p(xobj):
+	# minimal parameters
+	E = _geta(xobj, 'E').quantityScalar.value
+	fc = _geta(xobj, 'fcp').quantityScalar.value
+	# tensile strength
+	ft = fc / 10.0
+	# fracture energies
+	Gt = 0.073 * (fc**0.18)
+	Gc = ((fc/ft)**2) * Gt
+	# base concrete
+	return _make_hl_concrete_base(xobj, E, ft, fc, Gt, Gc)
+def _make_hl_concrete_4p(xobj):
+	# minimal parameters
+	E = _geta(xobj, 'E').quantityScalar.value
+	fc = _geta(xobj, 'fcp').quantityScalar.value
+	# tensile strength
+	ft = _geta(xobj, 'ft').quantityScalar.value
+	# fracture energies
+	Gt = _geta(xobj, 'Gt').quantityScalar.value
+	Gc = _geta(xobj, 'Gc').quantityScalar.value
+	# base concrete
+	return _make_hl_concrete_base(xobj, E, ft, fc, Gt, Gc)
+
+def _check_hl_concrete_1p(xobj):
+	for i in _globals.hl_t_targets:
+		xobj.getAttribute(i).visible = False
+	for i in _globals.hl_c_targets:
+		xobj.getAttribute(i).visible = False
+	xobj.getAttribute('ft').visible = False
+	xobj.getAttribute('fcp').visible = True
+	xobj.getAttribute('Gt').visible = False
+	xobj.getAttribute('Gc').visible = False
+def _check_hl_concrete_4p(xobj):
+	for i in _globals.hl_t_targets:
+		xobj.getAttribute(i).visible = False
+	for i in _globals.hl_c_targets:
+		xobj.getAttribute(i).visible = False
+	xobj.getAttribute('ft').visible = True
+	xobj.getAttribute('fcp').visible = True
+	xobj.getAttribute('Gt').visible = True
+	xobj.getAttribute('Gc').visible = True
+def _check_hl_user(xobj):
+	for i in _globals.hl_t_targets:
+		xobj.getAttribute(i).visible = True
+	for i in _globals.hl_c_targets:
+		xobj.getAttribute(i).visible = True
+	xobj.getAttribute('ft').visible = False
+	xobj.getAttribute('fcp').visible = False
+	xobj.getAttribute('Gt').visible = False
+	xobj.getAttribute('Gc').visible = False
 
 def _make_hl_user(xobj):
 	return (
@@ -114,8 +156,9 @@ class _globals:
 	hl_t_targets = ('Te','Ts','Td')
 	hl_c_targets = ('Ce','Cs','Cd')
 	presets = {
-		"Concrete (Plain)" : _make_hl_concrete_plain,
-		"User-Defined" : _make_hl_user,
+		"Concrete (1P)" : (_make_hl_concrete_1p, _check_hl_concrete_1p),
+		"Concrete (4P)": (_make_hl_concrete_4p, _check_hl_concrete_4p),
+		"User-Defined" : (_make_hl_user, _check_hl_user),
 		}
 
 ####################################################################################
@@ -138,12 +181,8 @@ def _check_cplanes(xobj):
 
 def _check_presets(xobj):
 	ptype = xobj.getAttribute('Preset').string
-	is_user = ptype == list(_globals.presets.keys())[-1]
-	for i in _globals.hl_t_targets:
-		xobj.getAttribute(i).visible = is_user
-	for i in _globals.hl_c_targets:
-		xobj.getAttribute(i).visible = is_user
-	xobj.getAttribute('fcp').visible = not is_user
+	check_fun = _globals.presets[ptype][1]
+	check_fun(xobj)
 
 def _check_hl_consistency(xobj, at, targets):
 	if at is None:
@@ -245,7 +284,7 @@ def makeXObjectMetaData():
 	cplanes = mka("-crackPlanes", "Crack Planes", "Activates the anisotropy of internal variables on multiple crack-planes", MpcAttributeType.Boolean, dval=False)
 	cplanes_nct = mka("nct", "Crack Planes", "Number of crack planes for the tensile behavior", MpcAttributeType.Integer, dval=4)
 	cplanes_ncc = mka("ncc", "Crack Planes", "Number of crack planes for the compressive behavior", MpcAttributeType.Integer, dval=4)
-	cplanes_angle = mka("smoothingAngle", "Crack Planes", "Smoothing angle (in degress) for smoothing the internal variables", MpcAttributeType.Real, dval=90.0)
+	cplanes_angle = mka("smoothingAngle", "Crack Planes", "Smoothing angle (in degress) for smoothing the internal variables", MpcAttributeType.Real, dval=45.0)
 	
 	# hardening laws - manual (by points) ...
 	Te = mka("Te", "Tension", "Tensile Hardening Law (Strain)", MpcAttributeType.QuantityVector)
@@ -257,6 +296,9 @@ def makeXObjectMetaData():
 	
 	# ... or by minimal parameters
 	fcp = mka("fcp", "Preset", "Peak Compressive Strength", MpcAttributeType.QuantityScalar, adim=u.F/u.L**2)
+	ft = mka("ft", "Preset", "Tensile Strength", MpcAttributeType.QuantityScalar, adim=u.F/u.L**2)
+	Gt = mka("Gt", "Preset", "Tensile Fracture Energy", MpcAttributeType.QuantityScalar, adim=u.F/u.L)
+	Gc = mka("Gc", "Preset", "Compressive Fracture Energy", MpcAttributeType.QuantityScalar, adim=u.F/u.L)
 	
 	# input type
 	all_presets = list(_globals.presets.keys())
@@ -277,7 +319,10 @@ def makeXObjectMetaData():
 	xom.addAttribute(v)
 	# Preset
 	xom.addAttribute(itype)
+	xom.addAttribute(ft)
 	xom.addAttribute(fcp)
+	xom.addAttribute(Gt)
+	xom.addAttribute(Gc)
 	# Tension
 	xom.addAttribute(Te)
 	xom.addAttribute(Ts)
@@ -316,7 +361,8 @@ def writeTcl(pinfo):
 	eta = _geta(xobj, 'eta').real
 	
 	# obtain the hardening points
-	Te,Ts,Td,Ce,Cs,Cd = _globals.presets[_geta(xobj, 'Preset').string](xobj)
+	hl_fun = _globals.presets[_geta(xobj, 'Preset').string][0]
+	Te,Ts,Td,Ce,Cs,Cd = hl_fun(xobj)
 	def to_tcl(x):
 		return ' '.join(str(i) for i in x)
 	
@@ -354,13 +400,6 @@ def writeTcl(pinfo):
 		command += ' \\\n{}\t-autoRegularization'.format(pinfo.indent)
 	
 	command += '\n'
-	
-	print(command)
-
-	#"{0}\t<-implex> <-implexControl $implexErrorTolerance $implexTimeReductionLimit> \\\n"
-	#"{0}\t<-crackPlanes $nct $ncc $smoothingAngle> \\\n"
-	#"{0}\t <-tangent> <-autoRegularization>\n"
-	
 	
 	# now write the string into the file
 	pinfo.out_file.write(command)
