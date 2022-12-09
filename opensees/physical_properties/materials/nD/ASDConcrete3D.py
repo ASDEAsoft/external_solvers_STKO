@@ -35,22 +35,24 @@ def _bezier3 (xi,   x0, x1, x2,   y0, y1, y2):
 
 def _make_hl_concrete_base(xobj, E, ft, fc, Gt, Gc):
 	# Tensile law
-	ft1 = ft * 0.7
-	ft2 = ft * 0.1
-	ft3 = ft * 1.0e-4
-	e0 = ft / E
-	e1 = e0 * 1.01
-	G1 = ft * e0 / 2.0
-	G2 = max(G1 * 1.0e-4, Gt-G1)
-	G21 = 0.8 * G2
-	G22 = G2 - G21
-	e2 = e0 + G21 / (ft2 + (ft1-ft2)/2.0)
-	e3 = e2 + 2.0*G22/ft2
+	f0 = ft*0.9
+	f1 = ft
+	e0 = f0/E
+	e1 = f1/E*1.5
+	ep = e1-f1/E
+	f2 = 0.2*ft
+	f3 = 1.0e-6*ft
+	w2 = Gt/ft
+	w3 = 5.0*w2
+	e2 = w2 + f2/E + ep
+	if e2 <= e1: e2 = e1*1.001
+	e3 = w3 + f3/E + ep
+	if e3 <= e2: e3 = e2*1.001
 	e4 = e3*5.0
-	Te = [0.0,  e0,   e1,  e2,   e3,       e4]
-	Ts = [0.0,  ft,  ft1, ft2,  ft3,      ft3]
-	Td = [0.0]*len(Te)
-	Tpl = [0.0, 0.0, 0.0, e2*0.9, e3*0.8, e3*0.8]
+	Te = [0.0,  e0,  e1,  e2,  e3,  e4]
+	Ts = [0.0,  f0,  f1,  f2,  f3,  f3]
+	Td = [0.0, 0.0, 0.0, 1.0, 1.0, 1.0]
+	Tpl = [0.0, 0.0, ep, e2*0.5, e3*0.7, e3*0.7]
 	for i in range(2, len(Te)):
 		xi = Te[i]
 		si = Ts[i]
@@ -100,7 +102,7 @@ def _make_hl_concrete_1p(xobj):
 	ft = fc / 10.0
 	# fracture energies
 	Gt = 0.073 * (fc**0.18)
-	Gc = ((fc/ft)**2) * Gt
+	Gc = ((fc/ft)**2) * Gt * 2.0
 	# base concrete
 	return _make_hl_concrete_base(xobj, E, ft, fc, Gt, Gc)
 def _make_hl_concrete_4p(xobj):
