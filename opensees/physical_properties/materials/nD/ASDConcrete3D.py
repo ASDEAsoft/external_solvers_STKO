@@ -33,8 +33,10 @@ def _bezier3 (xi,   x0, x1, x2,   y0, y1, y2):
 	t = (math.sqrt(D) - B) / (2.0 * A)
 	return (y0 - 2.0 * y1 + y2) * t * t + 2.0 * (y1 - y0) * t + y0
 
-def _make_hl_concrete_base(xobj, E, ft, fc, Gt, Gc):
-	# Tensile law
+def _make_tension(E, ft, Gt):
+	'''
+	a trilinar hardening-softening law for tensile response
+	'''
 	f0 = ft*0.9
 	f1 = ft
 	e0 = f0/E
@@ -49,10 +51,10 @@ def _make_hl_concrete_base(xobj, E, ft, fc, Gt, Gc):
 	e3 = w3 + f3/E + ep
 	if e3 <= e2: e3 = e2*1.001
 	e4 = e3*5.0
-	Te = [0.0,  e0,  e1,  e2,  e3,  e4]
-	Ts = [0.0,  f0,  f1,  f2,  f3,  f3]
-	Td = [0.0, 0.0, 0.0, 1.0, 1.0, 1.0]
-	Tpl = [0.0, 0.0, ep, e2*0.5, e3*0.7, e3*0.7]
+	Te = [0.0,  e0,  e1,  e2,  e3,  e4] # total strain points
+	Ts = [0.0,  f0,  f1,  f2,  f3,  f3] # nominal stress points
+	Td = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # initialize damage list
+	Tpl = [0.0, 0.0, ep, e2*0.5, e3*0.7, e3*0.7] # desired values of equivalent plastic strains
 	for i in range(2, len(Te)):
 		xi = Te[i]
 		si = Ts[i]
@@ -60,62 +62,87 @@ def _make_hl_concrete_base(xobj, E, ft, fc, Gt, Gc):
 		xipl_max = xi-si/E
 		xipl = min(xipl, xipl_max)
 		qi = (xi-xipl)*E
-		Td[i] = 1.0-si/qi
-	# Compressive Law
-	damage_c_end = 0.9
-	damage_c_peak = 0.3
-	ec = 2.0*fc/E
+		Td[i] = 1.0-si/qi # compute damage
+	return (Te, Ts, Td)
+
+def _make_compression(E, fc, fcr, ec, Gc):
+	'''
+	a quadratic hardening followed by linear softening for compressive response
+	'''
 	fc0 = fc/2.0
 	ec0 = fc0/E
 	ec1 = fc/E
-	fcr = fc*1.0e-2
-	ec_pl = 0.0
-	if damage_c_peak < 1.0:
-		max(0.0, ec - fc/((1.0 - damage_c_peak)*E))
+	ec_pl = ec*0.7
 	Gc1 = fc*(ec-ec_pl)/2.0
 	Gc2 = max(Gc1*1.0e-2, Gc-Gc1)
 	ecr = ec + 2.0*Gc2/(fc+fcr)
-	Cs = [0.0, fc0]
-	Ce = [0.0, ec0]
-	Cd = [0.0, 0.0]
-	nc = 5
+	Ce = [0.0, ec0] # total strain points
+	Cs = [0.0, fc0] # nominal stress points
+	Cpl = [0.0, 0.0] # desired values of equivalent plastic strains
+	nc = 10
 	dec = (ec-ec0)/(nc-1)
 	for i in range(nc-1):
 		iec = ec0+(i+1.0)*dec
 		Ce.append(iec)
 		Cs.append(_bezier3(iec,  ec0, ec1, ec,  fc0, fc, fc))
-		ratio = (i+1.0)/(nc-1.0)
-		Cd.append((1.0-ratio) + damage_c_peak*(ratio))
+		Cpl.append(Cpl[-1]+(iec-Cpl[-1])*0.7)
+	# end of linear softening - begin residual plateau
 	Ce.append(ecr)
+	Cs.append(fcr)
+	Cpl.append(Cpl[-1] + (ecr-Cpl[-1])*0.7)
+	# extend to make a plateau
 	Ce.append(ecr+ec0)
 	Cs.append(fcr)
-	Cs.append(fcr)
-	Cd.append(damage_c_end)
-	Cd.append(damage_c_end)
+	Cpl.append(Cpl[-1])
+	# compute damage now
+	Cd = [0.0]*len(Ce)
+	for i in range(2, len(Ce)):
+		xi = Ce[i]
+		si = Cs[i]
+		xipl = Cpl[i]
+		xipl_max = xi-si/E
+		xipl = min(xipl, xipl_max)
+		qi = (xi-xipl)*E
+		Cd[i] = 1.0-si/qi # compute damage
+	# Done
+	return (Ce, Cs, Cd)
+
+def _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, Gt, Gc):
+	# Tensile law
+	Te, Ts, Td = _make_tension(E, ft, Gt)
+	# Compressive Law
+	Ce, Cs, Cd = _make_compression(E, fc, fcr, ec, Gc)
 	# Done
 	return (Te, Ts, Td, Ce, Cs, Cd)
+
 def _make_hl_concrete_1p(xobj):
 	# minimal parameters
 	E = _geta(xobj, 'E').quantityScalar.value
 	fc = _geta(xobj, 'fcp').quantityScalar.value
+	# other compressive parameters
+	fcr = fc/10.0
+	ec = 2.0*fc/E
 	# tensile strength
 	ft = fc / 10.0
 	# fracture energies
 	Gt = 0.073 * (fc**0.18)
 	Gc = ((fc/ft)**2) * Gt * 2.0
 	# base concrete
-	return _make_hl_concrete_base(xobj, E, ft, fc, Gt, Gc)
+	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, Gt, Gc)
 def _make_hl_concrete_4p(xobj):
 	# minimal parameters
 	E = _geta(xobj, 'E').quantityScalar.value
 	fc = _geta(xobj, 'fcp').quantityScalar.value
+	# other compressive parameters
+	fcr = fc/10.0
+	ec = 2.0*fc/E
 	# tensile strength
 	ft = _geta(xobj, 'ft').quantityScalar.value
 	# fracture energies
 	Gt = _geta(xobj, 'Gt').quantityScalar.value
 	Gc = _geta(xobj, 'Gc').quantityScalar.value
 	# base concrete
-	return _make_hl_concrete_base(xobj, E, ft, fc, Gt, Gc)
+	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, Gt, Gc)
 
 def _check_hl_concrete_1p(xobj):
 	for i in _globals.hl_t_targets:
