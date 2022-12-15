@@ -68,6 +68,7 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 	set dU_tolerance [expr abs($dU) * 1.0e-8]
 	# compute the monothonic time step for this cycle
 	set dT [expr $DT / $nsteps]
+	set STKO_VAR_initial_time_increment $dT
 	
 	if {$STKO_VAR_process_id == 0} {
 		puts "======================================================================"
@@ -118,6 +119,10 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			if {$STKO_VAR_num_iter > 0} {set STKO_VAR_error_norm [lindex $norms [expr $STKO_VAR_num_iter-1]]} else {set STKO_VAR_error_norm 0.0}
 		}
 		
+		# after analyze
+		set STKO_VAR_afterAnalyze_done 0
+		STKO_CALL_OnAfterAnalyze
+		
 		# check convergence
 		if {$STKO_VAR_analyze_done == 0} {
 			
@@ -128,6 +133,15 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			
 			# update adaptive factor
 			set factor_increment [expr min($max_factor_increment, [expr double($desired_iter) / double($STKO_VAR_num_iter)])]
+			
+			# check STKO_VAR_afterAnalyze_done. Simulate a reduction similar to non-convergence
+			if {$STKO_VAR_afterAnalyze_done != 0} {
+				set factor_increment [expr max($min_factor_increment, [expr double($desired_iter) / double($max_iter)])]
+				if {$STKO_VAR_process_id == 0} {
+					puts "Reducing increment factor due to custom error controls. Factor = $factor"
+				}
+			}
+			
 			set factor [expr $factor * $factor_increment]
 			if {$factor > $max_factor} {
 				set factor $max_factor
@@ -161,8 +175,6 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			}
 		}
 		
-		# after analyze
-		STKO_CALL_OnAfterAnalyze
 	}
 	# end of adaptive time stepping
 }

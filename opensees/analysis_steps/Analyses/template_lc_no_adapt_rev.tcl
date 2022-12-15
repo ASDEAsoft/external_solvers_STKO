@@ -12,6 +12,7 @@ set initial_num_incr __initial_num_incr__
 
 set STKO_VAR_time 0.0
 set STKO_VAR_time_increment [expr $total_duration / $initial_num_incr]
+set STKO_VAR_initial_time_increment $STKO_VAR_time_increment
 integrator __integrator_type__ $STKO_VAR_time_increment __more_int_data__
 for {set STKO_VAR_increment 1} {$STKO_VAR_increment <= $initial_num_incr} {incr STKO_VAR_increment} {
 	
@@ -30,6 +31,10 @@ for {set STKO_VAR_increment 1} {$STKO_VAR_increment <= $initial_num_incr} {incr 
 		if {$STKO_VAR_num_iter > 0} {set STKO_VAR_error_norm [lindex $norms [expr $STKO_VAR_num_iter-1]]} else {set STKO_VAR_error_norm 0.0}
 	}
 	
+	# after analyze
+	set STKO_VAR_afterAnalyze_done 0
+	STKO_CALL_OnAfterAnalyze
+	
 	# check convergence
 	if {$STKO_VAR_analyze_done == 0} {
 		# print statistics
@@ -41,8 +46,6 @@ for {set STKO_VAR_increment 1} {$STKO_VAR_increment <= $initial_num_incr} {incr 
 		error "ERROR: the analysis did not converge"
 	}
 	
-	# after analyze
-	STKO_CALL_OnAfterAnalyze
 }
 
 # done

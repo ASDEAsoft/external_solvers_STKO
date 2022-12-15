@@ -25,6 +25,8 @@ set STKO_VAR_time 0.0
 set initial_time_increment [expr $total_duration / $initial_num_incr]
 set time_tolerance [expr abs($initial_time_increment) * 1.0e-8]
 
+set STKO_VAR_initial_time_increment $initial_time_increment
+
 while 1 {
 	
 	# check end of analysis
@@ -60,6 +62,11 @@ while 1 {
 		if {$STKO_VAR_num_iter > 0} {set STKO_VAR_error_norm [lindex $norms [expr $STKO_VAR_num_iter-1]]} else {set STKO_VAR_error_norm 0.0}
 	}
 	
+	# after analyze
+	set STKO_VAR_afterAnalyze_done 0
+	STKO_CALL_OnAfterAnalyze
+	
+	# check convergence
 	if {$STKO_VAR_analyze_done == 0} {
 		
 		# print statistics
@@ -69,6 +76,15 @@ while 1 {
 		
 		# update adaptive factor
 		set factor_increment [expr min($max_factor_increment, [expr double($desired_iter) / double($STKO_VAR_num_iter)])]
+		
+		# check STKO_VAR_afterAnalyze_done. Simulate a reduction similar to non-convergence
+		if {$STKO_VAR_afterAnalyze_done != 0} {
+			set factor_increment [expr max($min_factor_increment, [expr double($desired_iter) / double($max_iter)])]
+			if {$STKO_VAR_process_id == 0} {
+				puts "Reducing increment factor due to custom error controls. Factor = $factor"
+			}
+		}
+		
 		set factor [expr $factor * $factor_increment]
 		if {$factor > $max_factor} {
 			set factor $max_factor
@@ -101,6 +117,4 @@ while 1 {
 		}
 	}
 	
-	# after analyze
-	STKO_CALL_OnAfterAnalyze
 }

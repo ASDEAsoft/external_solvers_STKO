@@ -8,6 +8,9 @@ from mpc_utils_html import *
 import opensees.utils.tcl_input as tclin
 import math
 
+# NOTE 1: Don't use implexCheckError... 
+# it seems there is a problem in OpenSeesMP when a material fails in computation
+
 ####################################################################################
 # Utilities
 ####################################################################################
@@ -298,6 +301,12 @@ def makeXObjectMetaData():
 	implex_check = mka("implexCheckError", "Integration", "Check the IMPL-EX error making sure it is kept under a user-defined tolerance", MpcAttributeType.Boolean, dval=False)
 	implex_tol = mka("implexErrorTolerance", "Integration", "The maximum allowed relative IMPL-EX error", MpcAttributeType.Real, dval=0.05)
 	implex_red = mka("implexErrorTimeReductionLimit", "Integration", "The pseudo-time-step reduction limit under which the implex error check is not performed", MpcAttributeType.Real, dval=0.01)
+	
+	# Note 1
+	implex_check.editable = False
+	implex_tol.editable = False
+	implex_red.editable = False
+	
 	# misc
 	reg = mka("autoRegularization", "Misc", ("When this flag is True (Default), the input fracture energies (Gt and Gc) "
 		"will be divided by the element characteristic length, in order to obtain a response which is mesh-size independent.<br/>"
@@ -407,14 +416,17 @@ def writeTcl(pinfo):
 			to_tcl(Te), to_tcl(Ts), to_tcl(Td), to_tcl(Ce), to_tcl(Cs), to_tcl(Cd))
 	
 	if _geta(xobj, 'integration').string == 'IMPL-EX':
-		if _geta(xobj, 'implexCheckError').boolean:
-			command += ' \\\n{}\t-implex -implexAlpha {} -implexControl {} {}'.format(
-				pinfo.indent,
-				_geta(xobj, 'implexAlpha').real,
-				_geta(xobj, 'implexErrorTolerance').real,
-				_geta(xobj, 'implexErrorTimeReductionLimit').real)
-		else:
-			command += ' \\\n{}\t-implex -implexAlpha {}'.format(pinfo.indent, _geta(xobj, 'implexAlpha').real)
+		#if _geta(xobj, 'implexCheckError').boolean:
+		#	command += ' \\\n{}\t-implex -implexAlpha {} -implexControl {} {}'.format(
+		#		pinfo.indent,
+		#		_geta(xobj, 'implexAlpha').real,
+		#		_geta(xobj, 'implexErrorTolerance').real,
+		#		_geta(xobj, 'implexErrorTimeReductionLimit').real)
+		#else:
+		#	command += ' \\\n{}\t-implex -implexAlpha {}'.format(pinfo.indent, _geta(xobj, 'implexAlpha').real)
+		#
+		# Note 1
+		command += ' \\\n{}\t-implex -implexAlpha {}'.format(pinfo.indent, _geta(xobj, 'implexAlpha').real)
 	
 	if _geta(xobj, '-crackPlanes').boolean:
 		command += ' \\\n{}\t-crackPlanes {} {} {}'.format(pinfo.indent, 
