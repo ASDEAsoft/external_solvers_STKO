@@ -122,14 +122,18 @@ def _make_hl_concrete_1p(xobj):
 	# minimal parameters
 	E = _geta(xobj, 'E').quantityScalar.value
 	fc = _geta(xobj, 'fcp').quantityScalar.value
+	# bring input in MPa
+	L = _globals.L_units[_geta(xobj, 'L. unit').string]
+	F = _globals.F_units[_geta(xobj, 'F. unit').string]
 	# other compressive parameters
 	fcr = fc/10.0
 	ec = 2.0*fc/E
 	# tensile strength
 	ft = fc / 10.0
 	# fracture energies
-	Gt = 0.073 * (fc**0.18)
-	Gc = ((fc/ft)**2) * Gt * 2.0
+	Gt = (0.073 * ((fc*F/L/L)**0.18))*L/F # make fc in MPa, then bring it back to user-unit (1/stiffness)
+	Gc = 250.0*Gt
+	print(Gt, Gc)
 	# base concrete
 	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, Gt, Gc)
 def _make_hl_concrete_4p(xobj):
@@ -156,6 +160,8 @@ def _check_hl_concrete_1p(xobj):
 	xobj.getAttribute('fcp').visible = True
 	xobj.getAttribute('Gt').visible = False
 	xobj.getAttribute('Gc').visible = False
+	xobj.getAttribute('L. unit').visible = True
+	xobj.getAttribute('F. unit').visible = True
 def _check_hl_concrete_4p(xobj):
 	for i in _globals.hl_t_targets:
 		xobj.getAttribute(i).visible = False
@@ -165,6 +171,8 @@ def _check_hl_concrete_4p(xobj):
 	xobj.getAttribute('fcp').visible = True
 	xobj.getAttribute('Gt').visible = True
 	xobj.getAttribute('Gc').visible = True
+	xobj.getAttribute('L. unit').visible = False
+	xobj.getAttribute('F. unit').visible = False
 def _check_hl_user(xobj):
 	for i in _globals.hl_t_targets:
 		xobj.getAttribute(i).visible = True
@@ -174,6 +182,8 @@ def _check_hl_user(xobj):
 	xobj.getAttribute('fcp').visible = False
 	xobj.getAttribute('Gt').visible = False
 	xobj.getAttribute('Gc').visible = False
+	xobj.getAttribute('L. unit').visible = False
+	xobj.getAttribute('F. unit').visible = False
 
 def _make_hl_user(xobj):
 	return (
@@ -191,6 +201,21 @@ class _globals:
 		"Concrete (1P)" : (_make_hl_concrete_1p, _check_hl_concrete_1p),
 		"Concrete (4P)": (_make_hl_concrete_4p, _check_hl_concrete_4p),
 		"User-Defined" : (_make_hl_user, _check_hl_user),
+		}
+	L_units = {
+		'mm' : 1.0,
+		'cm' : 10.0,
+		'dm' : 100.0,
+		'm'  : 1000.0,
+		'in' : 25.4,
+		'ft' : 304.8,
+		}
+	F_units = {
+		'N': 1.0,
+		'daN': 10.0,
+		'kN' : 1000.0,
+		'lbf' : 4.4482216152605,
+		'kip' : 4448.2216152605,
 		}
 
 ####################################################################################
@@ -337,6 +362,12 @@ def makeXObjectMetaData():
 	ft = mka("ft", "Preset", "Tensile Strength", MpcAttributeType.QuantityScalar, adim=u.F/u.L**2)
 	Gt = mka("Gt", "Preset", "Tensile Fracture Energy", MpcAttributeType.QuantityScalar, adim=u.F/u.L)
 	Gc = mka("Gc", "Preset", "Compressive Fracture Energy", MpcAttributeType.QuantityScalar, adim=u.F/u.L)
+	Lunit = mka("L. unit", "Preset", "Unit of measurement used for Length", MpcAttributeType.String, dval="mm")
+	Lunit.sourceType = MpcAttributeSourceType.List
+	Lunit.setSourceList(list(_globals.L_units.keys()))
+	Funit = mka("F. unit", "Preset", "Unit of measurement used for Force", MpcAttributeType.String, dval="N")
+	Funit.sourceType = MpcAttributeSourceType.List
+	Funit.setSourceList(list(_globals.F_units.keys()))
 	
 	# input type
 	all_presets = list(_globals.presets.keys())
@@ -361,6 +392,8 @@ def makeXObjectMetaData():
 	xom.addAttribute(fcp)
 	xom.addAttribute(Gt)
 	xom.addAttribute(Gc)
+	xom.addAttribute(Lunit)
+	xom.addAttribute(Funit)
 	# Tension
 	xom.addAttribute(Te)
 	xom.addAttribute(Ts)
