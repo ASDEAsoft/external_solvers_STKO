@@ -86,11 +86,19 @@ def makeXObjectMetaData():
 		MpcAttributeType.Real,
 		dval=0.01)
 	
+	err_type = mka("Error Type", "Default",
+		"You can either choose to control the Max error, or the Average error",
+		MpcAttributeType.String,
+		dval="Max")
+	err_type.sourceType = MpcAttributeSourceType.List
+	err_type.setSourceList(['Max', 'Average'])
+	
 	xom = MpcXObjectMetaData()
 	xom.name = 'ImplexAutoErrorControlActivate'
 	xom.Xgroup = 'IMPL-EX'
 	xom.addAttribute(implex_tol)
 	xom.addAttribute(implex_red)
+	xom.addAttribute(err_type)
 	
 	return xom
 
@@ -125,6 +133,7 @@ def writeTcl(pinfo):
 	xobj = pinfo.analysis_step.XObject
 	tol = xobj.getAttribute('Error Tolerance').real
 	red = xobj.getAttribute('Time Reduction Limit').real
+	type = xobj.getAttribute('Error Type').string
 	
 	# print info
 	pinfo.out_file.write('\n\n# Activate IMPL-EX Error Control\n#\n')
@@ -173,6 +182,16 @@ def writeTcl(pinfo):
 				all_eles.append(element.id)
 		write_targets(all_eles, pinfo.indent)
 	
+	# based on error type
+	if type == 'Max':
+		param_name = 'implexError'
+		pre_op = 'set implex_error [expr max($implex_error, $other_implex_error)]'
+		post_op = ''
+	else:
+		param_name = 'avgImplexError'
+		pre_op = 'set implex_error [expr $implex_error + $other_implex_error]'
+		post_op = 'set implex_error [expr $implex_error / double([getNP])]\n\t\t\t'
+	
 	# write the custom function
 	pinfo.out_file.write('''#
 # IMPL-EX Error Control Functions.
@@ -183,7 +202,7 @@ proc STKO_IMPLEX_ErrorControl_OnBeforeAnalyze {{}} {{
 	if {{ [llength $STKO_IMPLEX_ErrorControl_TargetElements] > 0 }} {{
 		set first_element_id [lindex $STKO_IMPLEX_ErrorControl_TargetElements 0]
 		parameter {0}
-		addToParameter {0} element $first_element_id implexError
+		addToParameter {0} element $first_element_id {3}
 		updateParameter {0} 0.0
 		set implex_error [expr [getParamValue {0}]]
 		remove parameter {0}
@@ -202,20 +221,29 @@ proc STKO_IMPLEX_ErrorControl_OnAfterAnalyze {{}} {{
 	if {{ [llength $STKO_IMPLEX_ErrorControl_TargetElements] > 0 }} {{
 		set first_element_id [lindex $STKO_IMPLEX_ErrorControl_TargetElements 0]
 		parameter {0}
-		addToParameter {0} element $first_element_id implexError
+		addToParameter {0} element $first_element_id {3}
 		set implex_error [expr [getParamValue {0}]]
 		remove parameter {0}
 	}}
 	# for parallel analysis (MP)
-	for {{set pcounter 0}} {{$pcounter < [getNP]}} {{incr pcounter}} {{
-		if {{$pcounter != [getPID]}} {{
-			send -pid $pcounter $implex_error
-			recv -pid $pcounter other_implex_error
-			set implex_error [expr max($implex_error, $other_implex_error)]
+	if {{[getNP] > 1}} {{
+		if {{[getPID] == 0}} {{
+			for {{set pcounter 1}} {{$pcounter < [getNP]}} {{incr pcounter}} {{
+				recv -pid $pcounter other_implex_error
+				{4}
+			}}
+		}} else {{
+			send -pid 0 $implex_error
+		}}
+		if {{[getPID] == 0}} {{
+			{5}for {{set pcounter 1}} {{$pcounter < [getNP]}} {{incr pcounter}} {{
+				send -pid $pcounter $implex_error
+			}}
+		}} else {{
+			recv -pid 0 implex_error
 		}}
 	}}
 	# check
-	if {{[getPID] == 0}} {{ puts "IMPL-EX Error: $implex_error" }}
 	if {{$implex_error > {1}}} {{
 		if {{$STKO_VAR_time_increment >= [expr {2} * $STKO_VAR_initial_time_increment]}} {{
 			set STKO_VAR_afterAnalyze_done -1
@@ -224,4 +252,4 @@ proc STKO_IMPLEX_ErrorControl_OnAfterAnalyze {{}} {{
 }}
 # add it to the list of functions
 lappend STKO_VAR_OnAfterAnalyze_CustomFunctions STKO_IMPLEX_ErrorControl_OnAfterAnalyze
-'''.format(ParameterManager.IMPLEX_Error, tol, red))
+'''.format(ParameterManager.IMPLEX_Error, tol, red, param_name, pre_op, post_op))
