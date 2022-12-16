@@ -206,8 +206,16 @@ proc STKO_IMPLEX_ErrorControl_OnAfterAnalyze {{}} {{
 		set implex_error [expr [getParamValue {0}]]
 		remove parameter {0}
 	}}
-	# TODO: Parallel
-	# here
+	# for parallel analysis (MP)
+	for {{set pcounter 0}} {{$pcounter < [getNP]}} {{incr pcounter}} {{
+		if {{$pcounter != [getPID]}} {{
+			send -pid $pcounter $implex_error
+			recv -pid $pcounter other_implex_error
+			set implex_error [expr max($implex_error, $other_implex_error)]
+		}}
+	}}
+	# check
+	if {{[getPID] == 0}} {{ puts "IMPL-EX Error: $implex_error" }}
 	if {{$implex_error > {1}}} {{
 		if {{$STKO_VAR_time_increment >= [expr {2} * $STKO_VAR_initial_time_increment]}} {{
 			set STKO_VAR_afterAnalyze_done -1
