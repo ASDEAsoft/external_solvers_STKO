@@ -57,7 +57,8 @@ def _make_tension(E, ft, Gt):
 	Te = [0.0,  e0,  e1,  e2,  e3,  e4] # total strain points
 	Ts = [0.0,  f0,  f1,  f2,  f3,  f3] # nominal stress points
 	Td = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # initialize damage list
-	Tpl = [0.0, 0.0, ep, e2*0.9, e3*0.8, e3*0.8] # desired values of equivalent plastic strains
+	#Tpl = [0.0, 0.0, ep, e2*0.9, e3*0.8, e3*0.8] # desired values of equivalent plastic strains
+	Tpl = [0.0, 0.0, ep, e2*0.5, e3*0.7, e3*0.7] # desired values of equivalent plastic strains
 	for i in range(2, len(Te)):
 		xi = Te[i]
 		si = Ts[i]
