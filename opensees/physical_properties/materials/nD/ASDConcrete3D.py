@@ -298,7 +298,7 @@ def makeXObjectMetaData():
 			html_par(html_begin()) +
 			html_par(html_boldtext(name)+'<br/>') + 
 			html_par(descr) +
-			html_par(html_href('https://asdeasoft.net/?stko-support','DamageTC3D')+'<br/>') +
+			html_par(html_href('https://opensees.github.io/OpenSeesDocumentation/user/manual/material/ndMaterials/ASDConcrete3D.html','ASDConcrete3D')+'<br/>') +
 			html_end()
 			)
 		if adim is not None:
