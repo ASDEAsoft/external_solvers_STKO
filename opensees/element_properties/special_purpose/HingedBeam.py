@@ -34,6 +34,7 @@ def makeXObjectMetaData():
 		)
 	at_Beam.indexSource.type = MpcAttributeIndexSourceType.ElementProperty
 	at_Beam.indexSource.addAllowedNamespace("beam_column_elements")
+	at_Beam.indexSource.addAllowedNamespace("special_purpose")
 	'''at_Beam.indexSource.addAllowedNamespaceList(["Namespace_1", "Namespace_2"])'''
 	
 	# zeroLength_i
