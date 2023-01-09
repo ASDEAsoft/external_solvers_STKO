@@ -36,9 +36,16 @@ def _bezier3 (xi,   x0, x1, x2,   y0, y1, y2):
 	t = (math.sqrt(D) - B) / (2.0 * A)
 	return (y0 - 2.0 * y1 + y2) * t * t + 2.0 * (y1 - y0) * t + y0
 
+def _get_lch_ref():
+	'''
+	the characteristic length for built-in specific fracture energy
+	'''
+	agg_size = 20.0
+	return 2.7*agg_size
+
 def _make_tension(E, ft, Gt):
 	'''
-	a trilinar hardening-softening law for tensile response
+	a trilinear hardening-softening law for tensile response
 	'''
 	f0 = ft*0.9
 	f1 = ft
@@ -50,15 +57,17 @@ def _make_tension(E, ft, Gt):
 	w2 = Gt/ft
 	w3 = 5.0*w2
 	e2 = w2 + f2/E + ep
+	#e2 = e1+w2
 	if e2 <= e1: e2 = e1*1.001
 	e3 = w3 + f3/E + ep
+	#e3 = e1+w3
 	if e3 <= e2: e3 = e2*1.001
 	e4 = e3*10.0
 	Te = [0.0,  e0,  e1,  e2,  e3,  e4] # total strain points
 	Ts = [0.0,  f0,  f1,  f2,  f3,  f3] # nominal stress points
 	Td = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # initialize damage list
-	#Tpl = [0.0, 0.0, ep, e2*0.9, e3*0.8, e3*0.8] # desired values of equivalent plastic strains
-	Tpl = [0.0, 0.0, ep, e2*0.5, e3*0.7, e3*0.7] # desired values of equivalent plastic strains
+	Tpl = [0.0, 0.0, ep, e2*0.9, e3*0.8, e3*0.8] # desired values of equivalent plastic strains
+	#Tpl = [0.0, 0.0, ep, e2*0.5, e3*0.7, e3*0.7] # desired values of equivalent plastic strains
 	for i in range(2, len(Te)):
 		xi = Te[i]
 		si = Ts[i]
@@ -111,13 +120,13 @@ def _make_compression(E, fc, fcr, ec, Gc):
 	# Done
 	return (Ce, Cs, Cd)
 
-def _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, Gt, Gc):
+def _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, Gt, Gc, lch_ref):
 	# Tensile law
 	Te, Ts, Td = _make_tension(E, ft, Gt)
 	# Compressive Law
 	Ce, Cs, Cd = _make_compression(E, fc, fcr, ec, Gc)
 	# Done
-	return (Te, Ts, Td, Ce, Cs, Cd)
+	return (Te, Ts, Td, Ce, Cs, Cd, lch_ref)
 
 def _make_hl_concrete_1p(xobj):
 	# minimal parameters
@@ -134,9 +143,12 @@ def _make_hl_concrete_1p(xobj):
 	# fracture energies
 	Gt = (0.073 * ((fc*F/L/L)**0.18))*L/F # make fc in MPa, then bring it back to user-unit (1/stiffness)
 	Gc = 250.0*Gt
-	print(Gt, Gc)
+	# characteristic length
+	lch_ref = _get_lch_ref()/L
+	gt = Gt/lch_ref
+	gc = Gc/lch_ref
 	# base concrete
-	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, Gt, Gc)
+	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, gt, gc, lch_ref)
 def _make_hl_concrete_4p(xobj):
 	# minimal parameters
 	E = _geta(xobj, 'E').quantityScalar.value
@@ -149,8 +161,22 @@ def _make_hl_concrete_4p(xobj):
 	# fracture energies
 	Gt = _geta(xobj, 'Gt').quantityScalar.value
 	Gc = _geta(xobj, 'Gc').quantityScalar.value
+	# characteristic length
+	L = _globals.L_units[_geta(xobj, 'L. unit').string]
+	lch_ref = _get_lch_ref()/L
+	gt = Gt/lch_ref
+	gc = Gc/lch_ref
 	# base concrete
-	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, Gt, Gc)
+	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, Gt, Gc, lch_ref)
+def _make_hl_user(xobj):
+	return (
+		_geta(xobj, 'Te').quantityVector.value,
+		_geta(xobj, 'Ts').quantityVector.value,
+		_geta(xobj, 'Td').quantityVector.value,
+		_geta(xobj, 'Ce').quantityVector.value,
+		_geta(xobj, 'Cs').quantityVector.value,
+		_geta(xobj, 'Cd').quantityVector.value,
+		_geta(xobj, 'LchRef').quantityScalar.value)
 
 def _check_hl_concrete_1p(xobj):
 	for i in _globals.hl_t_targets:
@@ -185,15 +211,6 @@ def _check_hl_user(xobj):
 	xobj.getAttribute('Gc').visible = False
 	xobj.getAttribute('L. unit').visible = False
 	xobj.getAttribute('F. unit').visible = False
-
-def _make_hl_user(xobj):
-	return (
-		_geta(xobj, 'Te').quantityVector.value,
-		_geta(xobj, 'Ts').quantityVector.value,
-		_geta(xobj, 'Td').quantityVector.value,
-		_geta(xobj, 'Ce').quantityVector.value,
-		_geta(xobj, 'Cs').quantityVector.value,
-		_geta(xobj, 'Cd').quantityVector.value)
 
 class _globals:
 	hl_t_targets = ('Te','Ts','Td')
@@ -334,10 +351,6 @@ def makeXObjectMetaData():
 	implex_red.editable = False
 	
 	# misc
-	reg = mka("autoRegularization", "Misc", ("When this flag is True (Default), the input fracture energies (Gt and Gc) "
-		"will be divided by the element characteristic length, in order to obtain a response which is mesh-size independent.<br/>"
-		"If turn this flag Off, the input fracture energies will be used as they are."), 
-		MpcAttributeType.Boolean, dval=True)
 	ctype = mka("constitutiveTensorType", "Misc", ("Constitutive Tensor Tyope.<br/>"
 		"Tangent: The algorithmic tangent tensor.<br/>"
 		"(Default) Secant: The secant tensor.<br/>"), 
@@ -361,14 +374,24 @@ def makeXObjectMetaData():
 	# ... or by minimal parameters
 	fcp = mka("fcp", "Preset", "Peak Compressive Strength", MpcAttributeType.QuantityScalar, adim=u.F/u.L**2)
 	ft = mka("ft", "Preset", "Tensile Strength", MpcAttributeType.QuantityScalar, adim=u.F/u.L**2)
-	Gt = mka("Gt", "Preset", "Tensile Fracture Energy", MpcAttributeType.QuantityScalar, adim=u.F/u.L)
-	Gc = mka("Gc", "Preset", "Compressive Fracture Energy", MpcAttributeType.QuantityScalar, adim=u.F/u.L)
+	Gt = mka("Gt", "Preset", "Tensile Fracture Energy (F/L)", MpcAttributeType.QuantityScalar, adim=u.F/u.L)
+	Gc = mka("Gc", "Preset", "Compressive Fracture Energy (F/L)", MpcAttributeType.QuantityScalar, adim=u.F/u.L)
 	Lunit = mka("L. unit", "Preset", "Unit of measurement used for Length", MpcAttributeType.String, dval="mm")
 	Lunit.sourceType = MpcAttributeSourceType.List
 	Lunit.setSourceList(list(_globals.L_units.keys()))
 	Funit = mka("F. unit", "Preset", "Unit of measurement used for Force", MpcAttributeType.String, dval="N")
 	Funit.sourceType = MpcAttributeSourceType.List
 	Funit.setSourceList(list(_globals.F_units.keys()))
+	
+	# regularization
+	reg = mka("autoRegularization", "Regularization", ("When this flag is True (Default), the hardening/softening laws (in case of strain-softening) "
+		"will be regularized according to the characteristic length of the parent element, so that the response is independent from the mesh size.<br/>"
+		"If turn this flag Off, the input fracture energies will be used as they are."), 
+		MpcAttributeType.Boolean, dval=True)
+	lch_ref = mka("LchRef", "Regularization", ("The reference characteristic length:<br/>"
+		"When the strain-hardening/softening laws show strain-softening, the area under then curve is a specific fracture energy (F/L^2), "
+		"i.e. a fracture energy (F/L) divided by a size (LchRef)"),
+		MpcAttributeType.QuantityScalar, dval=1.0)
 	
 	# input type
 	all_presets = list(_globals.presets.keys())
@@ -403,6 +426,9 @@ def makeXObjectMetaData():
 	xom.addAttribute(Ce)
 	xom.addAttribute(Cs)
 	xom.addAttribute(Cd)
+	# Regularization
+	xom.addAttribute(reg)
+	xom.addAttribute(lch_ref)
 	# Integration
 	xom.addAttribute(algo)
 	xom.addAttribute(implex_alpha)
@@ -416,7 +442,6 @@ def makeXObjectMetaData():
 	xom.addAttribute(cplanes_angle)
 	# misc
 	xom.addAttribute(eta)
-	xom.addAttribute(reg)
 	xom.addAttribute(ctype)
 	
 	return xom
@@ -434,7 +459,7 @@ def writeTcl(pinfo):
 	
 	# obtain the hardening points
 	hl_fun = _globals.presets[_geta(xobj, 'Preset').string][0]
-	Te,Ts,Td,Ce,Cs,Cd = hl_fun(xobj)
+	Te,Ts,Td,Ce,Cs,Cd,lch_ref = hl_fun(xobj)
 	def to_tcl(x):
 		return ' '.join(str(i) for i in x)
 	
@@ -472,7 +497,7 @@ def writeTcl(pinfo):
 		command += ' \\\n{}\t-tangent'.format(pinfo.indent)
 	
 	if _geta(xobj, 'autoRegularization').boolean:
-		command += ' \\\n{}\t-autoRegularization'.format(pinfo.indent)
+		command += ' \\\n{}\t-autoRegularization {}'.format(pinfo.indent, lch_ref)
 	
 	command += '\n'
 	
