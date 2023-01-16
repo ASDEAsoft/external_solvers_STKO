@@ -269,16 +269,16 @@ def writeTcl(pinfo):
 	sopt = ''
 	
 	if geta('-CoR').boolean:
-		sopt += ' -CoR {}'.format(geta('c').quantityScalar)
+		sopt += ' -CoR {}'.format(geta('c').quantityScalar.value)
 	
 	if geta('-ThickMod').boolean:
-		sopt += ' -ThickMod {}'.format(geta('tMod').quantityScalar)
+		sopt += ' -ThickMod {}'.format(geta('tMod').quantityScalar.value)
 	
 	if geta('-Poisson').boolean:
-		sopt += ' -Poisson {}'.format(geta('Nu').quantityScalar)
+		sopt += ' -Poisson {}'.format(geta('Nu').quantityScalar.value)
 	
 	if geta('-Density').boolean:
-		sopt += ' -Density {}'.format(geta('Dens').quantityScalar)
+		sopt += ' -Density {}'.format(geta('Dens').quantityScalar.value)
 
 
 	# element MVLEM_3D eleTag iNode jNode kNode lNode m -thick {Thicknesses} -width {Widths} -rho {Reinforcing_ratios} -matConcrete {Concrete_tags} -matSteel {Steel_tags} -matShear {Shear_tag} <-CoR c> <-ThickMod tMod> <-Poisson Nu> <-Density Dens>
