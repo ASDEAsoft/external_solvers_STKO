@@ -120,13 +120,13 @@ def _make_compression(E, fc, fcr, ec, Gc):
 	# Done
 	return (Ce, Cs, Cd)
 
-def _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, Gt, Gc, lch_ref):
+def _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, Gt, Gc, auto_reg, lch_ref):
 	# Tensile law
 	Te, Ts, Td = _make_tension(E, ft, Gt)
 	# Compressive Law
 	Ce, Cs, Cd = _make_compression(E, fc, fcr, ec, Gc)
 	# Done
-	return (Te, Ts, Td, Ce, Cs, Cd, lch_ref)
+	return (Te, Ts, Td, Ce, Cs, Cd, auto_reg, lch_ref)
 
 def _make_hl_concrete_1p(xobj):
 	# minimal parameters
@@ -144,11 +144,12 @@ def _make_hl_concrete_1p(xobj):
 	Gt = (0.073 * ((fc*F/L/L)**0.18))*L/F # make fc in MPa, then bring it back to user-unit (1/stiffness)
 	Gc = 250.0*Gt
 	# characteristic length
+	auto_reg = True
 	lch_ref = _get_lch_ref()/L
 	gt = Gt/lch_ref
 	gc = Gc/lch_ref
 	# base concrete
-	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, gt, gc, lch_ref)
+	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, gt, gc, auto_reg, lch_ref)
 def _make_hl_concrete_4p(xobj):
 	# minimal parameters
 	E = _geta(xobj, 'E').quantityScalar.value
@@ -162,12 +163,13 @@ def _make_hl_concrete_4p(xobj):
 	Gt = _geta(xobj, 'Gt').quantityScalar.value
 	Gc = _geta(xobj, 'Gc').quantityScalar.value
 	# characteristic length
+	auto_reg = True
 	L = _globals.L_units[_geta(xobj, 'L. unit').string]
 	lch_ref = _get_lch_ref()/L
 	gt = Gt/lch_ref
 	gc = Gc/lch_ref
 	# base concrete
-	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, Gt, Gc, lch_ref)
+	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, Gt, Gc, auto_reg, lch_ref)
 def _make_hl_user(xobj):
 	return (
 		_geta(xobj, 'Te').quantityVector.value,
@@ -176,6 +178,7 @@ def _make_hl_user(xobj):
 		_geta(xobj, 'Ce').quantityVector.value,
 		_geta(xobj, 'Cs').quantityVector.value,
 		_geta(xobj, 'Cd').quantityVector.value,
+		_geta(xobj, 'autoRegularization').boolean,
 		_geta(xobj, 'LchRef').quantityScalar.value)
 
 def _check_hl_concrete_1p(xobj):
@@ -189,6 +192,8 @@ def _check_hl_concrete_1p(xobj):
 	xobj.getAttribute('Gc').visible = False
 	xobj.getAttribute('L. unit').visible = True
 	xobj.getAttribute('F. unit').visible = True
+	xobj.getAttribute('autoRegularization').visible = False
+	xobj.getAttribute('LchRef').visible = False
 def _check_hl_concrete_4p(xobj):
 	for i in _globals.hl_t_targets:
 		xobj.getAttribute(i).visible = False
@@ -200,6 +205,8 @@ def _check_hl_concrete_4p(xobj):
 	xobj.getAttribute('Gc').visible = True
 	xobj.getAttribute('L. unit').visible = False
 	xobj.getAttribute('F. unit').visible = False
+	xobj.getAttribute('autoRegularization').visible = False
+	xobj.getAttribute('LchRef').visible = False
 def _check_hl_user(xobj):
 	for i in _globals.hl_t_targets:
 		xobj.getAttribute(i).visible = True
@@ -211,6 +218,8 @@ def _check_hl_user(xobj):
 	xobj.getAttribute('Gc').visible = False
 	xobj.getAttribute('L. unit').visible = False
 	xobj.getAttribute('F. unit').visible = False
+	xobj.getAttribute('autoRegularization').visible = True
+	xobj.getAttribute('LchRef').visible = True
 
 class _globals:
 	hl_t_targets = ('Te','Ts','Td')
@@ -459,7 +468,7 @@ def writeTcl(pinfo):
 	
 	# obtain the hardening points
 	hl_fun = _globals.presets[_geta(xobj, 'Preset').string][0]
-	Te,Ts,Td,Ce,Cs,Cd,lch_ref = hl_fun(xobj)
+	Te,Ts,Td,Ce,Cs,Cd,auto_reg,lch_ref = hl_fun(xobj)
 	def to_tcl(x):
 		return ' '.join(str(i) for i in x)
 	
@@ -496,7 +505,7 @@ def writeTcl(pinfo):
 	if _geta(xobj, 'constitutiveTensorType').string == 'Tangent':
 		command += ' \\\n{}\t-tangent'.format(pinfo.indent)
 	
-	if _geta(xobj, 'autoRegularization').boolean:
+	if auto_reg:
 		command += ' \\\n{}\t-autoRegularization {}'.format(pinfo.indent, lch_ref)
 	
 	command += '\n'
