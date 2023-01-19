@@ -169,7 +169,7 @@ def _make_hl_concrete_4p(xobj):
 	gt = Gt/lch_ref
 	gc = Gc/lch_ref
 	# base concrete
-	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, Gt, Gc, auto_reg, lch_ref)
+	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, gt, gc, auto_reg, lch_ref)
 def _make_hl_user(xobj):
 	return (
 		_geta(xobj, 'Te').quantityVector.value,
