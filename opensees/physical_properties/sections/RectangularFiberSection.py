@@ -662,6 +662,7 @@ class RectangularFiberSectionWidget(QWidget):
 		self.strain_hist = StrainHistoryFactory.make('Monotonic')
 		self.strain_hist_params = self.strain_hist.getDefaultParams()
 		self.strain_hist_params.target_strain = self.confinementModel_params.ultimateStrainConcrete*1.05; #self.confinementModel.epsccu
+		self.strain_hist_params.num_divisions = 20 # BUG_CBOX_RACE-make it faster
 		self.strain_hist.build(self.strain_hist_params)
 		# make the total analysis last 1 (pseudo) seconds.
 		# this is not mandatory now, but for future works it can be useful for rate dependent models
@@ -724,14 +725,15 @@ class RectangularFiberSectionWidget(QWidget):
 				
 				# now we can run the tester
 				self.tester = Tester1D(materials, self.strain_hist_time, self.strain_hist.strain)
-				self.tester.testProcessUpdated.connect(self.onTestUnconfinedProcessUpdated)
-				parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
-				parent_dialog.setEnabled(False)
+				#self.tester.testProcessUpdated.connect(self.onTestUnconfinedProcessUpdated)
+				#parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
+				#parent_dialog.setEnabled(False)
 				self.editor.setCanClose(False)
 				try:
 					self.tester.run()
+					self.onTestUnconfinedProcessUpdatedAllInOne()
 				finally:
-					parent_dialog.setEnabled(True)
+					#parent_dialog.setEnabled(True)
 					self.editor.setCanClose(True)
 					self.tester.deleteLater()
 					self.tester = None
@@ -760,12 +762,21 @@ class RectangularFiberSectionWidget(QWidget):
 			# self.run_progress_bar.setValue(int(round(iperc*100.0)))
 			# process all events to prevent gui from freezing
 			QCoreApplication.processEvents()
+	def onTestUnconfinedProcessUpdatedAllInOne(self):
+		# update strain/stress data
+		for x,y in zip(self.tester.strain, self.tester.stress):
+			self.chart_data_unconfined.x.append(x)
+			self.chart_data_unconfined.y.append(y)
+			# update chart
+			self.mpc_chart_widget.chart = self.chart
+			self.mpc_chart_widget.autoScale()
 			
 	def runTesterConfined(self):
 		# Create a strain history Monotonic for now - in the future we could add the possibility to select monotonic or cyclic
 		self.strain_hist = StrainHistoryFactory.make('Monotonic')
 		self.strain_hist_params = self.strain_hist.getDefaultParams()
 		self.strain_hist_params.target_strain = self.confinementModel.epsccu*1.05;
+		self.strain_hist_params.num_divisions = 20 # BUG_CBOX_RACE-make it faster
 		self.strain_hist.build(self.strain_hist_params)
 		# make the total analysis last 1 (pseudo) seconds.
 		# this is not mandatory now, but for future works it can be useful for rate dependent models
@@ -827,14 +838,15 @@ class RectangularFiberSectionWidget(QWidget):
 				
 				# now we can run the tester
 				self.tester = Tester1D(materials, self.strain_hist_time, self.strain_hist.strain)
-				self.tester.testProcessUpdated.connect(self.onTestConfinedProcessUpdated)
-				parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
-				parent_dialog.setEnabled(False)
+				#self.tester.testProcessUpdated.connect(self.onTestConfinedProcessUpdated)
+				#parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
+				#parent_dialog.setEnabled(False)
 				self.editor.setCanClose(False)
 				try:
 					self.tester.run()
+					self.onTestConfinedProcessUpdatedAllInOne()
 				finally:
-					parent_dialog.setEnabled(True)
+					#parent_dialog.setEnabled(True)
 					self.editor.setCanClose(True)
 					self.tester.deleteLater()
 					self.tester = None
@@ -864,14 +876,15 @@ class RectangularFiberSectionWidget(QWidget):
 							materialTclString += " {}".format(param)
 						# now we can run the tester
 						self.tester = Tester1DMaterialConfinedSection(materialTclString, self.strain_hist_time, self.strain_hist.strain)
-						self.tester.testProcessUpdated.connect(self.onTestConfinedProcessUpdated)
-						parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
-						parent_dialog.setEnabled(False)
+						#self.tester.testProcessUpdated.connect(self.onTestConfinedProcessUpdated)
+						#parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
+						#parent_dialog.setEnabled(False)
 						self.editor.setCanClose(False)
 						try:
 							self.tester.run()
+							self.onTestConfinedProcessUpdatedAllInOne()
 						finally:
-							parent_dialog.setEnabled(True)
+							#parent_dialog.setEnabled(True)
 							self.editor.setCanClose(True)
 							self.tester.deleteLater()
 							self.tester = None
@@ -905,6 +918,14 @@ class RectangularFiberSectionWidget(QWidget):
 			# self.run_progress_bar.setValue(int(round(iperc*100.0)))
 			# process all events to prevent gui from freezing
 			QCoreApplication.processEvents()
+	def onTestConfinedProcessUpdatedAllInOne(self):
+		# update strain/stress data
+		for x,y in zip(self.tester.strain, self.tester.stress):
+			self.chart_data_confined.x.append(x)
+			self.chart_data_confined.y.append(y)
+			# update chart
+			self.mpc_chart_widget.chart = self.chart
+			self.mpc_chart_widget.autoScale()
 
 def makeXObjectMetaData():
 	
