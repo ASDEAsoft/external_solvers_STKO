@@ -347,8 +347,6 @@ class RectangularFiberSectionWidget(QWidget):
 		self.lateralPresssure_cbox.setCurrentIndex(index)
 		
 	def getMaterialProperties(self):
-		import PyMpc.IO
-		
 		# get document, we need it to get materials
 		doc = App.caeDocument()
 		if doc is None:
@@ -375,7 +373,6 @@ class RectangularFiberSectionWidget(QWidget):
 					msg = QMessageBox()
 					msg.setText("Material {} not supported for automatic computation of confinement. Impossibile to compute automatically confined law. Provide it manually\n".format(mat_cover.XObject.name))
 					msg.exec()
-
 		self.confinementModel_params.yieldStressSteel = fy
 		self.confinementModel_params.ultimateStrainSteel = epssu
 
@@ -1211,8 +1208,6 @@ def onAttributeChanged(editor, xobj, attribute_name):
 	The xobject containing the modified attribute and the attribute name
 	are passed as input arguments to this function.
 	'''
-	
-	# PyMpc.IO.write_cerr('on attribute changed - {} ({})\n'.format(attribute_name, datetime.datetime.now()))
 	attribute = _get_xobj_attribute(xobj, attribute_name)
 
 	if attribute.group in __constants.groups_for_section_update:
