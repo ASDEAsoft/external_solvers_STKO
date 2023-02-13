@@ -879,7 +879,7 @@ class RectangularFiberSectionWidget(QWidget):
 						PyMpc.IO.write_cerr('Error: uniaxialMaterial {} for cover not recognized for computing core concrete.\n'.format(mat_cover.XObject.name))
 				else:
 					# I cannot create the confined material because the cover is not provided
-					pass	
+					pass
 		except:
 			exdata = traceback.format_exc().splitlines()
 			PyMpc.IO.write_cerr('Error:\n{}\n'.format('\n'.join(exdata)))
