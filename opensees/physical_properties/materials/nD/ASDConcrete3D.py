@@ -43,7 +43,7 @@ def _get_lch_ref():
 	agg_size = 20.0
 	return 2.7*agg_size
 
-def _make_tension(E, ft, Gt):
+def _make_tension(E, ft, Gt, pscale):
 	'''
 	a trilinear hardening-softening law for tensile response
 	'''
@@ -67,7 +67,10 @@ def _make_tension(E, ft, Gt):
 	Ts = [0.0,  f0,  f1,  f2,  f3,  f3] # nominal stress points
 	Td = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # initialize damage list
 	Tpl = [0.0, 0.0, ep, e2*0.9, e3*0.8, e3*0.8] # desired values of equivalent plastic strains
-	#Tpl = [0.0, 0.0, ep, e2*0.5, e3*0.7, e3*0.7] # desired values of equivalent plastic strains
+	# scale plasticity
+	if pscale >= 0.0 and pscale < 1.0:
+		for i in range(len(Tpl)):
+			Tpl[i] = Tpl[i]*pscale
 	for i in range(2, len(Te)):
 		xi = Te[i]
 		si = Ts[i]
@@ -78,7 +81,7 @@ def _make_tension(E, ft, Gt):
 		Td[i] = 1.0-si/qi # compute damage
 	return (Te, Ts, Td)
 
-def _make_compression(E, fc, fcr, ec, Gc):
+def _make_compression(E, fc, fcr, ec, Gc, pscale):
 	'''
 	a quadratic hardening followed by linear softening for compressive response
 	'''
@@ -107,6 +110,10 @@ def _make_compression(E, fc, fcr, ec, Gc):
 	Ce.append(ecr+ec0)
 	Cs.append(fcr)
 	Cpl.append(Cpl[-1])
+	# scale plasticity
+	if pscale >= 0.0 and pscale < 1.0:
+		for i in range(len(Cpl)):
+			Cpl[i] = Cpl[i]*pscale
 	# compute damage now
 	Cd = [0.0]*len(Ce)
 	for i in range(2, len(Ce)):
@@ -120,11 +127,11 @@ def _make_compression(E, fc, fcr, ec, Gc):
 	# Done
 	return (Ce, Cs, Cd)
 
-def _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, Gt, Gc, auto_reg, lch_ref):
+def _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, Gt, Gc, auto_reg, lch_ref, pscalet, pscalec):
 	# Tensile law
-	Te, Ts, Td = _make_tension(E, ft, Gt)
+	Te, Ts, Td = _make_tension(E, ft, Gt, pscalet)
 	# Compressive Law
-	Ce, Cs, Cd = _make_compression(E, fc, fcr, ec, Gc)
+	Ce, Cs, Cd = _make_compression(E, fc, fcr, ec, Gc, pscalec)
 	# Done
 	return (Te, Ts, Td, Ce, Cs, Cd, auto_reg, lch_ref)
 
@@ -149,7 +156,7 @@ def _make_hl_concrete_1p(xobj):
 	gt = Gt/lch_ref
 	gc = Gc/lch_ref
 	# base concrete
-	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, gt, gc, auto_reg, lch_ref)
+	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, gt, gc, auto_reg, lch_ref, 1.0, 1.0)
 def _make_hl_concrete_4p(xobj):
 	# minimal parameters
 	E = _geta(xobj, 'E').quantityScalar.value
@@ -169,7 +176,30 @@ def _make_hl_concrete_4p(xobj):
 	gt = Gt/lch_ref
 	gc = Gc/lch_ref
 	# base concrete
-	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, gt, gc, auto_reg, lch_ref)
+	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, gt, gc, auto_reg, lch_ref, 1.0, 1.0)
+def _make_hl_concrete_6p(xobj):
+	# minimal parameters
+	E = _geta(xobj, 'E').quantityScalar.value
+	fc = _geta(xobj, 'fcp').quantityScalar.value
+	# other compressive parameters
+	fcr = fc/10.0
+	ec = 2.0*fc/E
+	# tensile strength
+	ft = _geta(xobj, 'ft').quantityScalar.value
+	# fracture energies
+	Gt = _geta(xobj, 'Gt').quantityScalar.value
+	Gc = _geta(xobj, 'Gc').quantityScalar.value
+	# characteristic length
+	auto_reg = True
+	L = _globals.L_units[_geta(xobj, 'L. unit').string]
+	lch_ref = _get_lch_ref()/L
+	gt = Gt/lch_ref
+	gc = Gc/lch_ref
+	# pscale factors
+	pscalet = _geta(xobj, 'PScale Tension').real
+	pscalec = _geta(xobj, 'PScale Compression').real
+	# base concrete
+	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, gt, gc, auto_reg, lch_ref, pscalet, pscalec)
 def _make_hl_user(xobj):
 	return (
 		_geta(xobj, 'Te').quantityVector.value,
@@ -194,6 +224,8 @@ def _check_hl_concrete_1p(xobj):
 	xobj.getAttribute('F. unit').visible = True
 	xobj.getAttribute('autoRegularization').visible = False
 	xobj.getAttribute('LchRef').visible = False
+	xobj.getAttribute('PScale Tension').visible = False
+	xobj.getAttribute('PScale Compression').visible = False
 def _check_hl_concrete_4p(xobj):
 	for i in _globals.hl_t_targets:
 		xobj.getAttribute(i).visible = False
@@ -207,6 +239,12 @@ def _check_hl_concrete_4p(xobj):
 	xobj.getAttribute('F. unit').visible = False
 	xobj.getAttribute('autoRegularization').visible = False
 	xobj.getAttribute('LchRef').visible = False
+	xobj.getAttribute('PScale Tension').visible = False
+	xobj.getAttribute('PScale Compression').visible = False
+def _check_hl_concrete_6p(xobj):
+	_check_hl_concrete_4p(xobj)
+	xobj.getAttribute('PScale Tension').visible = True
+	xobj.getAttribute('PScale Compression').visible = True
 def _check_hl_user(xobj):
 	for i in _globals.hl_t_targets:
 		xobj.getAttribute(i).visible = True
@@ -220,6 +258,8 @@ def _check_hl_user(xobj):
 	xobj.getAttribute('F. unit').visible = False
 	xobj.getAttribute('autoRegularization').visible = True
 	xobj.getAttribute('LchRef').visible = True
+	xobj.getAttribute('PScale Tension').visible = False
+	xobj.getAttribute('PScale Compression').visible = False
 
 class _globals:
 	hl_t_targets = ('Te','Ts','Td')
@@ -227,6 +267,7 @@ class _globals:
 	presets = {
 		"Concrete (1P)" : (_make_hl_concrete_1p, _check_hl_concrete_1p),
 		"Concrete (4P)": (_make_hl_concrete_4p, _check_hl_concrete_4p),
+		"Concrete (6P)": (_make_hl_concrete_6p, _check_hl_concrete_6p),
 		"User-Defined" : (_make_hl_user, _check_hl_user),
 		}
 	L_units = {
@@ -385,6 +426,8 @@ def makeXObjectMetaData():
 	ft = mka("ft", "Preset", "Tensile Strength", MpcAttributeType.QuantityScalar, adim=u.F/u.L**2)
 	Gt = mka("Gt", "Preset", "Tensile Fracture Energy (F/L)", MpcAttributeType.QuantityScalar, adim=u.F/u.L)
 	Gc = mka("Gc", "Preset", "Compressive Fracture Energy (F/L)", MpcAttributeType.QuantityScalar, adim=u.F/u.L)
+	pscalet = mka("PScale Tension", "Preset", "Tensile Plasticity Scale Factor (in range 0-1)", MpcAttributeType.Real, dval=1.0)
+	pscalec = mka("PScale Compression", "Preset", "Tensile Plasticity Scale Factor (in range 0-1)", MpcAttributeType.Real, dval=1.0)
 	Lunit = mka("L. unit", "Preset", "Unit of measurement used for Length", MpcAttributeType.String, dval="mm")
 	Lunit.sourceType = MpcAttributeSourceType.List
 	Lunit.setSourceList(list(_globals.L_units.keys()))
@@ -425,6 +468,8 @@ def makeXObjectMetaData():
 	xom.addAttribute(fcp)
 	xom.addAttribute(Gt)
 	xom.addAttribute(Gc)
+	xom.addAttribute(pscalet)
+	xom.addAttribute(pscalec)
 	xom.addAttribute(Lunit)
 	xom.addAttribute(Funit)
 	# Tension
