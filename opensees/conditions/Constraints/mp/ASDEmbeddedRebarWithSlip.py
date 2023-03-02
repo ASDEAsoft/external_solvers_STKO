@@ -174,17 +174,29 @@ def writeTcl_mpConstraints(pinfo):
 				orientation = elem.orientation.computeOrientation()
 				Vx = Math.vec3(orientation[0,0], orientation[1,0], orientation[2,0])
 				lump_factors = elem.computeLumpingFactors()
+				local_id = 1
 				for node, length in zip(elem.nodes, lump_factors):
 					slave_data = slave_node_map.get(node.id, None)
 					if slave_data is None:
-						slave_data = [Math.vec3(0.0,0.0,0.0), Math.vec3(0.0,0.0,0.0), 0.0]
+						#             Vx                      Vy                      L    local_id (1 for first ele-node, 2 for second), counter (< 2!)
+						slave_data = [Math.vec3(0.0,0.0,0.0), Math.vec3(0.0,0.0,0.0), 0.0, 0, 0]
 						slave_node_map[node.id] = slave_data
-					slave_data[0] += Vx
+					if slave_data[3] == local_id:
+						slave_data[0] -= Vx
+					else:
+						slave_data[0] += Vx
 					slave_data[2] += length
+					slave_data[3] = local_id
+					slave_data[4] += 1 # increase counter
+					if slave_data[4] > 2:
+						raise Exception(_err('This condition cannot be applied on complex wires (i.e. a wire where a vertex is shared by more than 2 edges)'))
+					local_id += 1
 		# normalize tangent vectors and compute Vy vectors
 		for slave_id, slave_data in slave_node_map.items():
 			Vx = slave_data[0]
 			Vx.normalize()
+			if Vx.norm() == 0.0:
+				raise Exception(_err('Found misaligned edges (this should never happen). Please contact STKO team.'))
 			if abs(Vx[2]) > 0.99:
 				temp = Math.vec3(1.0, 0.0, 0.0)
 			else:
