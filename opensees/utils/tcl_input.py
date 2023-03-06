@@ -83,6 +83,17 @@ class mpco_cdata_ele_info_reader:
 		# the first item is kept as string... so it does not mess up the parser... startswith!
 		return [str(ele_id), geom_id, geom_name, subgeom_id, type, ppid, ppname, epid, epname]
 
+class process_type:
+	'''
+	Defines what kind of proces this is
+	'''
+	
+	# the default
+	writing_tcl_for_analyis = 1
+	
+	# for material tester
+	writing_tcl_for_material_tester = 2
+
 class process_info:
 	def __init__(self):
 		'''
@@ -97,6 +108,10 @@ class process_info:
 		utils for monitor
 		'''
 		self.monitor = False
+		'''
+		process type
+		'''
+		self.ptype = process_type.writing_tcl_for_analyis
 		'''
 		utils for indentation
 		'''

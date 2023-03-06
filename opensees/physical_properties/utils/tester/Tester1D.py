@@ -130,6 +130,7 @@ class Tester1D(QObject):
 		# write materials
 		buffer_materials = StringIO()
 		pinfo.out_file = buffer_materials
+		pinfo.ptype = tclin.process_type.writing_tcl_for_material_tester
 		write_physical_properties.write_physical_properties(self.materials, pinfo, 'materials')
 		pinfo.out_file = None
 		
