@@ -16,7 +16,7 @@ def __fillVector(new_size, vect):
 	for i in range(min(len(vect), new_size)):
 		backup_vector[i] = vect.valueAt(i)
 
-	vect.resize(new_size, 1)
+	vect.resize(new_size)
 	vect.referenceValue = backup_vector
 
 
