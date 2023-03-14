@@ -358,8 +358,8 @@ class MyMplCanvas(FigureCanvas):
 				c1 = colorsys.hls_to_rgb(h, 0.45, 0.6)
 				c2 = colorsys.hls_to_rgb(h, 0.65, 0.5)
 				# 1 plot and 1 background for each key
-				plot = self.subplot.plot([],[], color=c1, linestyle='-', linewidth=1.5)[0]
 				bg_plot = self.subplot.plot([],[], color=c2, linestyle='--', linewidth=1.0)[0]
+				plot = self.subplot.plot([],[], color=c1, linestyle='-', linewidth=1.5)[0]
 				# map it
 				self.keymap[key] = (plot, bg_plot)
 			self.subplot.plot()
