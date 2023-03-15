@@ -254,25 +254,28 @@ def writeTcl(pinfo):
 			if (timeseries is None):
 				raise Exception('Error: timeseries path is not selected')
 			list_value = timeseries.getAttribute('list_of_values').quantityVector
+			cFactor = 1.0
+			if timeseries.getAttribute('-factor').boolean:
+				cFactor = timeseries.getAttribute('cFactor').real
 			if len(list_value) < 2:
 				raise Exception('Error: the time series for the Cyclic displacement control should have at least 2 values')
 			if(timeseries.getAttribute('constant').boolean):
 				dt= timeseries.getAttribute('dt').real
 				ix = 0.0
 				for i in range(len(list_value)):
-					U += '{} '.format(list_value.valueAt(i))
+					U += '{} '.format(list_value.valueAt(i)*cFactor)
 					time+= '{} '.format(ix)
 					ix += dt
-					U_temp.append(list_value.valueAt(i))
+					U_temp.append(list_value.valueAt(i)*cFactor)
 			else:
 				list_Time= timeseries.getAttribute('list_of_times').quantityVector
 				if(len(list_value)!=len(list_Time)):
 					raise Exception('Different length of vectors')
 				else:
 					for i in range(len(list_value)):
-						U += '{} '.format(list_value.valueAt(i))
+						U += '{} '.format(list_value.valueAt(i)*cFactor)
 						time+= '{} '.format(list_Time.valueAt(i))
-						U_temp.append(list_value.valueAt(i))
+						U_temp.append(list_value.valueAt(i)*cFactor)
 			U += '}'
 			time+='}'
 		else:
@@ -280,14 +283,21 @@ def writeTcl(pinfo):
 			U +='0 {} {}'.format(targ_disp.real,'}')
 			U_temp.append(0)
 			U_temp.append(targ_disp.real)
-		d = 0.0
-		for i in range(1,len(U_temp)):
-			d = max(abs(U_temp[i]-U_temp[i-1]), d)
+		
+		# compute the min and max displacement values.
+		# then compute the max delta disp (max - min).
+		# finally compute the initial trial disp incr as (max-min)/num_incr
+		U_min = 0.0
+		U_max = 0.0
+		for i in range(len(U_temp)):
+			U_min = min(U_min, U_temp[i])
+			U_max = max(U_max, U_temp[i])
+		U_delta_max = U_max - U_min
 		
 		if numIncr_at == 0:
 			trial_disp_incr = 0.0
 		else:
-			trial_disp_incr = d/numIncr_at
+			trial_disp_incr = U_delta_max/numIncr_at
 		
 		if (trial_disp_incr * float(numIncr_at)) == 0.0:
 			pinfo.out_file.write('# Analysis skipped: dU({}) * increments({}) = 0\n'.format(trial_disp_incr, numIncr_at))
