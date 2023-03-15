@@ -81,11 +81,10 @@ def _make_tension(E, ft, Gt, pscale):
 		Td[i] = 1.0-si/qi # compute damage
 	return (Te, Ts, Td)
 
-def _make_compression(E, fc, fcr, ec, Gc, pscale):
+def _make_compression(E, fc, fc0, fcr, ec, Gc, pscale):
 	'''
 	a quadratic hardening followed by linear softening for compressive response
 	'''
-	fc0 = fc/2.0
 	ec0 = fc0/E
 	ec1 = fc/E
 	ec_pl = ec*0.7
@@ -127,11 +126,11 @@ def _make_compression(E, fc, fcr, ec, Gc, pscale):
 	# Done
 	return (Ce, Cs, Cd)
 
-def _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, Gt, Gc, auto_reg, lch_ref, pscalet, pscalec):
+def _make_hl_concrete_base(xobj, E, ft, fc, fc0, fcr, ec, Gt, Gc, auto_reg, lch_ref, pscalet, pscalec):
 	# Tensile law
 	Te, Ts, Td = _make_tension(E, ft, Gt, pscalet)
 	# Compressive Law
-	Ce, Cs, Cd = _make_compression(E, fc, fcr, ec, Gc, pscalec)
+	Ce, Cs, Cd = _make_compression(E, fc, fc0, fcr, ec, Gc, pscalec)
 	# Done
 	return (Te, Ts, Td, Ce, Cs, Cd, auto_reg, lch_ref)
 
@@ -143,6 +142,7 @@ def _make_hl_concrete_1p(xobj):
 	L = _globals.L_units[_geta(xobj, 'L. unit').string]
 	F = _globals.F_units[_geta(xobj, 'F. unit').string]
 	# other compressive parameters
+	fc0 = fc/2.0
 	fcr = fc/10.0
 	ec = 2.0*fc/E
 	# tensile strength
@@ -156,12 +156,13 @@ def _make_hl_concrete_1p(xobj):
 	gt = Gt/lch_ref
 	gc = Gc/lch_ref
 	# base concrete
-	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, gt, gc, auto_reg, lch_ref, 1.0, 1.0)
+	return _make_hl_concrete_base(xobj, E, ft, fc, fc0, fcr, ec, gt, gc, auto_reg, lch_ref, 1.0, 1.0)
 def _make_hl_concrete_4p(xobj):
 	# minimal parameters
 	E = _geta(xobj, 'E').quantityScalar.value
 	fc = _geta(xobj, 'fcp').quantityScalar.value
 	# other compressive parameters
+	fc0 = fc/2.0
 	fcr = fc/10.0
 	ec = 2.0*fc/E
 	# tensile strength
@@ -176,12 +177,13 @@ def _make_hl_concrete_4p(xobj):
 	gt = Gt/lch_ref
 	gc = Gc/lch_ref
 	# base concrete
-	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, gt, gc, auto_reg, lch_ref, 1.0, 1.0)
+	return _make_hl_concrete_base(xobj, E, ft, fc, fc0, fcr, ec, gt, gc, auto_reg, lch_ref, 1.0, 1.0)
 def _make_hl_concrete_6p(xobj):
 	# minimal parameters
 	E = _geta(xobj, 'E').quantityScalar.value
 	fc = _geta(xobj, 'fcp').quantityScalar.value
 	# other compressive parameters
+	fc0 = fc/2.0
 	fcr = fc/10.0
 	ec = 2.0*fc/E
 	# tensile strength
@@ -199,7 +201,7 @@ def _make_hl_concrete_6p(xobj):
 	pscalet = _geta(xobj, 'PScale Tension').real
 	pscalec = _geta(xobj, 'PScale Compression').real
 	# base concrete
-	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, gt, gc, auto_reg, lch_ref, pscalet, pscalec)
+	return _make_hl_concrete_base(xobj, E, ft, fc, fc0, fcr, ec, gt, gc, auto_reg, lch_ref, pscalet, pscalec)
 def _make_hl_user(xobj):
 	return (
 		_geta(xobj, 'Te').quantityVector.value,
