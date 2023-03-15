@@ -360,16 +360,18 @@ class MyMplCanvas(FigureCanvas):
 				# 1 plot and 1 background for each key
 				bg_plot = self.subplot.plot([],[], color=c2, linestyle='--', linewidth=1.0)[0]
 				plot = self.subplot.plot([],[], color=c1, linestyle='-', linewidth=1.5)[0]
+				tip = self.subplot.plot([],[], 'o', markersize=6, markerfacecolor=(1,0,0,0.8), markeredgewidth=1, markeredgecolor=c1)[0]
 				# map it
-				self.keymap[key] = (plot, bg_plot)
+				self.keymap[key] = (plot, bg_plot, tip)
 			self.subplot.plot()
 	
 	def updatePlot(self, all_data):
 		# auxiliary function
-		def aux(plot, bg_plot, data, set_labels):
+		def aux(plot, bg_plot, tip, data, set_labels):
 			items = (
 				(plot, data.plot, data.plot.display_name), 
 				(bg_plot, data.bg_plot, '{} (Background)'.format(data.plot.display_name)))
+			# items: bg_plot and plot
 			for item in items:
 				plot = item[0]
 				plot_data = item[1]
@@ -385,12 +387,20 @@ class MyMplCanvas(FigureCanvas):
 					plot.set_xdata([])
 					plot.set_ydata([])
 					plot.set_label('_nolegend_')
+			# tip
+			if data.plot is not None and len(data.plot.x) > 0:
+				tip.set_xdata(data.plot.x[-1])
+				tip.set_ydata(data.plot.y[-1])
+			else:
+				tip.set_xdata([])
+				tip.set_ydata([])
+			tip.set_label('_nolegend_')
 		# process all
 		counter = 0
 		for key, data in all_data.items():
 			if key in self.keymap:
-				plot, bg_plot = self.keymap[key]
-				aux(plot, bg_plot, data, (counter == 0))
+				plot, bg_plot, tip = self.keymap[key]
+				aux(plot, bg_plot, tip, data, (counter == 0))
 				counter += 1
 		# bounds
 		self.subplot.relim()
