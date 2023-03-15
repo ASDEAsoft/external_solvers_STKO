@@ -267,7 +267,7 @@ def evaluateFunctionAttribute(xobj):
 	non_constant = non_constant_at.boolean
 	listValue = list_of_values_at.quantityVector
 	listTime = list_of_times_at.quantityVector
-	cFactor = cFactor_at.real
+	cFactor = cFactor_at.real if fact_at.boolean else 1.0
 	
 	xy = PyMpc.Math.mat(len(listValue), 2)
 	
@@ -276,7 +276,7 @@ def evaluateFunctionAttribute(xobj):
 			raise Exception('Different length of vectors')
 		for i in range(len(listValue)):
 			xy[i, 0] = listTime.valueAt(i)
-			xy[i, 1] = listValue.valueAt(i)
+			xy[i, 1] = listValue.valueAt(i) * cFactor
 	else:
 		ix = 0.0
 		if startTime_at.boolean:
@@ -284,7 +284,7 @@ def evaluateFunctionAttribute(xobj):
 		dt = dt_at.real
 		for i in range(len(listValue)):
 			xy[i, 0] = ix
-			xy[i, 1] = listValue.valueAt(i)
+			xy[i, 1] = listValue.valueAt(i) * cFactor
 			ix += dt
 	
 	return xy
