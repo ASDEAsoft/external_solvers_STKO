@@ -104,8 +104,9 @@ def process_document(pinfo):
 		count = 0
 		total_count = 0
 		N = len(all_eles)
+		pinfo.out_file.write('{}set STKO_VAR_TimeIncrementUpdateTargets [list '.format(indent))
 		if N > 0:
-			pinfo.out_file.write('{}set STKO_VAR_TimeIncrementUpdateTargets [list \\\n'.format(indent))
+			pinfo.out_file.write('\\\n')
 			for ele_id in all_eles:
 				count += 1
 				total_count += 1
@@ -115,7 +116,7 @@ def process_document(pinfo):
 				if count == 20 and total_count < N:
 					count = 0
 					pinfo.out_file.write('\\\n')
-			pinfo.out_file.write(']\n')
+		pinfo.out_file.write(']\n')
 	# get element list
 	if pinfo.process_count > 1:
 		all_eles = [[] for i in range(pinfo.process_count)]
