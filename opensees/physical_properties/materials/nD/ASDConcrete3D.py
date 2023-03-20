@@ -36,31 +36,41 @@ def _bezier3 (xi,   x0, x1, x2,   y0, y1, y2):
 	t = (math.sqrt(D) - B) / (2.0 * A)
 	return (y0 - 2.0 * y1 + y2) * t * t + 2.0 * (y1 - y0) * t + y0
 
-def _get_lch_ref():
+def _get_lch_ref(E,ft,Gt,fc,ec,Gc):
 	'''
 	the characteristic length for built-in specific fracture energy
 	'''
-	agg_size = 20.0
-	return 2.7*agg_size
+	
+	# min lch for tension
+	et_el = ft/E # no damage at peak
+	Gt_min = ft*et_el/2.0
+	hmin_t = Gt/Gt_min/100.0
+	
+	# min lch for compression
+	ec1 = fc/E
+	ec_pl = (ec-ec1)*0.4 + ec1
+	Gc_min = fc*(ec-ec_pl)/2.0
+	hmin_c = Gc/Gc_min/100.0
+	
+	# return the minimum
+	return min(hmin_t, hmin_c)
 
-def _make_tension(E, ft, Gt, pscale):
+def _make_tension_bilin(E, ft, Gt, pscale):
 	'''
 	a trilinear hardening-softening law for tensile response
 	'''
 	f0 = ft*0.9
 	f1 = ft
 	e0 = f0/E
-	e1 = f1/E*1.5
-	ep = e1-f1/E
+	e1 = ft/E*1.5
+	ep = e1-ft/E
 	f2 = 0.2*ft
-	f3 = 1.0e-6*ft
+	f3 = 1.0e-3*ft
 	w2 = Gt/ft
-	w3 = 5.0*w2
+	w3 = w2/0.2
 	e2 = w2 + f2/E + ep
-	#e2 = e1+w2
 	if e2 <= e1: e2 = e1*1.001
 	e3 = w3 + f3/E + ep
-	#e3 = e1+w3
 	if e3 <= e2: e3 = e2*1.001
 	e4 = e3*10.0
 	Te = [0.0,  e0,  e1,  e2,  e3,  e4] # total strain points
@@ -81,14 +91,13 @@ def _make_tension(E, ft, Gt, pscale):
 		Td[i] = 1.0-si/qi # compute damage
 	return (Te, Ts, Td)
 
-def _make_compression(E, fc, fcr, ec, Gc, pscale):
+def _make_compression(E, fc, fc0, fcr, ec, Gc, pscale):
 	'''
 	a quadratic hardening followed by linear softening for compressive response
 	'''
-	fc0 = fc/2.0
 	ec0 = fc0/E
 	ec1 = fc/E
-	ec_pl = ec*0.7
+	ec_pl = (ec-ec1)*0.4 + ec1
 	Gc1 = fc*(ec-ec_pl)/2.0
 	Gc2 = max(Gc1*1.0e-2, Gc-Gc1)
 	ecr = ec + 2.0*Gc2/(fc+fcr)
@@ -127,11 +136,11 @@ def _make_compression(E, fc, fcr, ec, Gc, pscale):
 	# Done
 	return (Ce, Cs, Cd)
 
-def _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, Gt, Gc, auto_reg, lch_ref, pscalet, pscalec):
+def _make_hl_concrete_base(xobj, E, ft, fc, fc0, fcr, ec, Gt, Gc, auto_reg, lch_ref, pscalet, pscalec):
 	# Tensile law
-	Te, Ts, Td = _make_tension(E, ft, Gt, pscalet)
+	Te, Ts, Td = _make_tension_bilin(E, ft, Gt, pscalet)
 	# Compressive Law
-	Ce, Cs, Cd = _make_compression(E, fc, fcr, ec, Gc, pscalec)
+	Ce, Cs, Cd = _make_compression(E, fc, fc0, fcr, ec, Gc, pscalec)
 	# Done
 	return (Te, Ts, Td, Ce, Cs, Cd, auto_reg, lch_ref)
 
@@ -143,6 +152,7 @@ def _make_hl_concrete_1p(xobj):
 	L = _globals.L_units[_geta(xobj, 'L. unit').string]
 	F = _globals.F_units[_geta(xobj, 'F. unit').string]
 	# other compressive parameters
+	fc0 = fc/2.0
 	fcr = fc/10.0
 	ec = 2.0*fc/E
 	# tensile strength
@@ -152,16 +162,17 @@ def _make_hl_concrete_1p(xobj):
 	Gc = 250.0*Gt
 	# characteristic length
 	auto_reg = True
-	lch_ref = _get_lch_ref()/L
+	lch_ref = _get_lch_ref(E,ft,Gt,fc,ec,Gc)
 	gt = Gt/lch_ref
 	gc = Gc/lch_ref
 	# base concrete
-	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, gt, gc, auto_reg, lch_ref, 1.0, 1.0)
+	return _make_hl_concrete_base(xobj, E, ft, fc, fc0, fcr, ec, gt, gc, auto_reg, lch_ref, 1.0, 1.0)
 def _make_hl_concrete_4p(xobj):
 	# minimal parameters
 	E = _geta(xobj, 'E').quantityScalar.value
 	fc = _geta(xobj, 'fcp').quantityScalar.value
 	# other compressive parameters
+	fc0 = fc/2.0
 	fcr = fc/10.0
 	ec = 2.0*fc/E
 	# tensile strength
@@ -171,17 +182,17 @@ def _make_hl_concrete_4p(xobj):
 	Gc = _geta(xobj, 'Gc').quantityScalar.value
 	# characteristic length
 	auto_reg = True
-	L = _globals.L_units[_geta(xobj, 'L. unit').string]
-	lch_ref = _get_lch_ref()/L
+	lch_ref = _get_lch_ref(E,ft,Gt,fc,ec,Gc)
 	gt = Gt/lch_ref
 	gc = Gc/lch_ref
 	# base concrete
-	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, gt, gc, auto_reg, lch_ref, 1.0, 1.0)
+	return _make_hl_concrete_base(xobj, E, ft, fc, fc0, fcr, ec, gt, gc, auto_reg, lch_ref, 1.0, 1.0)
 def _make_hl_concrete_6p(xobj):
 	# minimal parameters
 	E = _geta(xobj, 'E').quantityScalar.value
 	fc = _geta(xobj, 'fcp').quantityScalar.value
 	# other compressive parameters
+	fc0 = fc/2.0
 	fcr = fc/10.0
 	ec = 2.0*fc/E
 	# tensile strength
@@ -191,15 +202,37 @@ def _make_hl_concrete_6p(xobj):
 	Gc = _geta(xobj, 'Gc').quantityScalar.value
 	# characteristic length
 	auto_reg = True
-	L = _globals.L_units[_geta(xobj, 'L. unit').string]
-	lch_ref = _get_lch_ref()/L
+	lch_ref = _get_lch_ref(E,ft,Gt,fc,ec,Gc)
 	gt = Gt/lch_ref
 	gc = Gc/lch_ref
 	# pscale factors
 	pscalet = _geta(xobj, 'PScale Tension').real
 	pscalec = _geta(xobj, 'PScale Compression').real
 	# base concrete
-	return _make_hl_concrete_base(xobj, E, ft, fc, fcr, ec, gt, gc, auto_reg, lch_ref, pscalet, pscalec)
+	return _make_hl_concrete_base(xobj, E, ft, fc, fc0, fcr, ec, gt, gc, auto_reg, lch_ref, pscalet, pscalec)
+def _make_hl_concrete_9p(xobj):
+	# minimal parameters
+	E = _geta(xobj, 'E').quantityScalar.value
+	fc = _geta(xobj, 'fcp').quantityScalar.value
+	# other compressive parameters
+	fc0 = _geta(xobj, 'fc0').quantityScalar.value
+	fcr = _geta(xobj, 'fcr').quantityScalar.value
+	ec = _geta(xobj, 'ecp').real
+	# tensile strength
+	ft = _geta(xobj, 'ft').quantityScalar.value
+	# fracture energies
+	Gt = _geta(xobj, 'Gt').quantityScalar.value
+	Gc = _geta(xobj, 'Gc').quantityScalar.value
+	# characteristic length
+	auto_reg = True
+	lch_ref = _get_lch_ref(E,ft,Gt,fc,ec,Gc)
+	gt = Gt/lch_ref
+	gc = Gc/lch_ref
+	# pscale factors
+	pscalet = _geta(xobj, 'PScale Tension').real
+	pscalec = _geta(xobj, 'PScale Compression').real
+	# base concrete
+	return _make_hl_concrete_base(xobj, E, ft, fc, fc0, fcr, ec, gt, gc, auto_reg, lch_ref, pscalet, pscalec)
 def _make_hl_user(xobj):
 	return (
 		_geta(xobj, 'Te').quantityVector.value,
@@ -217,7 +250,10 @@ def _check_hl_concrete_1p(xobj):
 	for i in _globals.hl_c_targets:
 		xobj.getAttribute(i).visible = False
 	xobj.getAttribute('ft').visible = False
+	xobj.getAttribute('fc0').visible = False
 	xobj.getAttribute('fcp').visible = True
+	xobj.getAttribute('fcr').visible = False
+	xobj.getAttribute('ecp').visible = False
 	xobj.getAttribute('Gt').visible = False
 	xobj.getAttribute('Gc').visible = False
 	xobj.getAttribute('L. unit').visible = True
@@ -227,31 +263,31 @@ def _check_hl_concrete_1p(xobj):
 	xobj.getAttribute('PScale Tension').visible = False
 	xobj.getAttribute('PScale Compression').visible = False
 def _check_hl_concrete_4p(xobj):
-	for i in _globals.hl_t_targets:
-		xobj.getAttribute(i).visible = False
-	for i in _globals.hl_c_targets:
-		xobj.getAttribute(i).visible = False
+	_check_hl_concrete_1p(xobj)
 	xobj.getAttribute('ft').visible = True
-	xobj.getAttribute('fcp').visible = True
 	xobj.getAttribute('Gt').visible = True
 	xobj.getAttribute('Gc').visible = True
 	xobj.getAttribute('L. unit').visible = False
 	xobj.getAttribute('F. unit').visible = False
-	xobj.getAttribute('autoRegularization').visible = False
-	xobj.getAttribute('LchRef').visible = False
-	xobj.getAttribute('PScale Tension').visible = False
-	xobj.getAttribute('PScale Compression').visible = False
 def _check_hl_concrete_6p(xobj):
 	_check_hl_concrete_4p(xobj)
 	xobj.getAttribute('PScale Tension').visible = True
 	xobj.getAttribute('PScale Compression').visible = True
+def _check_hl_concrete_9p(xobj):
+	_check_hl_concrete_6p(xobj)
+	xobj.getAttribute('fc0').visible = True
+	xobj.getAttribute('fcr').visible = True
+	xobj.getAttribute('ecp').visible = True
 def _check_hl_user(xobj):
 	for i in _globals.hl_t_targets:
 		xobj.getAttribute(i).visible = True
 	for i in _globals.hl_c_targets:
 		xobj.getAttribute(i).visible = True
 	xobj.getAttribute('ft').visible = False
+	xobj.getAttribute('fc0').visible = False
 	xobj.getAttribute('fcp').visible = False
+	xobj.getAttribute('fcr').visible = False
+	xobj.getAttribute('ecp').visible = False
 	xobj.getAttribute('Gt').visible = False
 	xobj.getAttribute('Gc').visible = False
 	xobj.getAttribute('L. unit').visible = False
@@ -266,9 +302,10 @@ class _globals:
 	hl_c_targets = ('Ce','Cs','Cd')
 	presets = {
 		"Concrete (1P)" : (_make_hl_concrete_1p, _check_hl_concrete_1p),
-		"Concrete (4P)": (_make_hl_concrete_4p, _check_hl_concrete_4p),
-		"Concrete (6P)": (_make_hl_concrete_6p, _check_hl_concrete_6p),
-		"User-Defined" : (_make_hl_user, _check_hl_user),
+		"Concrete (4P)" : (_make_hl_concrete_4p, _check_hl_concrete_4p),
+		"Concrete (6P)" : (_make_hl_concrete_6p, _check_hl_concrete_6p),
+		"Concrete (9P)" : (_make_hl_concrete_9p, _check_hl_concrete_9p),
+		"User-Defined"  : (_make_hl_user, _check_hl_user),
 		}
 	L_units = {
 		'mm' : 1.0,
@@ -422,7 +459,10 @@ def makeXObjectMetaData():
 	Cd = mka("Cd", "Compression", "Compressive Hardening Law (Damage)", MpcAttributeType.QuantityVector)
 	
 	# ... or by minimal parameters
+	fc0 = mka("fc0", "Preset", "Compressive Elastic Limit (must be < fcp)", MpcAttributeType.QuantityScalar, adim=u.F/u.L**2)
 	fcp = mka("fcp", "Preset", "Peak Compressive Strength", MpcAttributeType.QuantityScalar, adim=u.F/u.L**2)
+	fcr = mka("fcr", "Preset", "Residual Compressive Strength (must be <= fcp)", MpcAttributeType.QuantityScalar, adim=u.F/u.L**2)
+	ecp = mka("ecp", "Preset", "Strain at Peak Compressive Strength (must be > fcp/E)", MpcAttributeType.Real)
 	ft = mka("ft", "Preset", "Tensile Strength", MpcAttributeType.QuantityScalar, adim=u.F/u.L**2)
 	Gt = mka("Gt", "Preset", "Tensile Fracture Energy (F/L)", MpcAttributeType.QuantityScalar, adim=u.F/u.L)
 	Gc = mka("Gc", "Preset", "Compressive Fracture Energy (F/L)", MpcAttributeType.QuantityScalar, adim=u.F/u.L)
@@ -465,7 +505,10 @@ def makeXObjectMetaData():
 	# Preset
 	xom.addAttribute(itype)
 	xom.addAttribute(ft)
+	xom.addAttribute(fc0)
 	xom.addAttribute(fcp)
+	xom.addAttribute(fcr)
+	xom.addAttribute(ecp)
 	xom.addAttribute(Gt)
 	xom.addAttribute(Gc)
 	xom.addAttribute(pscalet)
