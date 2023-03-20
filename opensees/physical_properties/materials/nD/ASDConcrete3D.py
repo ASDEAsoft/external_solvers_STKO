@@ -53,11 +53,10 @@ def _make_tension_bilin(E, ft, Gt, pscale):
 	e0 = f0/E
 	e1 = f1/E*1.5
 	ep = e1-f1/E
-	factor = 0.2
-	f2 = factor*ft
+	f2 = 0.2*ft
 	f3 = 1.0e-3*ft
 	w2 = Gt/ft
-	w3 = w2/factor
+	w3 = w2/0.2
 	e2 = w2 + f2/E + ep
 	if e2 <= e1: e2 = e1*1.001
 	e3 = w3 + f3/E + ep
