@@ -48,24 +48,19 @@ def _make_tension_bilin(E, ft, Gt, pscale):
 	'''
 	a trilinear hardening-softening law for tensile response
 	'''
-	
-	factor = 0.2
-	factor = min(max(0.01, factor), 0.5)
-	
 	f0 = ft*0.9
 	f1 = ft
 	e0 = f0/E
 	e1 = f1/E*1.5
 	ep = e1-f1/E
+	factor = 0.2
 	f2 = factor*ft
 	f3 = 1.0e-3*ft
 	w2 = Gt/ft
 	w3 = w2/factor
 	e2 = w2 + f2/E + ep
-	#e2 = e1+w2
 	if e2 <= e1: e2 = e1*1.001
 	e3 = w3 + f3/E + ep
-	#e3 = e1+w3
 	if e3 <= e2: e3 = e2*1.001
 	e4 = e3*10.0
 	Te = [0.0,  e0,  e1,  e2,  e3,  e4] # total strain points
@@ -92,7 +87,7 @@ def _make_compression(E, fc, fc0, fcr, ec, Gc, pscale):
 	'''
 	ec0 = fc0/E
 	ec1 = fc/E
-	ec_pl = ec*0.7
+	ec_pl = (ec-ec1)*0.4 + ec1
 	Gc1 = fc*(ec-ec_pl)/2.0
 	Gc2 = max(Gc1*1.0e-2, Gc-Gc1)
 	ecr = ec + 2.0*Gc2/(fc+fcr)
