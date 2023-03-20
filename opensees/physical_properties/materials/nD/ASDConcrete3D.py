@@ -36,13 +36,24 @@ def _bezier3 (xi,   x0, x1, x2,   y0, y1, y2):
 	t = (math.sqrt(D) - B) / (2.0 * A)
 	return (y0 - 2.0 * y1 + y2) * t * t + 2.0 * (y1 - y0) * t + y0
 
-def _get_lch_ref():
+def _get_lch_ref(E,ft,Gt,fc,ec,Gc):
 	'''
 	the characteristic length for built-in specific fracture energy
-	@todo: use lch_ref < G/G0
 	'''
-	agg_size = 20.0
-	return 2.7*agg_size
+	
+	# min lch for tension
+	et_el = ft/E # no damage at peak
+	Gt_min = ft*et_el/2.0
+	hmin_t = Gt/Gt_min/100.0
+	
+	# min lch for compression
+	ec1 = fc/E
+	ec_pl = (ec-ec1)*0.4 + ec1
+	Gc_min = fc*(ec-ec_pl)/2.0
+	hmin_c = Gc/Gc_min/100.0
+	
+	# return the minimum
+	return min(hmin_t, hmin_c)
 
 def _make_tension_bilin(E, ft, Gt, pscale):
 	'''
@@ -51,8 +62,8 @@ def _make_tension_bilin(E, ft, Gt, pscale):
 	f0 = ft*0.9
 	f1 = ft
 	e0 = f0/E
-	e1 = f1/E*1.5
-	ep = e1-f1/E
+	e1 = ft/E*1.5
+	ep = e1-ft/E
 	f2 = 0.2*ft
 	f3 = 1.0e-3*ft
 	w2 = Gt/ft
@@ -151,7 +162,7 @@ def _make_hl_concrete_1p(xobj):
 	Gc = 250.0*Gt
 	# characteristic length
 	auto_reg = True
-	lch_ref = _get_lch_ref()/L
+	lch_ref = _get_lch_ref(E,ft,Gt,fc,ec,Gc)
 	gt = Gt/lch_ref
 	gc = Gc/lch_ref
 	# base concrete
@@ -171,8 +182,7 @@ def _make_hl_concrete_4p(xobj):
 	Gc = _geta(xobj, 'Gc').quantityScalar.value
 	# characteristic length
 	auto_reg = True
-	L = _globals.L_units[_geta(xobj, 'L. unit').string]
-	lch_ref = _get_lch_ref()/L
+	lch_ref = _get_lch_ref(E,ft,Gt,fc,ec,Gc)
 	gt = Gt/lch_ref
 	gc = Gc/lch_ref
 	# base concrete
@@ -192,8 +202,7 @@ def _make_hl_concrete_6p(xobj):
 	Gc = _geta(xobj, 'Gc').quantityScalar.value
 	# characteristic length
 	auto_reg = True
-	L = _globals.L_units[_geta(xobj, 'L. unit').string]
-	lch_ref = _get_lch_ref()/L
+	lch_ref = _get_lch_ref(E,ft,Gt,fc,ec,Gc)
 	gt = Gt/lch_ref
 	gc = Gc/lch_ref
 	# pscale factors
@@ -216,8 +225,7 @@ def _make_hl_concrete_9p(xobj):
 	Gc = _geta(xobj, 'Gc').quantityScalar.value
 	# characteristic length
 	auto_reg = True
-	L = _globals.L_units[_geta(xobj, 'L. unit').string]
-	lch_ref = _get_lch_ref()/L
+	lch_ref = _get_lch_ref(E,ft,Gt,fc,ec,Gc)
 	gt = Gt/lch_ref
 	gc = Gc/lch_ref
 	# pscale factors
