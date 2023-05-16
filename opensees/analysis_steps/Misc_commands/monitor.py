@@ -22,7 +22,7 @@ class _monitor_globals:
 		'Reaction Moment':('nodeReaction', MAP_COMP_R),
 	})
 	
-	# Massimo: added 5/11/2021. When a node is in more that 1 partition,
+	# Massimo: added 5/11/2021. When a node is in more than 1 partition,
 	# each partition value, by default, is accumulated to the others (SUM).
 	# this is fine for results such as reactions in a domain decomposition,
 	# but not for results such as displacements!
@@ -101,7 +101,7 @@ def makeXObjectMetaData():
 	at_typeXResult.name = 'Result/X'
 	at_typeXResult.group = 'Plot X Axis'
 	at_typeXResult.sourceType = MpcAttributeSourceType.List
-	at_typeXResult.setSourceList(['Displacement', 'Rotation', 'Velocity', 'Angular Velocity', 'Acceleration', 'Angular Acceleration', 'Reaction Force', 'Reaction Moment'])
+	at_typeXResult.setSourceList(list(_monitor_globals.MAP_RES_COMP))
 	at_typeXResult.setDefault('Displacement')
 	#node plot X
 	at_node_idX = MpcAttributeMetaData()
@@ -158,7 +158,7 @@ def makeXObjectMetaData():
 	at_typeYResult.name = 'Result/Y'
 	at_typeYResult.group = 'Plot Y Axis'
 	at_typeYResult.sourceType = MpcAttributeSourceType.List
-	at_typeYResult.setSourceList(['Displacement', 'Rotation', 'Velocity', 'Angular Velocity', 'Acceleration', 'Angular Acceleration', 'Reaction Force','Reaction Moment'])
+	at_typeYResult.setSourceList(list(_monitor_globals.MAP_RES_COMP))
 	at_typeYResult.setDefault('Displacement')
 	#node plot
 	at_node_idY = MpcAttributeMetaData()
