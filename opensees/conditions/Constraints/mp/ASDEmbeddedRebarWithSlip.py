@@ -189,14 +189,14 @@ def writeTcl_mpConstraints(pinfo):
 					slave_data[3] = local_id
 					slave_data[4] += 1 # increase counter
 					if slave_data[4] > 2:
-						raise Exception(_err('This condition cannot be applied on complex wires (i.e. a wire where a vertex is shared by more than 2 edges)'))
+						raise Exception(_err(pinfo.condition.id, 'This condition cannot be applied on complex wires (i.e. a wire where a vertex is shared by more than 2 edges)'))
 					local_id += 1
 		# normalize tangent vectors and compute Vy vectors
 		for slave_id, slave_data in slave_node_map.items():
 			Vx = slave_data[0]
 			Vx.normalize()
 			if Vx.norm() == 0.0:
-				raise Exception(_err('Found misaligned edges (this should never happen). Please contact STKO team.'))
+				raise Exception(_err(pinfo.condition.id, 'Found misaligned edges (this should never happen). Please contact STKO team.'))
 			if abs(Vx[2]) > 0.99:
 				temp = Math.vec3(1.0, 0.0, 0.0)
 			else:
