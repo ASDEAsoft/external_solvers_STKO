@@ -60,9 +60,17 @@ def makeXObjectMetaData():
 	orientation_type.setDefault('From Local Axes')
 	
 	rigidgap = mka('Rigid Gap', MpcAttributeType.Boolean, descr=(
-		'Use this flag when the distance between the 2 nodes is larger then Zero, and you want to consider this initial gap as rigid.<br>'
+		'Use this flag when the distance between the 2 nodes is larger than Zero, and you want to consider this initial gap as rigid.<br>'
 		'Note: the master node must have rotational DOFs')
 		)
+	
+	# for cohesive zone modelling
+	is_cohesive = mka('Is Cohesive', MpcAttributeType.Boolean, group='Cohesive Zone', 
+		descr='Use this flag if the contact behavior has a tensile and cohesive strength')
+	ft = mka('ft', MpcAttributeType.Real, group='Cohesive Zone', descr='Tensile strength')
+	Gt = mka('Gt', MpcAttributeType.Real, group='Cohesive Zone', descr='Tensile fracture energy')
+	c  = mka('c' , MpcAttributeType.Real, group='Cohesive Zone', descr='Cohesive strength')
+	Gc = mka('Gc', MpcAttributeType.Real, group='Cohesive Zone', descr='Cohesive fracture energy')
 	
 	xom = MpcXObjectMetaData()
 	xom.name = 'zeroLengthContactASDimplex'
@@ -76,11 +84,22 @@ def makeXObjectMetaData():
 	xom.addAttribute(distributed)
 	xom.addAttribute(orientation_type)
 	xom.addAttribute(rigidgap)
+	xom.addAttribute(is_cohesive)
+	xom.addAttribute(ft)
+	xom.addAttribute(Gt)
+	xom.addAttribute(c)
+	xom.addAttribute(Gc)
 	
 	# auto-exclusive dependencies
 	# 2D or 3D
 	xom.setBooleanAutoExclusiveDependency(dimension, d2)
 	xom.setBooleanAutoExclusiveDependency(dimension, d3)
+	
+	# visibility
+	xom.setVisibilityDependency(is_cohesive, ft)
+	xom.setVisibilityDependency(is_cohesive, Gt)
+	xom.setVisibilityDependency(is_cohesive, c)
+	xom.setVisibilityDependency(is_cohesive, Gc)
 	
 	return xom
 
@@ -167,17 +186,27 @@ def writeTcl(pinfo):
 	# 2d/3d
 	d2 = _geta(xobj, '2D').boolean
 	
+	# compute lumping factor
+	# this is fine for 2-node links
+	lumpingFactor = elem.lumpingFactor
+	# but for node-elem we have to take it from the source element
+	if len(elem.nodes) > 2:
+		source_elem = elem.sourceElement
+		lumpingFactor = source_elem.area()
+	
 	# parameters
 	kn = _geta(xobj, 'Kn').real
 	kt = _geta(xobj, 'Kt').real
 	mu = _geta(xobj, 'mu').real
-	if _geta(xobj, 'distributed').boolean:
-		kn *= elem.lumpingFactor
-		kt *= elem.lumpingFactor
+	is_distributed = _geta(xobj, 'distributed').boolean
+	if is_distributed:
+		kn *= lumpingFactor
+		kt *= lumpingFactor
 	
-	# optional parameters
+	# implex
 	sopt = ''
-	if _geta(xobj, 'Impl-ex').boolean:
+	is_implex = _geta(xobj, 'Impl-ex').boolean
+	if is_implex:
 		sopt += '-intType 1'
 	
 	# compute nodes
@@ -297,8 +326,69 @@ def writeTcl(pinfo):
 			cvec = elem.orientation.computeOrientation().col(2)
 	
 	# write contact element
-	str_tcl = '{}element zeroLengthContactASDimplex {} {} {} {} {} {} -orient {} {} {} {}\n'.format(
-			pinfo.indent, tag, *nodes, kn, kt, mu, FMT(cvec.x), FMT(cvec.y), FMT(cvec.z), sopt)
+	pinfo.out_file.write('{}element zeroLengthContactASDimplex {} {} {} {} {} {} -orient {} {} {} {}\n'.format(
+			pinfo.indent, tag, *nodes, kn, kt, mu, FMT(cvec.x), FMT(cvec.y), FMT(cvec.z), sopt))
 	
-	# now write the string into the file
-	pinfo.out_file.write(str_tcl)
+	# cohesive
+	is_cohesive = _geta(xobj, 'Is Cohesive').boolean
+	if is_cohesive:
+		ft = _geta(xobj, 'ft').real
+		Gt = _geta(xobj, 'Gt').real
+		c = _geta(xobj, 'c').real
+		Gc = _geta(xobj, 'Gc').real
+		fc_low = ft*1.0e-8
+		fc_hi = ft*1.0e50
+		if is_distributed:
+			ft *= lumpingFactor
+			Gt *= lumpingFactor
+			c *= lumpingFactor
+			Gc *= lumpingFactor
+			fc_low *= lumpingFactor
+			fc_hi *= lumpingFactor
+		# write begin comment
+		pinfo.out_file.write('{}# begin cohesive zone for zeroLengthContactASDimplex {}\n'.format(pinfo.indent, tag))
+		# write materials
+		def _expsoft(_k, _ft, _Gt, _fc, _p):
+			# uniaxialMaterial plugin $tag pdm DamageTC1D -E $K -ft $ft -Gt $Gt -fc0 $fc -fcp $fc -fcr $fc -ep [expr $fc/$K*10.0] -Gc [expr $fc*1.0e50] -pdf_t $pf -implex 1 -autoRegularization 0
+			_tag = pinfo.next_physicalProperties_id
+			pinfo.out_file.write((
+				'{}uniaxialMaterial plugin {} pdm DamageTC1D '
+				'-E {} -ft {} -Gt {} -fc0 {} -fcp {} -fcr {} -ep {} -Gc {} -pdf_t {} -implex {} -autoRegularization 0\n'.format(
+					pinfo.indent, _tag, FMT(_k), FMT(_ft), FMT(_Gt), FMT(_fc), FMT(_fc), FMT(_fc),
+					FMT(_fc/_k*10.0), FMT(_fc*1.0e50), FMT(_p), int(is_implex))
+				))
+			pinfo.next_physicalProperties_id += 1
+			return _tag
+		# tensile and cohesive material
+		_T = _expsoft(kn, ft, Gt, fc_hi, 0.0)
+		_C = _expsoft(kt, c, Gc, fc_low, 0.0)
+		# write elements
+		def _celem(_n1, _n2, _mat, _dir, _x, _y):
+			# positive tension-cohesion ZL
+			_tag = pinfo.next_elem_id
+			pinfo.out_file.write('{}element zeroLength {}  {} {}  -mat {} -dir {} -orient {} {} {}  {} {} {}\n'.format(
+				pinfo.indent, _tag, _n1, _n2, _mat, _dir,
+				FMT(_x.x), FMT(_x.y), FMT(_x.z),  FMT(_y.x), FMT(_y.y), FMT(_y.z)))
+			pinfo.next_elem_id += 1
+			return _tag
+		if d2:
+			# compute the tangential vectors
+			vx = cvec.cross(Math.vec3(0.0, 0.0, 1.0)).normalized()
+			# positive tension-cohesion ZL
+			_C1 = _celem(nodes[0], nodes[1], '{} {}'.format(_C, _T), '1 2', vx, cvec)
+			# negative tension-cohesion ZL
+			_C2 = _celem(nodes[1], nodes[0], '{}'.format(_C), '1', vx, cvec)
+		else:
+			# compute the tangential vectors
+			if abs(cvec.x) >= 0.99:
+				vx = Math.vec3(0.0,1.0,0.0).cross(cvec).normalized()
+				vy = cvec.cross(vx).normalized()
+			else:
+				vy = cvec.cross(Math.vec3(1.0, 0.0, 0.0)).normalized()
+				vx = vy.cross(cvec).normalized()
+			# positive tension-cohesion ZL
+			_C1 = _celem(nodes[0], nodes[1], '{} {} {}'.format(_C, _C, _T), '1 2 3', vx, vy)
+			# negative tension-cohesion ZL
+			_C2 = _celem(nodes[1], nodes[0], '{} {}'.format(_C, _C), '1 2', vx, vy)
+		# write end comment
+		pinfo.out_file.write('{}# end cohesive zone for zeroLengthContactASDimplex {}\n'.format(pinfo.indent, tag))
