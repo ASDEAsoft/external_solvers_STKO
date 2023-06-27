@@ -1,6 +1,6 @@
 
-<p align="center"><img src="https://github.com/asdea-ngermano/testRepo/blob/main/ASDEA_software.png#gh-light-mode-only" width="600" align="middle"></p>
-<p align="center"><img src="https://github.com/asdea-ngermano/testRepo/blob/main/ASDEA_software_reverse.png#gh-dark-mode-only" width="600" align="middle"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/asdea-ngermano/Documentation/main/images/logo/ASDEA_software_black.png#gh-light-mode-only" width="600" align="middle"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/asdea-ngermano/Documentation/main/images/logo/ASDEA_software_white.png#gh-dark-mode-only" width="600" align="middle"></p>
 
 [![STKO release](https://custom-icon-badges.demolab.com/badge/STKO-3.3.0-2A96D4?logo=stko)](https://asdeasoft.net/?stko-trial)
 [![Python version](https://img.shields.io/badge/Python-3.6.6-blue?logo=python&logoColor=white)](https://www.python.org/downloads/release/python-366/)
