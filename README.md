@@ -17,15 +17,27 @@ External solvers customize to python.
 
 
 ## Dependencies
-First of all, make sure to have the correct versions of [`numpy`](https://pypi.org/project/numpy/1.19.5/), [`scipy`](https://pypi.org/project/scipy/1.3.3/), [`matplotlib`](https://pypi.org/project/matplotlib/3.3.4/), and [`PySide2`](https://pypi.org/project/PySide2/) installed.
+All the necessary libraries can be found in the `C:\Program Files\STKO\python_packages` folder (in the Windows OS). Make sure that the correct version of the libraries is available, as listed below. Otherwise, update the version using the pip command.
 
-```bash
-  python -m pip install numpy==1.19.5
-  python -m pip install scipy==1.3.3
-  python -m pip install matplotlib==3.3.4
-  python -m pip install PySide2==5.15.2
-```
+<details><summary>Library versions</summary>
 
+| **library**  | **pip command** |
+| ------------- | ------------- |
+| [`asteval-0.9.17`](https://pypi.org/project/asteval/0.9.17/) | python -m pip install asteval==0.9.17 |
+| [`cached_property-1.5.2`](https://pypi.org/project/cached-property/) | python -m pip install cached-property |
+| [`cycler-0.10.0`](https://pypi.org/project/cycler/0.10.0/) | python -m pip install cycler==0.10.0 |
+| [`h5py-3.1.0`](https://pypi.org/project/h5py/3.1.0/) | python -m pip install h5py==3.1.0 |
+| [`matplotlib-2.2.2`](https://pypi.org/project/matplotlib/2.2.2/) | python -m pip install matplotlib==2.2.2 |
+| [`numpy-1.14.3`](https://pypi.org/project/numpy/1.14.3/) | python -m pip install numpy==1.14.3 |
+| [`pyparsing-2.4.5`](https://pypi.org/project/pyparsing/2.4.5/) | python -m pip install pyparsing==2.4.5 |
+| [`PySide2-5.13.2`](https://pypi.org/project/PySide2/5.13.2/) | python -m pip install PySide2==5.13.2 |
+| [`python_dateutil-2.8.1`](https://pypi.org/project/python-dateutil/2.8.1/) | python -m pip install python-dateutil==2.8.1 |
+| [`pytz-2019.3`](https://pypi.org/project/pytz/2019.3/) | python -m pip install pytz==2019.3 |
+| [`scipy-1.4.1`](https://pypi.org/project/scipy/1.4.1/) | python -m pip install scipy==1.4.1 |
+| [`setuptools-39.0.1`](https://pypi.org/project/setuptools/39.0.1/) | python -m pip install setuptools==39.0.1 |
+| [`shiboken2-5.13.2`](https://pypi.org/project/shiboken2/5.13.2/) | python -m pip install shiboken2==5.13.2 |
+| [`six-1.11.0`](https://pypi.org/project/six/1.11.0/) | python -m pip install six==1.11.0 |
+</details>
 
 ## Path
 The path to the `external solvers` folder is usually located at `C:\Program Files\STKO\`
