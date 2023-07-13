@@ -601,6 +601,8 @@ def initializeMonitor(pinfo):
 	if os.path.exists(dest_dir):
 		shutil.rmtree(dest_dir)
 	shutil.copytree(source_dir, dest_dir)
+	if sys.platform == 'linux':
+		os.chmod(dest_dir + os.sep + 'STKOMonitor.sh', 0o777)
 	
 	# outout file
 	f = pinfo.out_file
