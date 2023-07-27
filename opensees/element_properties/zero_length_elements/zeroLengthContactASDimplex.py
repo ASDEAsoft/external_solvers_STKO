@@ -4,6 +4,7 @@ from mpc_utils_html import *
 import opensees.utils.tcl_input as tclin
 from opensees.conditions.Constraints.mp.ASDEmbeddedNodeElementUtils import ASDEmbeddedNodeElementUtils as ebu
 import numpy as np
+import math
 
 def _geta(xobj, name):
 	a = xobj.getAttribute(name)
@@ -222,6 +223,7 @@ def writeTcl(pinfo):
 		# identify the closest triangle source_nodes
 		if family == MpcElementGeometryFamilyType.Triangle:
 			retained_nodes = [source_elem.nodes[i] for i in range(3)]
+			_, contact_distance = ebu.lct3(retained_nodes, Cpos) # get distance to skip slave nodes not in contact
 		elif family == MpcElementGeometryFamilyType.Quadrilateral:
 			aux = []
 			for sub in ebu.QSubs:
@@ -229,13 +231,20 @@ def writeTcl(pinfo):
 				_, trial_distance = ebu.lct3(trial_nodes, Cpos)
 				aux.append((trial_nodes, trial_distance))
 			aux = sorted(aux, key = lambda variable: variable[1])
-			retained_nodes = aux[0][0]
+			retained_nodes, contact_distance = aux[0] # get distance to skip slave nodes not in contact
 		else:
 			# unsupported element type
 			raise Exception(err(
 				'The source element (master geometry) of the Link element {} '
 				'has a wrong family type ({})'.format(elem.id, family)
 				))
+		# skip slave nodes not in contact
+		source_area = source_elem.area()
+		if family == MpcElementGeometryFamilyType.Triangle:
+			source_area *= 2.0
+		lch = math.sqrt(source_area)
+		if contact_distance > 1.0e-3*lch:
+			return
 		# we need to create an auxiliary node for the embed constraint.
 		if d2:
 			pinfo.updateModelBuilder(2, 2)
