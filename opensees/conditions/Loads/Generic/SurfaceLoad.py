@@ -557,7 +557,7 @@ def _quadFaceTributaryAreaComputation(i, geom, face, edges, edges_map, dir_vec):
 	
 	
 def _evaluateTclLoad(pinfo, doc, geom, mesh_of_geom, edge, i, FT, is_partitioned, process_id, process_block_count, first_done):
-	pinfo.out_file.write('# Applying load in edge {}\n'.format(edge.id,i,geom.id))
+	#pinfo.out_file.write('# Applying load in edge {}\n'.format(edge.id,i,geom.id))
 
 	domain = mesh_of_geom.edges[edge.id]
 	
@@ -622,10 +622,10 @@ def _evaluateTclLoad(pinfo, doc, geom, mesh_of_geom, edge, i, FT, is_partitioned
 			nodal_values[j][2] = trib_width_node*FT.z
 			
 		discr, trib = edge.getDiscretizedTributaryWidth(u_edge[0],u_edge[1],n_max=10)
-		pinfo.out_file.write("# Elem {} \n".format(elem.id))
+		#pinfo.out_file.write("# Elem {} \n".format(elem.id))
 		
 		if edge.repartitionRule == 0:
-			pinfo.out_file.write("# Repartition as eleLoad\n")
+			#pinfo.out_file.write("# Repartition as eleLoad\n")
 			# Rotation to local system:
 			Floc = elem.orientation.quaternion.conjugate().rotate(FT)
 			# Creation of Tcl eleLoad
@@ -651,7 +651,7 @@ def _evaluateTclLoad(pinfo, doc, geom, mesh_of_geom, edge, i, FT, is_partitioned
 					str_tcl = '{}{}eleLoad -ele{} -type -beamUniform {} {} {} {} {}\n'.format(pinfo.indent, pinfo.tabIndent, eleTag, Wy, Wz, Wx, a, b)
 				pinfo.out_file.write(str_tcl)
 		elif edge.repartitionRule == 1:
-			pinfo.out_file.write("# Repartition as edgeLoad\n")
+			#pinfo.out_file.write("# Repartition as edgeLoad\n")
 			# do nodal lumping
 			nodal_lumped_values = [[0.0, 0.0, 0.0, 0.0] for ii in range(n)]
 			for gp in range(ngp):
@@ -714,7 +714,7 @@ def _evaluateTclLoad(pinfo, doc, geom, mesh_of_geom, edge, i, FT, is_partitioned
 				pinfo.out_file.write('\n')
 						
 		else:
-			pinfo.out_file.write('# Unknwon repartition Rule. Impossible to compute load on edge {} (face {} - geom {})\n'.format(edge.id,i,geom.id))
+			#pinfo.out_file.write('# Unknwon repartition Rule. Impossible to compute load on edge {} (face {} - geom {})\n'.format(edge.id,i,geom.id))
 			IO.write_cerr('WARNING: Unknwon repartition Rule. Impossible to compute load on edge {} (face {} - geom {})\n'.format(edge.id,i,geom.id))
 			raise Exception('Error: Unknwon repartition Rule. Impossible to compute load on edge edge {} (face {} - geom {})\n'.format(edge.id,i,geom.id))
 		
@@ -935,11 +935,11 @@ def _process_load (doc, pinfo, all_geom, F, is_partitioned, process_id, process_
 	for geom, subset in all_geom.items():
 		# geometry
 		print('Processing geometry {}...'.format(geom.id))
-		pinfo.out_file.write('# Processing geometry {}\n'.format(geom.id))
+		#pinfo.out_file.write('\n# Processing geometry {}\n'.format(geom.id))
 
 		mesh_of_geom = doc.mesh.getMeshedGeometry(geom.id)
 		for i in subset.faces:
-			pinfo.out_file.write('# Processing face {}\n'.format(i))
+			#pinfo.out_file.write('# Processing face {}\n'.format(i))
 			print('Processing face {}...'.format(i))
 			# Step 1: perform global checks (if not met, skip to next face)
 			if not _globalChecksFace(i,geom,pinfo):
