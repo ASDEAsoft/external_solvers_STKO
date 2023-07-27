@@ -57,6 +57,22 @@ def makeXObjectMetaData():
 		)
 	son.setDefault(True)
 	
+	# tolerance
+	tol = MpcAttributeMetaData()
+	tol.type = MpcAttributeType.Real
+	tol.name = 'tolerance'
+	tol.group = 'Default'
+	tol.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('KP (Penalty)')+'<br/>') + 
+		html_par(
+			"A relative tolerance to consider a node inside or outside.<br/>"
+			) +
+		html_par(html_href(dp,'ASDEmbeddedRebarWithSlip')+'<br/>') +
+		html_end()
+		)
+	tol.setDefault(1.0e-2)
+	
 	mat = MpcAttributeMetaData()
 	mat.type = MpcAttributeType.Index
 	mat.name = 'Bar-Slip Material'
@@ -92,6 +108,7 @@ def makeXObjectMetaData():
 	xom.name = 'ASDEmbeddedRebarWithSlip'
 	xom.addAttribute(K)
 	xom.addAttribute(son)
+	xom.addAttribute(tol)
 	xom.addAttribute(mat)
 	xom.addAttribute(dia)
 	
@@ -150,6 +167,7 @@ def writeTcl_mpConstraints(pinfo):
 	ignore_outside = _geta(xobj, 'Ignore Nodes Outside').boolean
 	slip_tag = _geta(xobj, 'Bar-Slip Material').index
 	dia = _geta(xobj, 'Rebar Diameter').quantityScalar.value
+	tol = _geta(xobj, 'tolerance').real
 	
 	# some stats
 	stats = [0, 0]
@@ -306,14 +324,14 @@ def writeTcl_mpConstraints(pinfo):
 						'has a wrong family type ({})'.format(elem.id, family)
 						))
 				# check distance
-				if distance > 1.0e-2:
+				if distance > tol:
 					if ignore_outside:
 						stats[1] += 1
 						continue
 					else:
 						raise Exception(_err(pinfo.condition.id, 
 							'The constrained node of the Link element {} '
-							'is outside the embedding domain (error = {} %; Max allowed error = 1.0 %)'.format(elem.id, distance*100.0)
+							'is outside the embedding domain (error = {} %; Max allowed error = {} %)'.format(elem.id, distance*100.0, tol*100.0)
 							))
 				# open process if-statement block
 				block_indent = ''
