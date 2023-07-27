@@ -4,24 +4,8 @@ from mpc_utils_html import *
 import opensees.utils.tcl_input as tclin
 
 def makeXObjectMetaData():
-
-	# Description
-	at_Description = MpcAttributeMetaData()
-	at_Description.type = MpcAttributeType.String
-	at_Description.name = 'zeroLengthND'
-	at_Description.group = 'Group'
-	at_Description.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('zeroLengthND')+'<br/>') +
-		html_par('zeroLengthND') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/ZeroLengthND_Element','zeroLengthND')+'<br/>') +
-		html_end()
-		)
-	at_Description.setDefault ("")
-
 	xom = MpcXObjectMetaData()
 	xom.name = 'zeroLengthND'
-	xom.addAttribute(at_Description)
 	return xom
 
 def getNodalSpatialDim(xobj, xobj_phys_prop):
@@ -63,7 +47,7 @@ def writeTcl(pinfo):
 	matTag_at = phys_prop.XObject.getAttribute('matTag')
 	matTag=matTag_at.index
 	uniTag_at = phys_prop.XObject.getAttribute('uniTag')
-	uniTag=uniTag_at.index
+	uniTag=uniTag_at.index if uniTag_at.index != 0 else ''
 	
 	# end special_purpose
 	
