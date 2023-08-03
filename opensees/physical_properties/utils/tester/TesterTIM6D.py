@@ -295,7 +295,7 @@ class TesterTIM6DWidget(QWidget):
 		self.strain_hist_label_type = QLabel("Type")
 		self.strain_hist_label_num_cyc = QLabel("Cycles")
 		self.strain_hist_label_div = QLabel("Divisions")
-		self.strain_hist_label_target_strain = QLabel("Target deformation")
+		self.strain_hist_label_target_strain = QLabel("Top disp. (global coord)")
 		self.strain_hist_label_component = QLabel("Tested component")
 		self.strain_hist_label_scale_positive = QLabel("Pos scale")
 		self.strain_hist_label_scale_negative = QLabel("Neg scale")
@@ -426,7 +426,7 @@ class TesterTIM6DWidget(QWidget):
 			c_strain = STRAIN_COMPONENTS[i]
 			c_stress = STRESS_COMPONENTS[i]
 			# chart data
-			chart_data = gu.makeChartData("{}-{} Response".format(c_strain, c_stress), c_strain, c_stress)
+			chart_data = gu.makeChartData("{}-{} Response".format(c_strain, c_stress), '{} (Local deformation)'.format(c_strain), '{} (Local force)'.format(c_stress))
 			self.chart_data.append(chart_data)
 			# stress-strain chart item
 			chart_item = MpcChartDataGraphicItem(chart_data)

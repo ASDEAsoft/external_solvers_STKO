@@ -32,11 +32,11 @@ if {[lindex $flags1 5] == 1} { pattern Plain 6 2  { load 2 0 0 0   0 0 [lindex $
 
 # apply deformation on deformation-controlled components that are fixed (i.e. not using the testing deformation cycle)
 if {[lindex $flags1 0] == 2} { if {[lindex $flags2 0] == 2} { pattern Plain 10 2 { sp 2 1 [lindex $imps 0] } } }; # q1
-if {[lindex $flags1 1] == 2} { if {[lindex $flags2 1] == 2} { pattern Plain 20 2 { sp 3 2 [lindex $imps 1] } } }; # q2
-if {[lindex $flags1 2] == 2} { if {[lindex $flags2 2] == 2} { pattern Plain 30 2 { sp 4 3 [lindex $imps 2] } } }; # q3
-if {[lindex $flags1 3] == 2} { if {[lindex $flags2 3] == 2} { pattern Plain 40 2 { sp 3 4 [lindex $imps 3] } } }; # qr1
-if {[lindex $flags1 4] == 2} { if {[lindex $flags2 4] == 2} { pattern Plain 50 2 { sp 4 5 [lindex $imps 4] } } }; # qr2
-if {[lindex $flags1 5] == 2} { if {[lindex $flags2 5] == 2} { pattern Plain 60 2 { sp 4 6 [lindex $imps 5] } } }; # qr3
+if {[lindex $flags1 1] == 2} { if {[lindex $flags2 1] == 2} { pattern Plain 20 2 { sp 2 2 [lindex $imps 1] } } }; # q2
+if {[lindex $flags1 2] == 2} { if {[lindex $flags2 2] == 2} { pattern Plain 30 2 { sp 2 3 [lindex $imps 2] } } }; # q3
+if {[lindex $flags1 3] == 2} { if {[lindex $flags2 3] == 2} { pattern Plain 40 2 { sp 2 4 [lindex $imps 3] } } }; # qr1
+if {[lindex $flags1 4] == 2} { if {[lindex $flags2 4] == 2} { pattern Plain 50 2 { sp 2 5 [lindex $imps 4] } } }; # qr2
+if {[lindex $flags1 5] == 2} { if {[lindex $flags2 5] == 2} { pattern Plain 60 2 { sp 2 6 [lindex $imps 5] } } }; # qr3
 
 # first stage, apply forces incrementally
 constraints Transformation
@@ -62,11 +62,11 @@ algorithm Newton
 
 # apply deformation cycle
 if {[lindex $flags1 0] == 2} { if {[lindex $flags2 0] == 1} { pattern Plain 100 1 { sp 2 1 1.0 } } }; # q1
-if {[lindex $flags1 1] == 2} { if {[lindex $flags2 1] == 1} { pattern Plain 200 1 { sp 3 2 1.0 } } }; # q2
-if {[lindex $flags1 2] == 2} { if {[lindex $flags2 2] == 1} { pattern Plain 300 1 { sp 4 3 1.0 } } }; # q3
-if {[lindex $flags1 3] == 2} { if {[lindex $flags2 3] == 1} { pattern Plain 400 1 { sp 3 1 1.0 } } }; # qr1
-if {[lindex $flags1 4] == 2} { if {[lindex $flags2 4] == 1} { pattern Plain 500 1 { sp 4 2 1.0 } } }; # qr2
-if {[lindex $flags1 5] == 2} { if {[lindex $flags2 5] == 1} { pattern Plain 600 1 { sp 4 1 1.0 } } }; # qr3
+if {[lindex $flags1 1] == 2} { if {[lindex $flags2 1] == 1} { pattern Plain 200 1 { sp 2 2 1.0 } } }; # q2
+if {[lindex $flags1 2] == 2} { if {[lindex $flags2 2] == 1} { pattern Plain 300 1 { sp 2 3 1.0 } } }; # q3
+if {[lindex $flags1 3] == 2} { if {[lindex $flags2 3] == 1} { pattern Plain 400 1 { sp 2 4 1.0 } } }; # qr1
+if {[lindex $flags1 4] == 2} { if {[lindex $flags2 4] == 1} { pattern Plain 500 1 { sp 2 5 1.0 } } }; # qr2
+if {[lindex $flags1 5] == 2} { if {[lindex $flags2 5] == 1} { pattern Plain 600 1 { sp 2 6 1.0 } } }; # qr3
 
 # second stage, apply deformation
 set outFile [open "__out__" w+]
@@ -91,8 +91,6 @@ for {set i 0} {$i < $num_step} {incr i} {
 	
 	set deformation [eleResponse 1 deformation]
 	set force [eleResponse 1 force]
-	
-	puts $outFile "$perc $deformation $force"
 	
 	# communicate
 	puts "__R__$perc|$deformation|$force"
