@@ -76,7 +76,10 @@ def writeTcl(pinfo):
 		raise Exception('Error: invalid type of element or number of nodes')
 	
 	# node string
-	nstr = ' '.join(str(node.id) for node in elem.nodes)
+	elem_ = [e for e in elem.nodes]
+	elem_[8], elem_[9] = elem_[9], elem_[8]
+	#nstr = ' '.join(str(node.id) for node in elem.nodes)
+	nstr = ' '.join(str(node.id) for node in elem_)
 
 	# optional paramters
 	sopt = ''
