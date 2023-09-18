@@ -14,7 +14,7 @@ def makeXObjectMetaData():
 			html_par(html_begin()) +
 			html_par(html_boldtext(name)+'<br/>') +
 			html_par(descr) +
-			html_par(html_href('https://opensees.github.io/OpenSeesDocumentation/user/manual/model/elements/SixNodeBoundryCondition.html','SixNodeBoundryCondition')+'<br/>') +
+			html_par(html_href('https://opensees.github.io/OpenSeesDocumentation/user/manual/model/elements/SixNodeBoundaryCondition.html','SixNodeBoundaryCondition')+'<br/>') +
 			html_end()
 			)
 		if dval:
@@ -29,7 +29,7 @@ def makeXObjectMetaData():
 	th = mka('th', MpcAttributeType.QuantityScalar, 'Default', 'Element thickness', dval = 1.0, dim = u.F/u.L**3)
 	
 	xom = MpcXObjectMetaData()
-	xom.name = 'SixNodeBoundryCondition'
+	xom.name = 'SixNodeBoundaryCondition'
 	xom.addAttribute(betaS)
 	xom.addAttribute(R)
 	xom.addAttribute(tamb)
@@ -70,16 +70,16 @@ def getRequestedNodalSpatialDim(xobj):
 		requested_node_dim_map[node_id] = (3, 1)
 	return requested_node_dim_map
 
-def writeTcl(pinfo):
+def writeTcl_spConstraints(pinfo):
 	
-	# element SixNodeBoundryCondition eleTag? Node1? Node2? Node3? Node4? Node5? Node6? <$betaS $R $tamb $th>
+	# element SixNodeBoundaryCondition eleTag? Node1? Node2? Node3? Node4? Node5? Node6? <$betaS $R $tamb $th>
 	xobj = pinfo.condition.XObject
 	
 	# paramters
 	def geta(name):
 		a = xobj.getAttribute(name)
 		if a is None:
-			raise Exception('Error in SixNodeBoundryCondition: cannot find "{}" attribute'.format(name))
+			raise Exception('Error in SixNodeBoundaryCondition: cannot find "{}" attribute'.format(name))
 		return a
 	betaS = geta('betaS').quantityScalar.value
 	R = geta('R').quantityScalar.value
@@ -97,7 +97,7 @@ def writeTcl(pinfo):
 	doc = App.caeDocument()
 	all_geom = pinfo.condition.assignment.geometries
 	if pinfo.process_count > 1:
-		elements = [[] for i in pinfo.process_count]
+		elements = [[] for i in range(pinfo.process_count)]
 		for geom, subset in all_geom.items():
 			mesh_of_geom = doc.mesh.getMeshedGeometry(geom.id)
 			for face_id in subset.faces:
@@ -105,7 +105,7 @@ def writeTcl(pinfo):
 				for elem in domain.elements:
 					# check
 					if (elem.geometryFamilyType()) != MpcElementGeometryFamilyType.Triangle or len(elem.nodes)!=6:
-						raise Exception('Error: invalid type of element or number of nodes for SixNodeBoundryCondition')
+						raise Exception('Error: invalid type of element or number of nodes for SixNodeBoundaryCondition')
 					elements[doc.mesh.partitionData.elementPartition(elem.id)].append(elem)
 	else:
 		elements = []
@@ -116,16 +116,23 @@ def writeTcl(pinfo):
 				for elem in domain.elements:
 					# check
 					if (elem.geometryFamilyType()) != MpcElementGeometryFamilyType.Triangle or len(elem.nodes)!=6:
-						raise Exception('Error: invalid type of element or number of nodes for SixNodeBoundryCondition')
+						raise Exception('Error: invalid type of element or number of nodes for SixNodeBoundaryCondition')
 					elements.append(elem)
 	
-	if pinfo.process_count > 1:
-		process_block_count = 0
-		for process_id in range(pinfo.process_count):
-			pinfo.setProcessId(process_id)
-			process_block_count = internal(process_id, process_block_count)# TODO here....
-	else:
+	def internal(current_indent, elements):
+		# we already have checked the elements
 		for elem in elements:
-			nstr = ' '.join(node.id for node in elem.nodes)
-			str_tcl = '{}element SixNodeBoundryCondition {} {} {}\n'.format(pinfo.indent, elem.id, nstr, sopt)
+			nstr = ' '.join(str(node.id) for node in elem.nodes)
+			str_tcl = '{}element SixNodeBoundryCondition {} {} {}\n'.format(current_indent, elem.id, nstr, sopt)
 			pinfo.out_file.write(str_tcl)
+	
+	if pinfo.process_count > 1:
+		for process_id in range(pinfo.process_count):
+			process_elements = elements[process_id]
+			if len(process_elements) > 0:
+				pinfo.setProcessId(process_id)
+				pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$STKO_VAR_process_id == ', process_id, '} {'))
+				internal(pinfo.indent + pinfo.tabIndent, process_elements)
+				pinfo.out_file.write('{}{}\n'.format(pinfo.indent, '}'))
+	else:
+		internal(pinfo.indent, elements)

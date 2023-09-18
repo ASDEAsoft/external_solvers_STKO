@@ -185,18 +185,14 @@ def __process_load (doc, pinfo, all_geom, Mode, Q, is_partitioned, process_id, p
 						qf += Ni * nodal_values[i][0]
 					
 					for i in range(n):
-						# fact = N[i] * det_J * W
-						fact = N[i] * det_J * W * 6
+						fact = N[i] * det_J * W
 						lump = nodal_lumped_values[i]
 						lump[0] = elem.nodes[i].id
 						lump[1] += qf * fact
 				
 				for i in range(n):
 					lump = nodal_lumped_values[i]
-					str_tcl = []
-					
 					if (lump[0] in pinfo.node_to_model_map):
-					
 						if is_partitioned :
 							if not first_done:
 								if process_block_count == 0:
@@ -204,17 +200,12 @@ def __process_load (doc, pinfo, all_geom, Mode, Q, is_partitioned, process_id, p
 								else:
 									pinfo.out_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$STKO_VAR_process_id == ', process_id, '} {'))
 								first_done = True
-					
 						spatial_info = pinfo.node_to_model_map[lump[0]]
 						node_ndm = spatial_info[0]
 						node_ndf = spatial_info[1]
 					else :
 						raise Exception('Error: node without assigned element')
-					str_tcl.append('{}load {} {}'.format(pinfo.indent, lump[0], lump[1]))
-					# now write the string into the file
-					pinfo.out_file.write('\n'.join(str_tcl))
-					pinfo.out_file.write('\n')
-					
+					pinfo.out_file.write('{}load {} {}\n'.format(pinfo.indent, lump[0], lump[1]))
 	if is_partitioned :
 		if first_done:
 			process_block_count += 1
@@ -247,11 +238,6 @@ def writeTcl_Force(pinfo, xobj):
 	if(Qf_at is None):
 		raise Exception('Error: cannot find "Qf" attribute')
 	Qf = Qf_at.string
-
-	sQf = 0
-	
-	if (Mode == 'function'):
-		sfx = Qf
 	
 	doc = App.caeDocument()
 	
@@ -261,6 +247,6 @@ def writeTcl_Force(pinfo, xobj):
 	if is_partitioned:
 		process_block_count = 0
 		for process_id in range(pinfo.process_count):
-			process_block_count = __process_load (doc, pinfo, all_geom, Mode, Q, is_partitioned, process_id, process_block_count, sQf)
+			process_block_count = __process_load (doc, pinfo, all_geom, Mode, Q, is_partitioned, process_id, process_block_count, Qf)
 	else :
-		__process_load (doc, pinfo, all_geom, Mode, Q, is_partitioned, 0, 0, sQf)
+		__process_load (doc, pinfo, all_geom, Mode, Q, is_partitioned, 0, 0, Qf)
