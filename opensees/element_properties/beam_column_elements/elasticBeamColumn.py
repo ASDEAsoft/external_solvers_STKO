@@ -9,6 +9,16 @@ class my_data:
 		# attributes will be set in the __control method
 		pass
 
+class _globals:
+	release_code_map = {'I-End only' : 1, 'J-End only' : 2, 'I-End & J-End' : 3}
+	release_keys = list(release_code_map.keys())
+
+def _geta(xobj, name):
+	a = xobj.getAttribute(name)
+	if a is None:
+		raise Exception('Cannot find "{}" attribute in "elasticBeamColumn" element property'.format(name))
+	return a
+
 def makeXObjectMetaData():
 	
 	# Dimension
@@ -152,6 +162,60 @@ def makeXObjectMetaData():
 		)
 	
 	
+	# -releasey
+	at_releasey = MpcAttributeMetaData()
+	at_releasey.type = MpcAttributeType.Boolean
+	at_releasey.name = '-releasey'
+	at_releasey.group = 'End-Releases'
+	at_releasey.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('-releasey')+'<br/>') +
+		html_par('Activates the end-release about the local Y axis') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Beam_Column_Element','Elastic Beam Column Element')+'<br/>') +
+		html_end()
+		)
+	at_releasey_code = MpcAttributeMetaData()
+	at_releasey_code.type = MpcAttributeType.String
+	at_releasey_code.name = 'releaseyCode'
+	at_releasey_code.group = 'End-Releases'
+	at_releasey_code.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('releaseyCode')+'<br/>') +
+		html_par('Type of release about the local Y axis.') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Beam_Column_Element','Elastic Beam Column Element')+'<br/>') +
+		html_end()
+		)
+	at_releasey_code.sourceType = MpcAttributeSourceType.List
+	at_releasey_code.setSourceList(_globals.release_keys)
+	at_releasey_code.setDefault(_globals.release_keys[-1])
+	
+	# -releasez
+	at_releasez = MpcAttributeMetaData()
+	at_releasez.type = MpcAttributeType.Boolean
+	at_releasez.name = '-releasez'
+	at_releasez.group = 'End-Releases'
+	at_releasez.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('-releasez')+'<br/>') +
+		html_par('Activates the end-release about the local Z axis') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Beam_Column_Element','Elastic Beam Column Element')+'<br/>') +
+		html_end()
+		)
+	at_releasez_code = MpcAttributeMetaData()
+	at_releasez_code.type = MpcAttributeType.String
+	at_releasez_code.name = 'releasezCode'
+	at_releasez_code.group = 'End-Releases'
+	at_releasez_code.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('releaseyCode')+'<br/>') +
+		html_par('Type of release about the local Z axis.') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Beam_Column_Element','Elastic Beam Column Element')+'<br/>') +
+		html_end()
+		)
+	at_releasez_code.sourceType = MpcAttributeSourceType.List
+	at_releasez_code.setSourceList(_globals.release_keys)
+	at_releasez_code.setDefault(_globals.release_keys[-1])
+	
 	xom = MpcXObjectMetaData()
 	xom.name = 'elasticBeamColumn'
 	xom.addAttribute(at_Dimension)
@@ -165,7 +229,10 @@ def makeXObjectMetaData():
 	xom.addAttribute(at_mass)
 	xom.addAttribute(at_massDens)
 	xom.addAttribute(at_cMass)
-	
+	xom.addAttribute(at_releasey)
+	xom.addAttribute(at_releasey_code)
+	xom.addAttribute(at_releasez)
+	xom.addAttribute(at_releasez_code)
 	
 	# visibility dependencies
 	
@@ -178,11 +245,19 @@ def makeXObjectMetaData():
 	# massDens-dep
 	xom.setVisibilityDependency(at_mass, at_massDens)
 	
+	# releases
+	xom.setVisibilityDependency(at_releasey, at_releasey_code)
+	xom.setVisibilityDependency(at_releasez, at_releasez_code)
+	
 	# 2D-dep
 	xom.setVisibilityDependency(at_2D, at_use_alpha)
 	xom.setVisibilityDependency(at_2D, at_alpha)
 	xom.setVisibilityDependency(at_2D, at_use_depth)
 	xom.setVisibilityDependency(at_2D, at_depth)
+	
+	# 3D-dep
+	xom.setVisibilityDependency(at_3D, at_releasey)
+	xom.setVisibilityDependency(at_3D, at_releasey_code)
 	
 	
 	# auto-exclusive dependencies
@@ -365,6 +440,12 @@ def writeTcl(pinfo):
 	cMass = cMass_at.boolean
 	if cMass:
 		sopt += ' -cMass'
+	
+	# releases
+	if _geta(xobj, '-releasez').boolean:
+		sopt += ' -releasez {}'.format(_globals.release_code_map[_geta(xobj, 'releasezCode').string])
+	if d.Dimension3 and _geta(xobj, '-releasey').boolean:
+		sopt += ' -releasey {}'.format(_globals.release_code_map[_geta(xobj, 'releaseyCode').string])
 	
 	if d.Dimension2:
 		ndm = 2

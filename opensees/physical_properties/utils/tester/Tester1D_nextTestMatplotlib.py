@@ -586,8 +586,8 @@ class Tester1DWidget(QWidget):
 		
 	def unloadReferenceData(self):
 		# Erase the vectors for reference strain and stress
-		self.reference_strain.resize(0,1)
-		self.reference_stress.resize(0,1)
+		self.reference_strain.resize(0)
+		self.reference_stress.resize(0)
 		# Erse the data
 		self.chart_reference_data.y = PyMpc.Math.double_array([])
 		self.chart_reference_data.x = PyMpc.Math.double_array([])

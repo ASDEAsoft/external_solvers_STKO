@@ -130,6 +130,7 @@ class Tester1D(QObject):
 		# write materials
 		buffer_materials = StringIO()
 		pinfo.out_file = buffer_materials
+		pinfo.ptype = tclin.process_type.writing_tcl_for_material_tester
 		write_physical_properties.write_physical_properties(self.materials, pinfo, 'materials')
 		pinfo.out_file = None
 		
@@ -645,8 +646,8 @@ class Tester1DWidget(QWidget):
 		
 	def unloadReferenceData(self):
 		# Erase the vectors for reference strain and stress
-		self.reference_strain.resize(0,1)
-		self.reference_stress.resize(0,1)
+		self.reference_strain.resize(0)
+		self.reference_stress.resize(0)
 		# Erse the data
 		self.chart_reference_data.y = PyMpc.Math.double_array([])
 		self.chart_reference_data.x = PyMpc.Math.double_array([])
@@ -684,7 +685,6 @@ class Tester1DWidget(QWidget):
 		reference_stress = []
 		for i in range(len(self.reference_stress)):
 			reference_stress.append(self.reference_stress.referenceValueAt(i))
-			
 		jds['Tester1D'] = {
 			'name': class_name, 
 			'num_cycl': num_cycles, 
@@ -697,7 +697,6 @@ class Tester1DWidget(QWidget):
 			'reference_stress': reference_stress 
 			}
 		a.string = json.dumps(jds, indent=4)
-		
 		#################################################### $JSON
 	
 	def onStrainHistoryTypeChanged(self):

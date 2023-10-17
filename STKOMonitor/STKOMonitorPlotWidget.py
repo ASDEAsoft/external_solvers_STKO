@@ -2,10 +2,10 @@ import sys
 from PySide2.QtCore import (Signal, QTimer, Qt)
 from PySide2.QtWidgets import (
 	QLineEdit, QPushButton, QApplication, 
-	QVBoxLayout, QHBoxLayout,
-	QDialog, QTableWidget, QTabWidget, QGridLayout, 
+	QVBoxLayout, QHBoxLayout, QGridLayout, 
+	QDialog, QTableWidget, QTabWidget, 
 	QWidget, QTableWidgetItem, QComboBox, QTreeWidget, QTreeWidgetItem, QAbstractItemView,
-	QLabel, QSpinBox, QRadioButton, QSplitter)
+	QLabel, QSpinBox, QRadioButton, QSplitter, QFrame, QCheckBox)
 from PySide2 import QtGui
 import os
 from STKODoubleItemDelegate import *
@@ -20,6 +20,7 @@ from matplotlib.figure import Figure
 from matplotlib import cm
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy import interpolate
 
 params = {
 	'legend.fontsize': 'x-small',
@@ -135,7 +136,7 @@ class STKOMonitorPlotWidget(QWidget):
 		self.tree.setEnabled(False)
 		
 		# random seed
-		self.label_seed = QLabel('Random Seed:')
+		self.label_seed = QLabel('Color Random Seed:')
 		self.seed = QSpinBox()
 		self.seed.setMinimum(0)
 		self.seed.setMaximum(1000000)
@@ -147,6 +148,9 @@ class STKOMonitorPlotWidget(QWidget):
 		self.seed_cont.layout().setContentsMargins(0,0,0,0)
 		self.seed_cont.layout().addWidget(self.label_seed)
 		self.seed_cont.layout().addWidget(self.seed)
+		
+		# fourier amplitude
+		self.fft_check = QCheckBox('Fourier Amplitude')
 		
 		# timer
 		self.timer = QTimer(self)
@@ -166,6 +170,11 @@ class STKOMonitorPlotWidget(QWidget):
 		right_layout.addWidget(self.tree)
 		self.radio_single.setChecked(True)
 		right_layout.addWidget(self.seed_cont)
+		sep = QFrame()
+		sep.setFrameShape(QFrame.HLine)
+		sep.setFrameShadow(QFrame.Sunken)
+		right_layout.addWidget(sep)
+		right_layout.addWidget(self.fft_check)
 		
 		# add to main layout
 		self.splitter.addWidget(self.left_container)
@@ -181,6 +190,7 @@ class STKOMonitorPlotWidget(QWidget):
 		self.tree.itemClicked.connect(self.onTreeItemClicked)
 		self.radio_single.toggled.connect(self.onSingleToggled)
 		self.seed.valueChanged.connect(self.onSeedChanged)
+		self.fft_check.toggled.connect(self.onFftToggled)
 		
 		# start timer
 		self.timer.start()
@@ -306,6 +316,11 @@ class STKOMonitorPlotWidget(QWidget):
 		self.prepareCanvas(force = True)
 		self.reloadPlotData(force_update=True)
 	
+	def onFftToggled(self, checked):
+		self.canvas.do_fft = checked
+		self.prepareCanvas(force = True)
+		self.reloadPlotData(force_update=True)
+	
 	def prepareCanvas(self, force=False):
 		keys = []
 		if self.radio_single.isChecked():
@@ -323,7 +338,7 @@ class STKOMonitorPlotWidget(QWidget):
 						keys.append(itemdata)
 		# done
 		self.canvas.prepare(keys, force)
-	
+
 class MyMplCanvas(FigureCanvas):
 	def __init__(self, parent=None, width=5, height=4, dpi=100):
 		# base initialization
@@ -340,6 +355,7 @@ class MyMplCanvas(FigureCanvas):
 		# data (map plot names to plots)
 		self.keymap = {}
 		self.seed = 0
+		self.do_fft = False
 		# done
 		self.setParent(parent)
 		FigureCanvas.updateGeometry(self)
@@ -358,43 +374,126 @@ class MyMplCanvas(FigureCanvas):
 				c1 = colorsys.hls_to_rgb(h, 0.45, 0.6)
 				c2 = colorsys.hls_to_rgb(h, 0.65, 0.5)
 				# 1 plot and 1 background for each key
-				plot = self.subplot.plot([],[], color=c1, linestyle='-', linewidth=1.5)[0]
 				bg_plot = self.subplot.plot([],[], color=c2, linestyle='--', linewidth=1.0)[0]
+				plot = self.subplot.plot([],[], color=c1, linestyle='-', linewidth=1.5)[0]
+				tip = self.subplot.plot([],[], 'o', markersize=6, markerfacecolor=(1,0,0,0.8), markeredgewidth=1, markeredgecolor=c1)[0]
 				# map it
-				self.keymap[key] = (plot, bg_plot)
+				self.keymap[key] = (plot, bg_plot, tip)
 			self.subplot.plot()
 	
 	def updatePlot(self, all_data):
-		# auxiliary function
-		def aux(plot, bg_plot, data, set_labels):
+		
+		# util for trimming
+		def _trim(x, y, tmax):
+			if x[-1] > tmax:
+				# find last
+				last = 0
+				for i in range(len(x)):
+					last = i
+					if x[i] > tmax:
+						break
+				return (x[:last], y[:last])
+			return (x, y)
+		
+		# util for resampling
+		def _resample(x, y):
+			try:
+				dtall = x[1:]-x[:-1]
+				dtmin = dtall.min()
+				dtmax = dtall.max()
+				if (dtmax - dtmin) < 1.0e-4*dtmax:
+					return (x, y)
+				dt = dtall.mean()
+				t0 = x[0]
+				t1 = x[-1]
+				N3 = max(1, int(round((t1-t0)/dt)))+1
+				xx = np.linspace(t0, t1, N3)
+				interp = interpolate.interp1d(x, y)
+				yy = interp(xx)
+				return (xx, yy)
+			except:
+				return (x, y)
+		
+		# util for fft with uniform dt
+		def _fft(xs, ys):
+			try:
+				n_samples = len(xs)
+				xx, yy = _resample(xs, ys)
+				x = np.array(xx)
+				y = np.array(yy)
+				t0 = x[0]
+				t1 = x[-1]
+				np_fft = np.fft.fft(y)
+				amplitudes = (t1-t0) / n_samples * np.sqrt(np_fft.real**2 + np_fft.imag**2)
+				frequencies = np.fft.fftfreq(n_samples) * n_samples / (t1 - t0)
+				frequencies = frequencies[:len(frequencies) // 2]
+				amplitudes = amplitudes[:len(np_fft) // 2]
+				id = amplitudes.argmax()
+				return (frequencies, amplitudes, frequencies[id], amplitudes[id])
+			except:
+				return ([0.0], [0.0], 0.0, 0.0)
+		
+		# util for plotting the i-th item
+		def plot_item(plot, bg_plot, tip, data, set_labels):
 			items = (
 				(plot, data.plot, data.plot.display_name), 
 				(bg_plot, data.bg_plot, '{} (Background)'.format(data.plot.display_name)))
-			for item in items:
+			# items: bg_plot and plot
+			if self.do_fft:
+				fft_tip_x = 0.0
+				fft_tip_y = 0.0
+				tmax = 0.0
+				if len(data.plot.x) > 0:
+					tmax = data.plot.x[-1]
+			for counter, item in enumerate(items):
 				plot = item[0]
 				plot_data = item[1]
 				label = item[2]
 				if plot_data is not None:
-					plot.set_xdata(plot_data.x)
-					plot.set_ydata(plot_data.y)
+					if self.do_fft:
+						(_trimmed_x, _trimmed_y) = (plot_data.x, plot_data.y) if counter == 0 else _trim(plot_data.x, plot_data.y, tmax)
+						fftx, ffty, fmax, amax = _fft(_trimmed_x, _trimmed_y)
+						plot.set_xdata(fftx)
+						plot.set_ydata(ffty)
+						if counter == 0:
+							fft_tip_x = fmax
+							fft_tip_y = amax
+					else:
+						plot.set_xdata(plot_data.x)
+						plot.set_ydata(plot_data.y)
 					if set_labels:
-						self.subplot.set_xlabel(plot_data.xLabel)
-						self.subplot.set_ylabel(plot_data.yLabel)
+						self.subplot.set_xlabel('Frequency (Hz)' if self.do_fft else plot_data.xLabel)
+						self.subplot.set_ylabel('Fourier Amplitude' if self.do_fft else plot_data.yLabel)
 					plot.set_label(label)
 				else:
 					plot.set_xdata([])
 					plot.set_ydata([])
 					plot.set_label('_nolegend_')
+			# tip
+			if self.do_fft:
+				tip.set_xdata(fft_tip_x)
+				tip.set_ydata(fft_tip_y)
+			else:
+				if data.plot is not None and len(data.plot.x) > 0:
+					tip.set_xdata(data.plot.x[-1])
+					tip.set_ydata(data.plot.y[-1])
+				else:
+					tip.set_xdata([])
+					tip.set_ydata([])
+			tip.set_label('_nolegend_')
+		
 		# process all
 		counter = 0
 		for key, data in all_data.items():
 			if key in self.keymap:
-				plot, bg_plot = self.keymap[key]
-				aux(plot, bg_plot, data, (counter == 0))
+				plot, bg_plot, tip = self.keymap[key]
+				plot_item(plot, bg_plot, tip, data, (counter == 0))
 				counter += 1
+		
 		# bounds
 		self.subplot.relim()
 		self.subplot.autoscale_view()
+		
 		# done
 		if counter > 0:
 			self.subplot.legend()

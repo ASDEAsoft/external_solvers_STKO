@@ -113,7 +113,7 @@ def writeTcl(pinfo):
 	# note that if we have hanging nodes they will be written at the end of the
 	# nodes.tcl file.
 	node_file_name = 'nodes_subset_{}.tcl'.format(id)
-	node_file = open('{}{}{}'.format(pinfo.out_dir, os.sep, node_file_name), 'w+')
+	node_file = open('{}{}{}'.format(pinfo.out_dir, os.sep, node_file_name), 'w+', encoding='utf-8')
 	pinfo.out_file = node_file
 	if is_partitioned:
 		write_node.write_node_partition (doc, pinfo, node_file)
@@ -127,7 +127,7 @@ def writeTcl(pinfo):
 	# create a single file named elements.tcl.
 	# write all elements there, and then source it in the main script
 	element_file_name = 'elements_subset_{}.tcl'.format(id)
-	element_file = open('{}{}{}'.format(pinfo.out_dir, os.sep, element_file_name), 'w+')
+	element_file = open('{}{}{}'.format(pinfo.out_dir, os.sep, element_file_name), 'w+', encoding='utf-8')
 	pinfo.out_file = element_file
 	if is_partitioned:
 		write_element.write_geom_partition(doc, pinfo, element_file)

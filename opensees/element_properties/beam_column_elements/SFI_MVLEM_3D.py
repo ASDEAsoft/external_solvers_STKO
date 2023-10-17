@@ -16,7 +16,7 @@ def __fillVector(new_size, vect):
 	for i in range(min(len(vect), new_size)):
 		backup_vector[i] = vect.valueAt(i)
 
-	vect.resize(new_size, 1)
+	vect.resize(new_size)
 	vect.referenceValue = backup_vector
 
 
@@ -230,16 +230,16 @@ def writeTcl(pinfo):
 	sopt = ''
 	
 	if geta('-CoR').boolean:
-		sopt += ' -CoR {}'.format(geta('c').quantityScalar)
+		sopt += ' -CoR {}'.format(geta('c').quantityScalar.value)
 	
 	if geta('-ThickMod').boolean:
-		sopt += ' -ThickMod {}'.format(geta('tMod').quantityScalar)
+		sopt += ' -ThickMod {}'.format(geta('tMod').quantityScalar.value)
 	
 	if geta('-Poisson').boolean:
-		sopt += ' -Poisson {}'.format(geta('Nu').quantityScalar)
+		sopt += ' -Poisson {}'.format(geta('Nu').quantityScalar.value)
 	
 	if geta('-Density').boolean:
-		sopt += ' -Density {}'.format(geta('Dens').quantityScalar)
+		sopt += ' -Density {}'.format(geta('Dens').quantityScalar.value)
 
 
 	# element SFI_MVLEM_3D eleTag iNode jNode kNode lNode m -thick {Thicknesses} -width {Widths} -mat {Material_tags} <-CoR c> <-ThickMod tMod> <-Poisson Nu> <-Density Dens>

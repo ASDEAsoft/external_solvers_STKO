@@ -1,3 +1,6 @@
+# enable default 3D tester for this module
+from opensees.physical_properties.utils.tester.EnableTester3D import *
+
 import PyMpc.Units as u
 from PyMpc import *
 from mpc_utils_html import *
@@ -75,12 +78,17 @@ def writeTcl(pinfo):
 		sopt += ' {}'.format(geta('alpha').real)
 		sopt += ' {}'.format(geta('T').real)
 		sopt += ' {}'.format(geta('tol').real)
-
+	
+	# get ndm
+	ndm = geta('ndm').integer
+	if pinfo.ptype == tclin.process_type.writing_tcl_for_material_tester:
+		ndm = 3
+	
 	# nDMaterial TruncatedDP tag? ndm? rho? G? K? <theta? alpha? T? tol?>
 	str_tcl = '{}nDMaterial TruncatedDP {} {} {} {} {}{}\n'.format(
 			pinfo.indent,
 			tag,
-			geta('ndm').integer,
+			ndm,
 			geta('rho').quantityScalar.value,
 			geta('G').quantityScalar.value,
 			geta('K').quantityScalar.value,

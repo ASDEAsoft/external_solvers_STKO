@@ -318,7 +318,7 @@ def preProcessElements(pinfo):
 	FMT = pinfo.get_double_formatter()
 	
 	# now we can write a RCJointModel3D.tcl file to source before the elements
-	joint_file = open('{}{}{}'.format(pinfo.out_dir, os.sep, 'RCJointModel3D.tcl'), 'w+')
+	joint_file = open('{}{}{}'.format(pinfo.out_dir, os.sep, 'RCJointModel3D.tcl'), 'w+', encoding='utf-8')
 	save_file = pinfo.out_file
 	pinfo.out_file = joint_file
 	

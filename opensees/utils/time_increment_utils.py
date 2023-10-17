@@ -1,6 +1,6 @@
 from PyMpc import *
 import os
-from opensees.utils import parameter_utils as paramutil
+from opensees.utils.parameter_utils import ParameterManager
 
 def _find_phys_props(doc):
 	'''
@@ -12,7 +12,7 @@ def _find_phys_props(doc):
 	for id, prop in doc.physicalProperties.items():
 		xobj = prop.XObject
 		name = xobj.name
-		if name == 'DamageTC3D' or name == 'DamageTC1D':
+		if name == 'DamageTC3D' or name == 'DamageTC1D' or name == 'ASDConcrete3D':
 			implex = xobj.getAttribute('integration').string == 'IMPL-EX'
 			viscosity = xobj.getAttribute('eta').real != 0.0
 			if implex or viscosity:
@@ -87,19 +87,53 @@ def process_document(pinfo):
 	for geom_key, domain in geoms.items():
 		target_count += len(domain.elements)
 	
+	# quick return
+	if target_count == 0:
+		return
+	
 	# print info
 	pinfo.out_file.write('\n\n# Time-Increment Utility Stats\n#\n')
 	pinfo.out_file.write('# Found {} Physical Properties\n'.format(len(phys_props)))
 	for id, prop in phys_props.items():
 		pinfo.out_file.write('#    [{}] {}\n'.format(id, prop.name))
 	pinfo.out_file.write('# Found {} Geometries\n'.format(len(geoms)))
-	for geom_key, domain in geoms.items():
-		pinfo.out_file.write('#    [{}] {} (# Elements: {})\n'.format(geom_key, domain, len(domain.elements)))
 	pinfo.out_file.write('# Found a total of {} elements\n'.format(target_count))
 	
-	# quick return
-	if target_count == 0:
-		return
+	# write the list of elements based on partitioning
+	def write_loop(all_eles, indent):
+		count = 0
+		total_count = 0
+		N = len(all_eles)
+		pinfo.out_file.write('{}set STKO_VAR_TimeIncrementUpdateTargets [list '.format(indent))
+		if N > 0:
+			pinfo.out_file.write('\\\n')
+			for ele_id in all_eles:
+				count += 1
+				total_count += 1
+				if count == 1:
+					pinfo.out_file.write('{}{}'.format(indent, pinfo.tabIndent))
+				pinfo.out_file.write('{} '.format(ele_id))
+				if count == 20 and total_count < N:
+					count = 0
+					pinfo.out_file.write('\\\n')
+		pinfo.out_file.write(']\n')
+	# get element list
+	if pinfo.process_count > 1:
+		all_eles = [[] for i in range(pinfo.process_count)]
+		for geom_key, domain in geoms.items():
+			for element in domain.elements:
+				pid = doc.mesh.partitionData.elementPartition(element.id)
+				all_eles[pid].append(element.id)
+		for partition_id in range(pinfo.process_count):
+			pinfo.out_file.write('{}if {{$STKO_VAR_process_id == {}}} {{\n'.format(pinfo.indent, partition_id))
+			write_loop(all_eles[partition_id], pinfo.indent+pinfo.tabIndent)
+			pinfo.out_file.write('{}}}\n'.format(pinfo.indent))
+	else:
+		all_eles = []
+		for geom_key, domain in geoms.items():
+			for element in domain.elements:
+				all_eles.append(element.id)
+		write_loop(all_eles, pinfo.indent)
 	
 	# write custom functions
 	pinfo.out_file.write('''#
@@ -108,13 +142,16 @@ def process_document(pinfo):
 proc STKO_DT_UTIL_OnBeforeAnalyze {} {
 	global STKO_VAR_increment
 	global STKO_VAR_time_increment
+	global STKO_VAR_TimeIncrementUpdateTargets
 	# update the initial time and the committed time for the first time
-	if {$STKO_VAR_increment == 1} {
-		setParameter -val $STKO_VAR_time_increment -ele dTimeCommit
-		setParameter -val $STKO_VAR_time_increment -ele dTimeInitial
+	foreach ele_id $STKO_VAR_TimeIncrementUpdateTargets {
+		if {$STKO_VAR_increment == 1} {
+			setParameter -val $STKO_VAR_time_increment -ele $ele_id dTimeCommit
+			setParameter -val $STKO_VAR_time_increment -ele $ele_id dTimeInitial
+		}
+		# always update the current time increment
+		setParameter -val $STKO_VAR_time_increment -ele $ele_id dTime
 	}
-	# always update the current time increment
-	setParameter -val $STKO_VAR_time_increment -ele dTime
 }
 # add it to the list of functions
 lappend STKO_VAR_OnBeforeAnalyze_CustomFunctions STKO_DT_UTIL_OnBeforeAnalyze

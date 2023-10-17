@@ -436,6 +436,10 @@ def write_node_not_assigned (doc, pinfo, node_file):
 				node_file.write('{}{} {} {} {} {}\n'.format(pinfo.indent, '#', 'tag', 'x', 'y', 'z'))
 				done_first = True
 			__write_mass_and_node_not_assigned(pinfo, node_id, node, node_file, pinfo.indent)
+	# set them all to 3-3
+	for node_id in doc.mesh.nodes:
+		if not node_id in pinfo.node_to_model_map:
+			pinfo.node_to_model_map[node_id] = (3, 3)
 
 def write_node_not_assigned_partition (doc, pinfo, node_file):
 	'''

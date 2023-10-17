@@ -16,39 +16,9 @@ def makeXObjectMetaData():
 		html_end()
 		)
 	
-	# -scaleDrilling
-	at_scaleDrilling = MpcAttributeMetaData()
-	at_scaleDrilling.type = MpcAttributeType.Boolean
-	at_scaleDrilling.name = '-scaleDrilling'
-	at_scaleDrilling.group = 'Group'
-	at_scaleDrilling.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('-scaleDrilling')+'<br/>') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Shell_Element','Shell Element')+'<br/>') +
-		html_end()
-		)
-	at_scaleDrilling.setDefault(True)
-	
-	# drillingScaleFactor
-	at_drillingScaleFactor = MpcAttributeMetaData()
-	at_drillingScaleFactor.type = MpcAttributeType.Real
-	at_drillingScaleFactor.name = 'drillingScaleFactor'
-	at_drillingScaleFactor.group = 'Group'
-	at_drillingScaleFactor.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('drillingScaleFactor')+'<br/>') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Shell_Element','Shell Element')+'<br/>') +
-		html_end()
-		)
-	at_drillingScaleFactor.setDefault(0.01)
-	
 	xom = MpcXObjectMetaData()
 	xom.name = 'ShellMITC4'
 	xom.addAttribute(at_updateBasis)
-	xom.addAttribute(at_scaleDrilling)
-	xom.addAttribute(at_drillingScaleFactor)
-	
-	xom.setVisibilityDependency(at_scaleDrilling, at_drillingScaleFactor)
 	
 	return xom
 
@@ -58,7 +28,7 @@ def getNodalSpatialDim(xobj, xobj_phys_prop):
 def writeTcl(pinfo):
 	import opensees.element_properties.shell.shell_utils as shelu
 	
-	# element ShellMITC4 $tag $iNode $jNoe $kNode $lNode $secTag <-updateBasis> <-scaleDrilling $drillingScaleFactor>
+	# element ShellMITC4 $tag $iNode $jNoe $kNode $lNode $secTag <-updateBasis>
 	
 	elem = pinfo.elem
 	phys_prop = pinfo.phys_prop
@@ -92,20 +62,6 @@ def writeTcl(pinfo):
 	updateBasis = updateBasis_at.boolean
 	if updateBasis:
 		sopt += ' -updateBasis'
-	
-	scaleDrilling_at = xobj.getAttribute('-scaleDrilling')
-	if(scaleDrilling_at is None):
-		raise Exception('Error: cannot find "-scaleDrilling" attribute')
-	if scaleDrilling_at.boolean:
-		drillingScaleFactor_at = xobj.getAttribute('drillingScaleFactor')
-		if drillingScaleFactor_at is None:
-			raise Exception('Error: cannot find "drillingScaleFactor" attribute')
-		drillingScaleFactor = drillingScaleFactor_at.real
-		if drillingScaleFactor < 0.0:
-			drillingScaleFactor = 0.0
-		if drillingScaleFactor > 1.0:
-			drillingScaleFactor = 1.0
-		sopt += ' -scaleDrilling {}'.format(drillingScaleFactor)
 	
 	str_tcl = '{}element ShellMITC4 {} {} {}{}\n'.format(pinfo.indent, tag, nstr, secTag, sopt)
 	

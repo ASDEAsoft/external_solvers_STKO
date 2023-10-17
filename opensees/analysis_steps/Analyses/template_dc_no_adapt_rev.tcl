@@ -59,6 +59,7 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 	set dU [expr $DU / $nsteps]
 	# compute the monothonic time step for this cycle
 	set STKO_VAR_time_increment [expr $DT / $nsteps]
+	set STKO_VAR_initial_time_increment $STKO_VAR_time_increment
 	
 	if {$STKO_VAR_process_id == 0} {
 		puts "======================================================================"
@@ -87,6 +88,10 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			if {$STKO_VAR_num_iter > 0} {set STKO_VAR_error_norm [lindex $norms [expr $STKO_VAR_num_iter-1]]} else {set STKO_VAR_error_norm 0.0}
 		}
 		
+		# after analyze
+		set STKO_VAR_afterAnalyze_done 0
+		STKO_CALL_OnAfterAnalyze
+		
 		# check convergence
 		if {$STKO_VAR_analyze_done == 0} {
 			# print statistics
@@ -98,8 +103,6 @@ for {set i 1} {$i <= $ncycles} {incr i} {
 			error "ERROR: the analysis did not converge"
 		}
 		
-		# after analyze
-		STKO_CALL_OnAfterAnalyze
 	}
 	
 	# done with this cycle

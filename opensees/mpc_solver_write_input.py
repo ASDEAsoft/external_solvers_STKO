@@ -82,7 +82,7 @@ def write_tcl_int(out_dir):
 	main_file_name = '{}{}main.tcl'.format(out_dir, os.sep)
 	PyMpc.App.monitor().sendMessage('creating main script: "{}" ...'.format(main_file_name))
 	PyMpc.App.monitor().sendPercentage(current_percentage)
-	main_file = open(main_file_name, 'w+')
+	main_file = open(main_file_name, 'w+', encoding='utf-8')
 	# the initial wipe
 	main_file.write('wipe\n\n')
 	# write STKO_VAR_*** stuff
@@ -94,13 +94,17 @@ def write_tcl_int(out_dir):
 	main_file.write('{}# A boolean flag for parallel processing (True if NP > 1)\n'.format(pinfo.indent))
 	main_file.write('{}set STKO_VAR_is_parallel {}\n'.format(pinfo.indent, int(is_partitioned)))
 	main_file.write('{}# The result from analyze command  (0 if succesfull)\n'.format(pinfo.indent))
-	main_file.write('{}set STKO_VAR_analyze_done 0\n'.format(pinfo.indent, int(is_partitioned)))
+	main_file.write('{}set STKO_VAR_analyze_done 0\n'.format(pinfo.indent))
+	main_file.write('{}# The alternative result from after-analyze custom functions (0 if succesfull)\n'.format(pinfo.indent))
+	main_file.write('{}set STKO_VAR_afterAnalyze_done 0\n'.format(pinfo.indent))
 	main_file.write('{}# The increment counter in the current stage\n'.format(pinfo.indent))
 	main_file.write('{}set STKO_VAR_increment 0\n'.format(pinfo.indent))
 	main_file.write('{}# The current time\n'.format(pinfo.indent))
 	main_file.write('{}set STKO_VAR_time 0.0\n'.format(pinfo.indent))
 	main_file.write('{}# The current time increment\n'.format(pinfo.indent))
 	main_file.write('{}set STKO_VAR_time_increment 0.0\n'.format(pinfo.indent))
+	main_file.write('{}# The initial time increment\n'.format(pinfo.indent))
+	main_file.write('{}set STKO_VAR_initial_time_increment 0.0\n'.format(pinfo.indent))
 	main_file.write('{}# The current stage percentage\n'.format(pinfo.indent))
 	main_file.write('{}set STKO_VAR_percentage 0.0\n'.format(pinfo.indent))
 	main_file.write('{}# The last number of iterations\n'.format(pinfo.indent))
@@ -185,7 +189,7 @@ def write_tcl_int(out_dir):
 	# write all definitions there, and then source it in the main script
 	definitions_file_name = 'definitions.tcl'
 	PyMpc.App.monitor().sendMessage('writing definitions...')
-	definitions_file = open('{}{}{}'.format(out_dir, os.sep, definitions_file_name), 'w+')
+	definitions_file = open('{}{}{}'.format(out_dir, os.sep, definitions_file_name), 'w+', encoding='utf-8')
 	pinfo.out_file = definitions_file
 	write_definitions.write_definitions(doc.definitions, pinfo)
 	definitions_file.close()
@@ -197,7 +201,7 @@ def write_tcl_int(out_dir):
 	# write all physical properties of type (uniaxial/nD) there, and then source it in the main script
 	physical_properties_name = 'materials.tcl'
 	PyMpc.App.monitor().sendMessage('writing materials...')
-	physical_properties_file = open('{}{}{}'.format(out_dir, os.sep, physical_properties_name), 'w+')
+	physical_properties_file = open('{}{}{}'.format(out_dir, os.sep, physical_properties_name), 'w+', encoding='utf-8')
 	pinfo.out_file = physical_properties_file
 	write_physical_properties.write_physical_properties(doc.physicalProperties, pinfo, 'materials')
 	physical_properties_file.close()
@@ -209,7 +213,7 @@ def write_tcl_int(out_dir):
 	# write all physical properties of type (section) there, and then source it in the main script
 	sections_file_name = 'sections.tcl'
 	PyMpc.App.monitor().sendMessage('writing sections...')
-	sections_file = open('{}{}{}'.format(out_dir, os.sep, sections_file_name), 'w+')
+	sections_file = open('{}{}{}'.format(out_dir, os.sep, sections_file_name), 'w+', encoding='utf-8')
 	pinfo.out_file = sections_file
 	write_physical_properties.write_physical_properties(doc.physicalProperties, pinfo, 'sections')
 	sections_file.close()
@@ -241,7 +245,7 @@ def write_tcl_int(out_dir):
 	# nodes.tcl file.
 	node_file_name = 'nodes.tcl'
 	PyMpc.App.monitor().sendMessage('writing nodes...')
-	node_file = open('{}{}{}'.format(out_dir, os.sep, node_file_name), 'w+')
+	node_file = open('{}{}{}'.format(out_dir, os.sep, node_file_name), 'w+', encoding='utf-8')
 	pinfo.out_file = node_file
 	PyMpc.App.monitor().setRange(current_percentage, current_percentage + duration_nodes)
 	if not has_model_subsets:
@@ -290,7 +294,7 @@ def write_tcl_int(out_dir):
 	# write all elements there, and then source it in the main script
 	element_file_name = 'elements.tcl'
 	PyMpc.App.monitor().sendMessage('writing elements...')
-	element_file = open('{}{}{}'.format(out_dir, os.sep, element_file_name), 'w+')
+	element_file = open('{}{}{}'.format(out_dir, os.sep, element_file_name), 'w+', encoding='utf-8')
 	pinfo.out_file = element_file
 	PyMpc.App.monitor().setRange(current_percentage, current_percentage + duration_elements)
 	if not has_model_subsets:
@@ -321,7 +325,7 @@ def write_tcl_int(out_dir):
 	# write all analysis_steps there, and then source it in the main script
 	analysis_steps_file_name = 'analysis_steps.tcl'
 	PyMpc.App.monitor().sendMessage('writing analysis steps...')
-	analysis_steps_file = open('{}{}{}'.format(out_dir, os.sep, analysis_steps_file_name), 'w+')
+	analysis_steps_file = open('{}{}{}'.format(out_dir, os.sep, analysis_steps_file_name), 'w+', encoding='utf-8')
 	pinfo.out_file = analysis_steps_file
 	
 	# search for all monitors (if any) and do the first monitor initialization.
