@@ -422,6 +422,10 @@ def makeXObjectMetaData():
 	Kc = mka("Kc", "Misc", ("Triaxial-Compression shape factor.<br/>"
 		"It must be in the range [2/3, 1].<br/>"
 		"The lower the value, the stronger is the material under increasing confinement"), MpcAttributeType.Real, dval=2.0/3.0)
+	# cdf
+	cdf = mka("CDF", "Misc", ("Cross-Damage Factor.<br/>"
+		"It must be in the range [0, inf[.<br/>"
+		"The higher the value, the more the tensile damage will affect the compressive stress in shear"), MpcAttributeType.Real, dval=0.0)
 	# implex
 	algo = mka("integration", "Integration", ("Integration type.<br/>"
 		"(Default) Implicit: A standard Backward-Euler integration scheme.<br/>"
@@ -544,6 +548,7 @@ def makeXObjectMetaData():
 	# misc
 	xom.addAttribute(eta)
 	xom.addAttribute(Kc)
+	xom.addAttribute(cdf)
 	xom.addAttribute(ctype)
 	
 	return xom
@@ -559,6 +564,7 @@ def writeTcl(pinfo):
 	rho = _geta(xobj, 'rho').quantityScalar.value
 	eta = _geta(xobj, 'eta').real
 	Kc = _geta(xobj, 'Kc').real
+	cdf = _geta(xobj, 'CDF').real
 	
 	# obtain the hardening points
 	hl_fun = _globals.presets[_geta(xobj, 'Preset').string][0]
@@ -574,8 +580,8 @@ def writeTcl(pinfo):
 		"{0}\t-Ce {9} \\\n"
 		"{0}\t-Cs {10} \\\n"
 		"{0}\t-Cd {11} \\\n"
-		"{0}\t-rho {4} -eta {5} -Kc {12}").format(pinfo.indent, tag, E, v, rho, eta, 
-			to_tcl(Te), to_tcl(Ts), to_tcl(Td), to_tcl(Ce), to_tcl(Cs), to_tcl(Cd), Kc)
+		"{0}\t-rho {4} -eta {5} -Kc {12} -cdf {13}").format(pinfo.indent, tag, E, v, rho, eta, 
+			to_tcl(Te), to_tcl(Ts), to_tcl(Td), to_tcl(Ce), to_tcl(Cs), to_tcl(Cd), Kc, cdf)
 	
 	if _geta(xobj, 'integration').string == 'IMPL-EX':
 		#if _geta(xobj, 'implexCheckError').boolean:
