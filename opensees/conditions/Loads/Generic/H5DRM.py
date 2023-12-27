@@ -381,6 +381,9 @@ class DRMWidget(QWidget):
 					pos = node_id*3
 					if not isqa:
 						pos = loc[node_id]
+						timevec = self.time
+					else:
+						timevec = self.timeQA
 					x = values[pos, :]
 					y = values[pos+1, :]
 					z = values[pos+2, :]
@@ -389,11 +392,11 @@ class DRMWidget(QWidget):
 					px = iplot[0]
 					py = iplot[1]
 					pz = iplot[2]
-					px.set_xdata(self.time)
+					px.set_xdata(timevec)
 					px.set_ydata(x)
-					py.set_xdata(self.time)
+					py.set_xdata(timevec)
 					py.set_ydata(y)
-					pz.set_xdata(self.time)
+					pz.set_xdata(timevec)
 					pz.set_ydata(z)
 					# redraw
 					for item in (px, py, pz):
@@ -438,8 +441,10 @@ class DRMWidget(QWidget):
 		tend = db['DRM_Metadata/tend'][()]
 		self.tend = tend
 		nsteps = db['DRM_Data/displacement'].shape[1]
+		nstepsQA = db['DRM_QA_Data/displacement'].shape[1]
 		# save the time series
-		self.time = np.arange(self.tstart, self.tend, self.dt)
+		self.time = np.arange(self.tstart, self.tstart + self.dt*nsteps, self.dt)
+		self.timeQA = np.arange(self.tstart, self.tstart + self.dt*nstepsQA, self.dt)
 		# time slider
 		self.tdrop.setRange(0, nsteps-1)
 		# qa points
