@@ -101,7 +101,7 @@ for {set i 0} {$i < $num_step} {incr i} {
 	puts "__R__$perc|$strain|$stress"
 }
 
-
+close $outFile
 
 
 
