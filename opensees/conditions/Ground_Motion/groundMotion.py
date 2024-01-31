@@ -401,6 +401,7 @@ class _gstore:
 			},
 		3 : {
 			3 : make_3DU(),
+			4 : make_3DU(),
 			6 : make_3DUR()
 			}
 		}

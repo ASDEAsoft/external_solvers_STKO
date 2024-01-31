@@ -211,7 +211,7 @@ class TesterND(QObject):
 			'__flags1__', buffer_flags1.getvalue()).replace(
 			'__flags2__', buffer_flags2.getvalue()).replace(
 			'__imps__', buffer_imps.getvalue()).replace(
-			'__out__', temp_output_file))
+			'__out__', os.path.relpath(temp_output_file, temp_dir)))
 		
 		# relase temporary buffers
 		buffer_materials.close()
@@ -237,15 +237,21 @@ class TesterND(QObject):
 		
 		# prepare test
 		(opensees_cmd, temp_dir, temp_script_file, temp_output_file) = self.__prepare_test()
+		
+		# bugfix 01/2024
+		# since the working dir may contain unicode characters that won't work fine in tcl
+		# we pass the relative path, since the process will run anyway in the working dir
+		temp_script_file_rel = os.path.relpath(temp_script_file, temp_dir)
+		
 		print('Running OpenSEES')
 		print('command: {}'.format(opensees_cmd))
-		print('args: {}'.format(temp_script_file))
+		print('args: {}'.format(temp_script_file_rel))
 		
 		# strain size
 		ssize = NDTraits.STRAIN_SIZE[self.type]
 		
 		# launch opensees and communicate
-		for item in tu.executeAsync([opensees_cmd, temp_script_file], temp_dir):
+		for item in tu.executeAsync([opensees_cmd, temp_script_file_rel], temp_dir):
 			if item.startswith('__R__'):
 				# this line contains precentage and strain/stress data
 				tokens = item[5:].split('|')

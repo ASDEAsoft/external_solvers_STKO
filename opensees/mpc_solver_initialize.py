@@ -78,6 +78,7 @@ def initialize():
 	__load_module_internal(['conditions', 'Loads', 'Generic'], doc.registerMetaDataCondition)
 	__load_module_internal(['conditions', 'Loads', 'Force'], doc.registerMetaDataCondition)
 	__load_module_internal(['conditions', 'Loads', 'sp'], doc.registerMetaDataCondition)
+	__load_module_internal(['conditions', 'Loads', 'Moving'], doc.registerMetaDataCondition)
 	__load_module_internal(['conditions', 'Mass'], doc.registerMetaDataCondition)
 	__load_module_internal(['conditions', 'GroundMotion'], doc.registerMetaDataCondition)
 	__load_module_internal(['conditions', 'Multi_Support_Excitation_Pattern'], doc.registerMetaDataCondition)
