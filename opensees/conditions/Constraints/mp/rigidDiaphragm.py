@@ -111,16 +111,36 @@ def getRequestedNodalSpatialDim(xobj):
 	
 	return requested_node_dim_map
 
+def ensureNodesOnPartitions(xobj, pmap):
+	# make sure a master node is on every partition a slave node is
+	doc = App.caeDocument()
+	if doc is None: return
+	if doc.mesh is None: return
+	process_count = len(doc.mesh.partitionData.partitions)
+	if process_count <= 1: return
+	all_inter = xobj.parent.assignment.interactions
+	for inter in all_inter:
+		moi = doc.mesh.getMeshedInteraction(inter.id)
+		for elem in moi.elements:
+			if (len(elem.nodes) < 2 or elem.numberOfMasterNodes() != 1):
+				continue # will raise and error later on
+			master_id = elem.nodes[0].id
+			master_parts = pmap.get(master_id, None)
+			if master_parts is None:
+				master_parts = []
+				pmap[master_id] = master_parts
+			for process_id in range(process_count):
+				for slave_counter in range(1, len(elem.nodes)):
+					slave_id = elem.nodes[slave_counter].id
+					if doc.mesh.partitionData.isNodeOnParition(slave_id, process_id):
+						if not process_id in master_parts:
+							master_parts.append(process_id)
+
 def __process_rigidDiaphram (doc, pinfo, perpDirn, is_partitioned, all_inter, process_id, process_block_count, indent):
 	first_done = False
 	for inter in all_inter:
 		moi = doc.mesh.getMeshedInteraction(inter.id)
 		for elem in moi.elements:
-			
-			# in parallel mode: skipe elements not in this process_id
-			if is_partitioned:
-				if doc.mesh.partitionData.elementPartition(elem.id) != process_id:
-					continue
 			
 			# check invalid elements
 			if (len(elem.nodes) < 2 or elem.numberOfMasterNodes() != 1):
@@ -137,6 +157,31 @@ def __process_rigidDiaphram (doc, pinfo, perpDirn, is_partitioned, all_inter, pr
 				if (ndm_map != 3 or ndf_map != 6):
 					raise Exception('Error: The rigidDiaphragm command works only for problems in 3 ndm and 6 ndf')
 			
+			# compute string of slave nodes
+			num_slaves = 0
+			n = 1 # variable to handle line length
+			for i in range(1, len(elem.nodes)):
+				inode_id = elem.nodes[i].id
+				if (inode_id in pinfo.node_to_model_map):
+					ndm_map = pinfo.node_to_model_map[inode_id][0]
+					ndf_map = pinfo.node_to_model_map[inode_id][1]
+					if (ndm_map != 3 or ndf_map != 6):
+						raise Exception('Error: The rigidDiaphragm command works only for problems in 3 ndm and 6 ndf')
+				
+				if not doc.mesh.partitionData.isNodeOnParition(inode_id, process_id):
+					continue
+				
+				num_slaves += 1
+				if (i == (15*n)):
+					node_slave += ' \\\n    {}'.format(inode_id)
+					n += 1
+				else:
+					node_slave += ' {}'.format(inode_id)
+			
+			# skip if not slave on this process
+			if num_slaves == 0:
+				continue
+			
 			# in parallel mode: check whether we have to open the if/elseif block (do it only before first element)
 			# the choise of if or elseif comes from process_block_count
 			if is_partitioned:
@@ -147,22 +192,6 @@ def __process_rigidDiaphram (doc, pinfo, perpDirn, is_partitioned, all_inter, pr
 						pinfo.out_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$STKO_VAR_process_id == ', process_id, '} {'))
 					first_done = True
 			
-			# compute string of slave nodes
-			n=1 # variable to handle line length
-			for i in range(1, len(elem.nodes)):
-				inode_id = elem.nodes[i].id
-				if (inode_id in pinfo.node_to_model_map):
-					ndm_map = pinfo.node_to_model_map[inode_id][0]
-					ndf_map = pinfo.node_to_model_map[inode_id][1]
-					if (ndm_map != 3 or ndf_map != 6):
-						raise Exception('Error: The rigidDiaphragm command works only for problems in 3 ndm and 6 ndf')
-				
-				if (i == (15*n)):
-					node_slave += ' \\\n    {}'.format(inode_id)
-					n += 1
-				else:
-					node_slave += ' {}'.format(inode_id)
-
 			# now write the string into the file
 			pinfo.updateModelBuilder(3, 6)
 			str_tcl = '{}{}rigidDiaphragm {} {}{}\n'.format(pinfo.indent, indent, perpDirn, mid, node_slave)

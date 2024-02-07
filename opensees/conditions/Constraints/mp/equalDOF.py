@@ -440,6 +440,30 @@ def getRequestedNodalSpatialDim(xobj):
 	
 	return requested_node_dim_map
 
+def ensureNodesOnPartitions(xobj, pmap):
+	# make sure a master node is on every partition a slave node is
+	doc = App.caeDocument()
+	if doc is None: return
+	if doc.mesh is None: return
+	process_count = len(doc.mesh.partitionData.partitions)
+	if process_count <= 1: return
+	all_inter = xobj.parent.assignment.interactions
+	for inter in all_inter:
+		moi = doc.mesh.getMeshedInteraction(inter.id)
+		for elem in moi.elements:
+			if (elem.numberOfMasterNodes() != 1 or elem.numberOfSlaveNodes() != 1):
+				continue # will raise and error later on
+			master_id = elem.nodes[0].id
+			slave_id = elem.nodes[1].id
+			master_parts = pmap.get(master_id, None)
+			if master_parts is None:
+				master_parts = []
+				pmap[master_id] = master_parts
+			for process_id in range(process_count):
+				if doc.mesh.partitionData.isNodeOnParition(slave_id, process_id):
+					if not process_id in master_parts:
+						master_parts.append(process_id)
+
 def __process_equalDOF (doc, pinfo, is_partitioned, all_inter, process_id, process_block_count, ds, dsc):
 	first_done = False
 	for inter in all_inter:
@@ -448,9 +472,18 @@ def __process_equalDOF (doc, pinfo, is_partitioned, all_inter, process_id, proce
 			if (elem.numberOfMasterNodes() != 1 or elem.numberOfSlaveNodes() != 1):
 				raise Exception('wrong master-slave connectivity, expected: 1 master, 1 slave, given: {} masters, {} slaves'.format(elem.numberOfMasterNodes(), elem.numberOfSlaveNodes()))
 			
+			master_id = elem.nodes[0].id
+			slave_id = elem.nodes[1].id
+			
 			if is_partitioned:
-				if doc.mesh.partitionData.elementPartition(elem.id) != process_id:
+				# if doc.mesh.partitionData.elementPartition(elem.id) != process_id:
+					# continue
+				# The above does not work good with transformation method. the MP constraint should be in every partition
+				# the slave node belongs to. Note that we are sure that also the master node will be in that partition since
+				# they belong to a link element in stko mesh.
+				if not doc.mesh.partitionData.isNodeOnParition(slave_id, process_id):
 					continue
+				
 				if not first_done:
 					if process_block_count == 0:
 						pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$STKO_VAR_process_id == ', process_id, '} {'))
@@ -458,8 +491,6 @@ def __process_equalDOF (doc, pinfo, is_partitioned, all_inter, process_id, proce
 						pinfo.out_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$STKO_VAR_process_id == ', process_id, '} {'))
 					first_done = True
 			
-			master_id = elem.nodes[0].id
-			slave_id = elem.nodes[1].id
 			if (master_id in pinfo.node_to_model_map) and (slave_id in pinfo.node_to_model_map):
 				
 				(ndm_master, ndf_master) = pinfo.node_to_model_map[master_id]
