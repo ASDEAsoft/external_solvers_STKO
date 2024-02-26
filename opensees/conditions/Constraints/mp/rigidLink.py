@@ -199,7 +199,7 @@ def ensureNodesOnPartitions(xobj, pmap):
 			for process_id in range(process_count):
 				for slave_counter in range(1, len(elem.nodes)):
 					slave_id = elem.nodes[slave_counter].id
-					if doc.mesh.partitionData.isNodeOnParition(slave_id, process_id):
+					if doc.mesh.partitionData.isNodeOnPartition(slave_id, process_id):
 						if not process_id in master_parts:
 							master_parts.append(process_id)
 
@@ -241,7 +241,7 @@ def __process_rigidLink (doc, pinfo, is_partitioned, all_inter, process_id, proc
 					# The above does not work good with transformation method. the MP constraint should be in every partition
 					# the slave node belongs to. Note that we are sure that also the master node will be in that partition since
 					# they belong to a link element in stko mesh.
-					if not doc.mesh.partitionData.isNodeOnParition(slave_id, process_id):
+					if not doc.mesh.partitionData.isNodeOnPartition(slave_id, process_id):
 						continue
 				
 				# write

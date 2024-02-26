@@ -354,7 +354,7 @@ def preProcessElements(pinfo):
 			pid_count = 0 # number of joints processed in this partition
 			# process each joint
 			for _, joint in manager.items.items():
-				if doc.mesh.partitionData.isNodeOnParition(joint.source_node, processor_id):
+				if doc.mesh.partitionData.isNodeOnPartition(joint.source_node, processor_id):
 					# this joint can be processed on this partition
 					# open process scope (only for the first one in this processor)
 					if pid_count == 0:

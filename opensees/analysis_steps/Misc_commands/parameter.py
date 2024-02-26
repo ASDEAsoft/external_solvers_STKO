@@ -292,7 +292,7 @@ def writeTcl(pinfo):
 				
 				for node_id in parameter_map_node:
 					if (node_id in pinfo.node_to_model_map):
-						if not doc.mesh.partitionData.isNodeOnParition(node_id, process_id):
+						if not doc.mesh.partitionData.isNodeOnPartition(node_id, process_id):
 							continue
 						if (check):
 							str_addToParameter.append('\n{}{}# addToParameter\n'.format(pinfo.indent, Indent))

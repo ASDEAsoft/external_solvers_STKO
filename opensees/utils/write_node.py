@@ -374,7 +374,7 @@ def write_node_partition (doc, pinfo, node_file):
 			is_model_builder_already_updated = False
 			for node_with_age in v:
 				node_id = node_with_age.id
-				if not doc.mesh.partitionData.isNodeOnParition(node_id, process_id):
+				if not doc.mesh.partitionData.isNodeOnPartition(node_id, process_id):
 					continue # skip it, the node is not in this partition
 				if (pinfo.node_subset is not None) and (node_id not in pinfo.node_subset):
 					continue # skip it in case of staged models if not in current stage
@@ -452,7 +452,7 @@ def write_node_not_assigned_partition (doc, pinfo, node_file):
 		write_node_not_assigned_boolean = True
 		for node_id, node in doc.mesh.nodes.items():
 			if not node_id in pinfo.node_to_model_map:
-				if not doc.mesh.partitionData.isNodeOnParition(node_id, process_id):
+				if not doc.mesh.partitionData.isNodeOnPartition(node_id, process_id):
 					continue # skip it, the node is not in this partition
 				if (pinfo.node_subset is not None) and (node_id not in pinfo.node_subset):
 					continue # skip it in case of staged models if not in current stage

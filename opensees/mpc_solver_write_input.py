@@ -423,11 +423,11 @@ class _mp_handler:
 				rem_part = []
 				self.pmap_remove[node_id] = rem_part
 			for pid in partitions:
-				if not doc.mesh.partitionData.isNodeOnParition(node_id, pid):
+				if not doc.mesh.partitionData.isNodeOnPartition(node_id, pid):
 					rem_part.append(pid)
-					before = doc.mesh.partitionData.isNodeOnParition(node_id, pid)
+					before = doc.mesh.partitionData.isNodeOnPartition(node_id, pid)
 					doc.mesh.partitionData.addNode(doc.mesh.getNode(node_id), pid)
-					after = doc.mesh.partitionData.isNodeOnParition(node_id, pid)
+					after = doc.mesh.partitionData.isNodeOnPartition(node_id, pid)
 					print('... adding node {} to partition {} [{}, {}]'.format(node_id, pid, before, after))
 		self.pmap_remove = {i:j for i,j in self.pmap_remove.items() if j} # purge empty values
 		print('P.MAP (Remove):')
@@ -441,9 +441,9 @@ class _mp_handler:
 		if doc.mesh is None: return
 		for node_id, partitions in self.pmap_remove.items():
 			for pid in partitions:
-				before = doc.mesh.partitionData.isNodeOnParition(node_id, pid)
+				before = doc.mesh.partitionData.isNodeOnPartition(node_id, pid)
 				doc.mesh.partitionData.removeNode(doc.mesh.getNode(node_id), pid)
-				after = doc.mesh.partitionData.isNodeOnParition(node_id, pid)
+				after = doc.mesh.partitionData.isNodeOnPartition(node_id, pid)
 				print('... removing node {} from partition {} [{}, {}]'.format(node_id, pid, before, after))
 
 def write_tcl(out_dir):

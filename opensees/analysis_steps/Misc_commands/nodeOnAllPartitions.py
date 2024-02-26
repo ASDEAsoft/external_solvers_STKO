@@ -87,7 +87,7 @@ def writeTcl(pinfo):
 		pinfo.setProcessId(process_id)
 		first_done = False
 		for node_id in map_node:
-			if doc.mesh.partitionData.isNodeOnParition(node_id, process_id):
+			if doc.mesh.partitionData.isNodeOnPartition(node_id, process_id):
 				continue
 			else:
 				if not first_done:
