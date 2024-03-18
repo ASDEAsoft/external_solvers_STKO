@@ -50,7 +50,147 @@ class __constants:
 		'Confined Concrete'])
 	# gui
 	gui = None
-	
+
+'''
+Massimo 2024.
+Some logic for confinement is inside the GUI. This prevents somthing like re-computing
+the confinement just before writing the Tcl files (for example if a material changes without
+updating the section)
+'''
+class RCSectionLogic:
+	# todo: move here all the logic from the GUI
+	def obtainConfinementParameters(xobj):
+		import math
+
+		# checks
+		doc = App.caeDocument()
+		if doc is None:
+			raise Exception('no active cae document')
+		mat_cover = doc.getPhysicalProperty(_get_xobj_attribute(xobj, 'Concrete (Cover) Material').index)
+		mat_core = doc.getPhysicalProperty(_get_xobj_attribute(xobj, 'Concrete (Core) Material').index)
+		if mat_core:
+			raise Exception('Cannot call automatic-confinement functions with a valid core material')
+		if mat_cover is None:
+			raise Exception('Cannot call automatic-confinement functions without a valid cover material')
+		module_name = 'opensees.physical_properties.{}.{}'.format(mat_cover.XObject.Xnamespace, mat_cover.XObject.name)
+		module = importlib.import_module(module_name)
+		if not hasattr(module, 'getMaterialProperties'):
+			raise Exception('Material {} not suported for automatic computation of confinement. Impossibile to compute automatically confined law. Provide it manually\n'.format(mat_cover.XObject.name))
+		if not hasattr(module, 'getParamsConfinedVersion'):
+			raise Exception('uniaxialMaterial {} for cover not recognized. Provide material for core manually'.format(mat_cover.XObject.name))
+
+		# confinement model
+		ds = xobj.getAttribute(MpcXObjectMetaData.dataStoreAttributeName()).string
+		jds = json.loads(ds)
+		jds = jds['ConfinedRectangulaSection']
+		class_name = jds['name']
+		lateral_pressure_description = jds['lat_press']
+		lateral_pressure = ''
+		for key, value in lateral_pressure_computation_description.items():
+			if value == lateral_pressure_description:
+				lateral_pressure = key
+
+		# self.onConfinementModelChanged()
+		confinementModel = ConfinementModelsFactory.make(class_name)
+
+		# section
+		W = max(1.0e-10, _get_xobj_attribute(xobj, 'Width').quantityScalar.value)
+		H = max(1.0e-10, _get_xobj_attribute(xobj, 'Height').quantityScalar.value)
+		C = max(1.0e-10, _get_xobj_attribute(xobj, 'Cover').quantityScalar.value)
+		SD = _get_xobj_attribute(xobj, 'Stirrup Diam').quantityScalar.value
+		Wc = W - 2.0*(C+SD/2.0)
+		Hc = H - 2.0*(C+SD/2.0)
+		Ac = Wc * Hc # Area of concrete core measured from centerline to centerline of confinement steel
+
+		# stirrups
+		AsSt = math.pi * (SD**2) / 4.0
+		s = _get_xobj_attribute(xobj, 'Stirrup Spacing').quantityScalar.value
+		AsY = AsSt * _get_xobj_attribute(xobj, 'Stirrup Legs Y').integer
+		AsZ = AsSt * _get_xobj_attribute(xobj, 'Stirrup Legs Z').integer
+		rhoY = AsY / (s * Hc)
+		rhoZ = AsZ / (s * Wc)
+
+		# rebars
+		phi_corner = _get_xobj_attribute(xobj, 'Corner Rebars Diam').quantityScalar.value
+		num_corner = _get_xobj_attribute(xobj, 'Corner Rebars Number').integer
+		phi_bottom = _get_xobj_attribute(xobj, 'Bottom Rebars Diam').quantityScalar.value
+		num_bottom = _get_xobj_attribute(xobj, 'Bottom Rebars Number').integer
+		phi_top = _get_xobj_attribute(xobj, 'Top Rebars Diam').quantityScalar.value
+		num_top = _get_xobj_attribute(xobj, 'Top Rebars Number').integer
+		phi_left = _get_xobj_attribute(xobj, 'Left Rebars Diam').quantityScalar.value
+		num_left = _get_xobj_attribute(xobj, 'Left Rebars Number').integer
+		phi_right = _get_xobj_attribute(xobj, 'Right Rebars Diam').quantityScalar.value
+		num_right = _get_xobj_attribute(xobj, 'Right Rebars Number').integer
+		phi_max = max(phi_corner,max(phi_bottom, max(phi_top, max(phi_left, phi_right))))
+		Wcc = Wc - phi_max - SD 
+		Hcc = Hc - phi_max - SD
+		bi2 = 0.0
+		AsLong = 0.0
+		# corner
+		AsLong += num_corner * 4.0*(math.pi*(phi_corner**2)/4.0)
+		# bottom
+		if num_bottom > 0:
+			Wcc_mod = Wcc
+			if num_bottom > 1:
+				Wcc_mod -= 2.0*Wcc/(num_bottom+1)
+				bi2 += (((Wcc-Wcc_mod)/2.0)**2) * (num_bottom + 1)
+			else:
+				bi2 += ((Wcc/2.0)**2) * (num_bottom + 1)
+			AsLong += num_bottom * math.pi * (phi_bottom**2) / 4
+		else:
+			bi2 += Wcc**2
+		# top
+		if num_top > 0:
+			Wcc_mod = Wcc
+			if num_top > 1:
+				Wcc_mod -= 2.0*Wcc/(num_top+1)
+				bi2 += (((Wcc-Wcc_mod)/2.0)**2) * (num_top + 1)
+			else:
+				bi2 += ((Wcc/2.0)**2) * (num_top + 1)
+			AsLong += num_top * math.pi * (phi_top**2) / 4
+		else:
+			bi2 += Wcc**2
+		# left
+		if num_left > 0:
+			Hcc_mod = Hcc
+			if num_left > 1:
+				Hcc_mod -= 2.0*Hcc/(num_left+1)
+				bi2 += (((Hcc-Hcc_mod)/2.0)**2) * (num_left + 1)
+			else:
+				bi2 += ((Hcc/2.0)**2) * (num_left + 1)
+			AsLong += num_left * math.pi * (phi_left**2) / 4
+		else:
+			bi2 += Hcc**2
+		# right
+		if num_right > 0:
+			Hcc_mod = Hcc
+			if num_right > 1:
+				Hcc_mod -= 2.0*Hcc/(num_right+1)
+				bi2 += (((Hcc-Hcc_mod)/2.0)**2) * (num_right + 1)
+			else:
+				bi2 += ((Hcc/2.0)**2) * (num_right + 1)
+			AsLong += num_right * math.pi * (phi_right**2) / 4
+		else:
+			bi2 += Hcc**2
+		# done
+		rhoCC = AsLong/Ac # Longitudinal steel ratio
+
+		# done
+		fy = _get_xobj_attribute(xobj, 'fy').quantityScalar.value
+		epssu = _get_xobj_attribute(xobj, 'epssu').real
+		fc, epsc0, epscu, Ec = module.getMaterialProperties(mat_cover.XObject)
+		confinementModel_params = ConfinementModelParameters( H, W, C, SD, s, bi2, rhoCC, rhoY, rhoZ, fy, epssu, fc, epsc0, epscu, Ec, lateral_pressure)
+
+		# self.onConfinementParamsChanged()
+		confinementModel.computeConfinement(confinementModel_params)
+		fcc = confinementModel.fcc
+		epscc0 = confinementModel.epscc0
+		epsccu = confinementModel.epsccu
+
+		# return
+		print(fcc, epscc0, epsccu, Ec, lateral_pressure)
+		return (fcc, epscc0, epsccu, Ec)
+
 class RectangularFiberSectionWidget(QWidget):
 	# constructor
 	def __init__(self, editor, xobj, parent = None):
@@ -1319,11 +1459,8 @@ def writeTcl (pinfo):
 			module_name = 'opensees.physical_properties.{}.{}'.format(mat_cover.XObject.Xnamespace, mat_cover.XObject.name)
 			module = importlib.import_module(module_name)
 			if hasattr(module, 'getParamsConfinedVersion'):
-				# Compute stress corresponding to ultimate strain with Mander law
-				epsccu = _get_xobj_attribute(xobj, 'epsccu').real
-				fcc = _get_xobj_attribute(xobj, 'fcc').quantityScalar.referenceValue
-				epscc0 = _get_xobj_attribute(xobj, 'epscc0').real
-				Ec = _get_xobj_attribute(xobj, 'Ec').quantityScalar.referenceValue
+				# Compute confined parameters
+				fcc, epscc0, epsccu, Ec = RCSectionLogic.obtainConfinementParameters(xobj)
 				e = -epsccu*0.9999
 				x = e / (-epscc0)
 				Esec = fcc / epscc0
@@ -1516,7 +1653,7 @@ class ConfinementManderModel:
 			# Computation of mean lateral pressure based on selected option
 			lat_pressure_computation = params.lat_press_computation
 			if lat_pressure_computation not in lateral_pressure_computation_description.keys():
-				PyMpc.IO.write_cerr('Warning - Option for lateral pressure computation not recognized\nAssumed Weighted Average')
+				PyMpc.IO.write_cerr('Warning - Option for lateral pressure computation not recognized\nAssumed Weighted Average\n')
 				lat_pressure_computation = "weigh_avrg"
 			outputString += "<tr><td colspan = \"3\">Lateral pressure computed with {}</td></tr>".format(lateral_pressure_computation_description[lat_pressure_computation])
 			s2, s3 = fLYp, fLZp
@@ -1640,7 +1777,7 @@ class ConfinementEN1998_3Model:
 			# Computation of mean lateral pressure based on selected option
 			lat_pressure_computation = params.lat_press_computation
 			if lat_pressure_computation not in lateral_pressure_computation_description.keys():
-				PyMpc.IO.write_cerr('Warning - Option for lateral pressure computation not recognized\nAssumed Weighted Average')
+				PyMpc.IO.write_cerr('Warning - Option for lateral pressure computation not recognized\nAssumed Weighted Average\n')
 				lat_pressure_computation = "weigh_avrg"
 			outputString += "<tr><td colspan = \"3\">Lateral pressure computed with {}</td></tr>".format(lateral_pressure_computation_description[lat_pressure_computation])
 			s2, s3 = fLY, fLZ
@@ -1765,7 +1902,7 @@ class ConfinementNTC2018Model:
 			# Computation of mean lateral pressure based on selected option
 			lat_pressure_computation = params.lat_press_computation
 			if lat_pressure_computation not in lateral_pressure_computation_description.keys():
-				PyMpc.IO.write_cerr('Warning - Option for lateral pressure computation not recognized\nAssumed Weighted Average')
+				PyMpc.IO.write_cerr('Warning - Option for lateral pressure computation not recognized\nAssumed Weighted Average\n')
 				lat_pressure_computation = "weigh_avrg"
 			outputString += "<tr><td colspan = \"3\">Lateral pressure computed with {}</td></tr>".format(lateral_pressure_computation_description[lat_pressure_computation])
 			s2, s3 = fLY, fLZ
