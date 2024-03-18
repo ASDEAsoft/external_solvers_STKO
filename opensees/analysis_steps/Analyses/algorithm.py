@@ -7,7 +7,7 @@ def algorithmCommand(xom, group_suffix=''):
 	algorithm Linear <-secant> <-initial> <-factorOnce>
 	algorithm Newton <-secant> <-initial> <-initialThenCurrent>
 	algorithm NewtonLineSearch <-type $typeSearch> <-tol $tol> <-maxIter $maxIter> <-minEta $minEta> <-maxEta $maxEta>
-	algorithm ModifiedNewton <-secant> <-initial>
+	algorithm ModifiedNewton <-secant> <-initial> <-factorOnce>
 	algorithm KrylovNewton <-iterate $tangIter> <-increment $tangIncr> <-maxDim $maxDim>
 	algorithm SecantNewton <-iterate $tangIter> <-increment $tangIncr> <-maxDim $maxDim>
 	algorithm BFGS <-secant> <-initial> <-count>
@@ -342,6 +342,19 @@ def algorithmCommand(xom, group_suffix=''):
 	at_formTangent_ModifiedNewton.sourceType = MpcAttributeSourceType.List
 	at_formTangent_ModifiedNewton.setSourceList(['-secant', '-initial'])
 	at_formTangent_ModifiedNewton.setDefault('-secant')
+	
+	# factorOnce
+	at_factorOnce_ModifiedNewton = MpcAttributeMetaData()
+	at_factorOnce_ModifiedNewton.type = MpcAttributeType.Boolean
+	at_factorOnce_ModifiedNewton.name = '-factorOnce/ModifiedNewton'
+	at_factorOnce_ModifiedNewton.group = group
+	at_factorOnce_ModifiedNewton.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('-factorOnce')+'<br/>') + 
+		html_par('optional flag to indicate to only set up and factor matrix once') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Modified_Newton_Algorithm','Modified Newton Algorithm')+'<br/>') +
+		html_end()
+		)
 	
 	'''
 	KrylovNewton
@@ -717,6 +730,7 @@ def algorithmCommand(xom, group_suffix=''):
 	xom.addAttribute(at_ModifiedNewton)
 	xom.addAttribute(at_use_formTangent_ModifiedNewton)
 	xom.addAttribute(at_formTangent_ModifiedNewton)
+	xom.addAttribute(at_factorOnce_ModifiedNewton)
 	# Algorithm / KrylovNewton
 	xom.addAttribute(at_KrylovNewton)
 	xom.addAttribute(at_iterate_KrylovNewton)
@@ -780,9 +794,9 @@ def algorithmCommand(xom, group_suffix=''):
 	
 	# visibility dependencies / ModifiedNewton
 	xom.setVisibilityDependency(at_ModifiedNewton, at_use_formTangent_ModifiedNewton)
-	
 	xom.setVisibilityDependency(at_ModifiedNewton, at_formTangent_ModifiedNewton)
 	xom.setVisibilityDependency(at_use_formTangent_ModifiedNewton, at_formTangent_ModifiedNewton)
+	xom.setVisibilityDependency(at_ModifiedNewton, at_factorOnce_ModifiedNewton)
 	
 	# visibility dependencies / KrylovNewton
 	xom.setVisibilityDependency(at_KrylovNewton, at_iterate_KrylovNewton)
@@ -844,7 +858,7 @@ def writeTcl_algorithm(pinfo, xobj):
 	algorithm Linear <-secant> <-initial> <-factorOnce>
 	algorithm Newton <-secant> <-initial> <-initialThenCurrent>
 	algorithm NewtonLineSearch <-type $typeSearch> <-tol $tol> <-maxIter $maxIter> <-minEta $minEta> <-maxEta $maxEta>
-	algorithm ModifiedNewton <-secant> <-initial>
+	algorithm ModifiedNewton <-secant> <-initial> <-factorOnce>
 	algorithm KrylovNewton <-iterate $tangIter> <-increment $tangIncr> <-maxDim $maxDim>
 	algorithm SecantNewton <-iterate $tangIter> <-increment $tangIncr> <-maxDim $maxDim>
 	algorithm BFGS <-secant> <-initial> <-count>
@@ -961,7 +975,11 @@ def writeTcl_algorithm(pinfo, xobj):
 			formTangent = formTangent_at.string
 			
 			sopt += ' {}'.format(formTangent)
-		
+		factorOnce_at_ModifiedNewton = xobj.getAttribute('-factorOnce/ModifiedNewton')
+		if factorOnce_at_ModifiedNewton is None:
+			raise Exception('Error: cannot find "-factorOnce" attribute')
+		if factorOnce_at_ModifiedNewton.boolean:
+			sopt += ' -FactorOnce'
 		str_tcl = '{}algorithm ModifiedNewton{}\n'.format(pinfo.indent, sopt)
 	
 	elif algorithm == 'Krylov-Newton':
