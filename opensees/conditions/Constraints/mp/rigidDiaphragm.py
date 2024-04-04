@@ -168,8 +168,9 @@ def __process_rigidDiaphram (doc, pinfo, perpDirn, is_partitioned, all_inter, pr
 					if (ndm_map != 3 or ndf_map != 6):
 						raise Exception('Error: The rigidDiaphragm command works only for problems in 3 ndm and 6 ndf')
 				
-				if not doc.mesh.partitionData.isNodeOnPartition(inode_id, process_id):
-					continue
+				if is_partitioned:
+					if not doc.mesh.partitionData.isNodeOnPartition(inode_id, process_id):
+						continue
 				
 				num_slaves += 1
 				if (i == (15*n)):
