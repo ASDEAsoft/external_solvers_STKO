@@ -7,6 +7,7 @@ import opensees.utils.Gui.GuiUtils as gu
 from PySide2.QtCore import QCoreApplication
 import numpy as np
 import opensees.physical_properties.sections.ASDCoupledHinge_support_data.RectangularFiberSectionDomain as domain
+from opensees.physical_properties.sections.ASDCoupledHinge_support_data.editor_widget import EquationEditorWidget
 import opensees.utils.Gui.ThreadUtils as tu
 from time import sleep, time
 from math import pi
@@ -49,7 +50,7 @@ import shiboken2
 # import random
 
 class _constants:
-	verbose = False
+	verbose = True
 	groups_for_section_update = ([
 		'Section geometry',
 		'Rebars',
@@ -213,7 +214,7 @@ class ASDCoupledHinge_RectangularRCWidget(QWidget):
 		# Temporary test button
 		self.run_button = QPushButton('Test')
 		self.layout().addWidget(self.run_button)
-		self.run_button.clicked.connect(self.onTestClicked)
+		self.run_button.clicked.connect(self.onTestClicked) #onTestClicked / onEditorClicked
 		
 		# sc = MyStaticMplCanvas()
 		# self.layout().addWidget(sc)
@@ -308,6 +309,22 @@ class ASDCoupledHinge_RectangularRCWidget(QWidget):
 				# Done
 				self.finished.emit()
 	
+	def onEditorClicked(self):
+		try:
+			# @note Some widgets used here comes from STKO Python API, they are C++ classes exposed to Python via Boost.Python
+			# while all other widgets are part of PySide2 and thus exposed via Shiboken2. Since they are incompatible, we use
+			# the shiboken2.wrapInstance method on the raw C++ pointer.
+			parentPtr = shiboken2.wrapInstance(self.editor.getPtr(), QWidget)
+			dialog = EquationEditorWidget(parent = parentPtr, title = 'thetaPy')
+			# I am not actually using the result
+			res = dialog.exec()
+			if _constants.verbose: print('Result from dialog: {}'.format(res),'\n','QDialog.Accepted: ',QDialog.Accepted,'\n',res == QDialog.Accepted)
+		except:
+			exdata = traceback.format_exc().splitlines()
+			PyMpc.IO.write_cerr('Error:\n{}\n'.format('\n'.join(exdata)))
+		# if _constants.verbose: print(res)
+		return
+		
 	def onTestClicked(self):
 		# if _constants.verbose: print(self.materials)
 		t1 = time()
@@ -1208,29 +1225,30 @@ def computeDomain(xobj, materials = None, theta = None, emitterPercentage = None
 	# Call domain construction
 	rectSecDomain = domain.RectangularSectionDomain(W, H, C, SD, yReinf, zReinf, phiReinf, sec, materials)
 	t2 = time()
+	# If confinement account for spalling looking from materials.spalling
 	# if _constants.verbose: print('Time used for object creation: {} s'.format(t2-t1))
 	if emitterText is not None:
 		emitterText('Computig strain profiles corresponding to ultimate conditions...')
 	if theta is None:
-		if _constants.verbose: emitterText('Compute without theta. Use all thetas')
+		if _constants.verbose and emitterText is not None: emitterText('Compute without theta. Use all thetas')
 		t0 = time()
-		rectSecDomain.computeUltimateStrainConditions(emitterPercentage = emitterPercentage)
-		if _constants.verbose: emitterText('Time required for computing ultimate strain conditions: {} s'.format(time()-t0))
+		rectSecDomain.computeUltimateStrainConditions(emitterPercentage = emitterPercentage, accountSpalling = materials.spalling)
+		if _constants.verbose and emitterText is not None: emitterText('Time required for computing ultimate strain conditions: {} s'.format(time()-t0))
 		if not onlyUltimate:
 			t0 = time()
 			rectSecDomain.computeYieldStrainConditions(emitterPercentage = emitterPercentage)
 			if _constants.verbose: emitterText('Time required for computing yield strain conditions: {} s'.format(time()-t0))
 	else:
-		if _constants.verbose: emitterText('Compute with theta = {}'.format(theta))
-		rectSecDomain.computeUltimateStrainConditions(theta, emitterPercentage = emitterPercentage)
+		if _constants.verbose and emitterText is not None: emitterText('Compute with theta = {}'.format(theta))
+		rectSecDomain.computeUltimateStrainConditions(theta, emitterPercentage = emitterPercentage, accountSpalling = materials.spalling)
 		
 	t0 = time()
 	rectSecDomain.computeDomainForCondition(emitterPercentage = emitterPercentage, emitterText = emitterText, condition = 'U')
-	if _constants.verbose: emitterText('Time used for computing ultimate domain: {} s'.format(time()-t0))
+	if _constants.verbose and emitterText is not None: emitterText('Time used for computing ultimate domain: {} s'.format(time()-t0))
 	if not onlyUltimate:
 		t0 = time()
 		rectSecDomain.computeDomainForCondition(emitterPercentage = emitterPercentage, emitterText = emitterText, condition = 'Y')
-		if _constants.verbose: emitterText('Time used for computing ultimate domain: {} s'.format(time()-t0))
+		if _constants.verbose and emitterText is not None: emitterText('Time used for computing ultimate domain: {} s'.format(time()-t0))
 	return rectSecDomain
 
 def writeTcl (pinfo):
@@ -1311,8 +1329,8 @@ def writeTcl (pinfo):
 	
 	# 4. Write the tcl file for the section
 	# "Want: section ASDCoupledHinge3D tag? Ktor? Kvy? Kvz? Kax? -initialFlexuralStiffness \"Ky?\" \"Kz?\""
-            # "<-simpleStrengthDomain Nmin? Nmax? MyMax? NMyMax? MzMax? NMzMax?> <-strengthDomainByPoints nN? nTheta? {listN} {listMy} {listMz}> <-hardening as?>"
-            # "-thetaP \"thetaPy?\" \"thetaPz?\" -thetaPC \"thetaPCy?\" \"thetaPCz?\"\n";
+			# "<-simpleStrengthDomain Nmin? Nmax? MyMax? NMyMax? MzMax? NMzMax?> <-strengthDomainByPoints nN? nTheta? {listN} {listMy} {listMz}> <-hardening as?>"
+			# "-thetaP \"thetaPy?\" \"thetaPz?\" -thetaPC \"thetaPCy?\" \"thetaPCz?\"\n";
 	
 	str_tcl = '{}section ASDCoupledHinge3D {} '.format(pinfo.indent, tag)
 	nTab = len(str_tcl) // 4

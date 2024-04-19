@@ -35,6 +35,7 @@ from PySide2.QtGui import (
 	QDoubleValidator,
 	QKeySequence,
 	QGuiApplication,
+	QIcon,
 	)
 import shiboken2
 # import random
@@ -58,6 +59,8 @@ params = {	'legend.fontsize': 'x-small',
 			'axes.titlesize':'x-small',
 			'xtick.labelsize':'x-small',
 			'ytick.labelsize':'x-small'}
+
+_TOL = 1e-8
 
 _verbose = False
 
@@ -116,7 +119,7 @@ class MyMplCanvas(FigureCanvas):
 		# # FigureCanvas.updateGeometry(self)
 
 class MaterialsForRectangularSection:
-	def __init__(self, fc, eps_c, eps_cu, n, fcc, eps_cc, eps_ccu, nc, Es, fy, eps_su, eps_sy = None):
+	def __init__(self, fc, eps_c, eps_cu, n, fcc, eps_cc, eps_ccu, nc, Es, fy, eps_su, eps_sy = None, spalling = False):
 		# Unconfined concrete
 		self.fc = fc if fc < 0 else -fc
 		self.eps_c = eps_c if eps_c < 0 else -eps_c
@@ -127,6 +130,10 @@ class MaterialsForRectangularSection:
 		self.eps_cc = eps_cc if eps_cc < 0 else -eps_cc
 		self.eps_ccu = eps_ccu if eps_ccu < 0 else -eps_ccu
 		self.nc = nc
+		if abs(self.eps_ccu - self.eps_cu) <= _TOL:
+			self.spalling = False
+		else:
+			self.spalling = True
 		# Steel
 		self.Es = Es
 		self.fy = fy
@@ -1008,6 +1015,7 @@ class ContainerDomainGraphs(QWidget):
 		validator.setTop(Nmax)
 		self.editN.setValidator(validator)
 		self.buttonDetail = QToolButton()
+		self.buttonDetail.setIcon(QIcon(":/odb/fiber_plot"))
 		self.buttonDetail.setCheckable(True)
 		self.buttonData = QPushButton('Data')
 		
