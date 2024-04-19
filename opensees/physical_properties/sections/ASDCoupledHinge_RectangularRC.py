@@ -1042,6 +1042,333 @@ def makeXObjectMetaData():
 	at_as.type = MpcAttributeType.Real
 	at_as.setDefault(1.08)
 	
+	# Optional parameters for histeretic rules
+	
+	# rDispP
+	at_rDispP = MpcAttributeMetaData()
+	at_rDispP.type= MpcAttributeType.Real
+	at_rDispP.name= 'rDispP'
+	at_rDispP.group= 'Optional - Hysteretic parameters'
+	at_rDispP.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('rDispP')+'<br/>') + 
+		html_par('floating point value defining the ratio of the deformation at which reloading occurs to the maximum historic deformation demand') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_rDispP.setDefault(0.2)
+	
+	# rForceP
+	at_rForceP = MpcAttributeMetaData()
+	at_rForceP.type= MpcAttributeType.Real
+	at_rForceP.name= 'rForceP'
+	at_rForceP.group= 'Optional - Hysteretic parameters'
+	at_rForceP.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('rForceP')+'<br/>') + 
+		html_par('floating point value defining the ratio of the force at which reloading begins to force corresponding to the maximum historic deformation demand') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_rForceP.setDefault(0.5)
+	
+	# uForceP
+	at_uForceP = MpcAttributeMetaData()
+	at_uForceP.type= MpcAttributeType.Real
+	at_uForceP.name= 'uForceP'
+	at_uForceP.group= 'Optional - Hysteretic parameters'
+	at_uForceP.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('uForceP')+'<br/>') + 
+		html_par('floating point value defining the ratio of strength developed upon unloading from negative load to the maximum strength developed under monotonic loading') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_uForceP.setDefault(0.0)
+	
+	# rDispN
+	at_rDispN = MpcAttributeMetaData()
+	at_rDispN.type= MpcAttributeType.Real
+	at_rDispN.name= 'rDispN'
+	at_rDispN.group= 'Optional - Hysteretic parameters'
+	at_rDispN.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('rDispN')+'<br/>') + 
+		html_par('floating point value defining the ratio of the deformation at which reloading occurs to the minimum historic deformation demand') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_rDispN.setDefault(0.2)
+	
+	# rForceN
+	at_rForceN = MpcAttributeMetaData()
+	at_rForceN.type= MpcAttributeType.Real
+	at_rForceN.name= 'rForceN'
+	at_rForceN.group= 'Optional - Hysteretic parameters'
+	at_rForceN.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('rForceN')+'<br/>') + 
+		html_par('floating point value defining the ratio of the force at which reloading begins to force corresponding to the minimum historic deformation demand') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_rForceN.setDefault(0.5)
+
+	# uForceN
+	at_uForceN = MpcAttributeMetaData()
+	at_uForceN.type= MpcAttributeType.Real
+	at_uForceN.name= 'uForceN'
+	at_uForceN.group= 'Optional - Hysteretic parameters'
+	at_uForceN.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('uForceN')+'<br/>') + 
+		html_par('floating point value defining the ratio of strength developed upon unloading from negative load to the minimum strength developed under monotonic loading') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_uForceN.setDefault(0.0)
+	
+	# gK1
+	at_gK1 = MpcAttributeMetaData()
+	at_gK1.type= MpcAttributeType.Real
+	at_gK1.name= 'gK1'
+	at_gK1.group= 'Optional - Degradation parameters'
+	at_gK1.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('gK1')+'<br/>') + 
+		html_par('floating point value controlling cyclic degradation model for unloading stiffness degradation') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_gK1.setDefault(0.0)
+	
+	# gK2
+	at_gK2 = MpcAttributeMetaData()
+	at_gK2.type= MpcAttributeType.Real
+	at_gK2.name= 'gK2'
+	at_gK2.group= 'Optional - Degradation parameters'
+	at_gK2.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('gK2')+'<br/>') + 
+		html_par('floating point value controlling cyclic degradation model for unloading stiffness degradation') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_gK2.setDefault(0.0)
+	
+	# gK3
+	at_gK3 = MpcAttributeMetaData()
+	at_gK3.type= MpcAttributeType.Real
+	at_gK3.name= 'gK3'
+	at_gK3.group= 'Optional - Degradation parameters'
+	at_gK3.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('gK3')+'<br/>') + 
+		html_par('floating point value controlling cyclic degradation model for unloading stiffness degradation') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_gK3.setDefault(0.0)
+	
+	# gK4
+	at_gK4 = MpcAttributeMetaData()
+	at_gK4.type= MpcAttributeType.Real
+	at_gK4.name= 'gK4'
+	at_gK4.group= 'Optional - Degradation parameters'
+	at_gK4.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('gK4')+'<br/>') + 
+		html_par('floating point value controlling cyclic degradation model for unloading stiffness degradation') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_gK4.setDefault(0.0)
+	
+	# gKLim
+	at_gKLim = MpcAttributeMetaData()
+	at_gKLim.type= MpcAttributeType.Real
+	at_gKLim.name= 'gKLim'
+	at_gKLim.group= 'Optional - Degradation parameters'
+	at_gKLim.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('gKLim')+'<br/>') + 
+		html_par('floating point value controlling cyclic degradation model for unloading stiffness degradation') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_gKLim.setDefault(0.0)
+		
+	# gD1 
+	at_gD1= MpcAttributeMetaData()
+	at_gD1.type= MpcAttributeType.Real
+	at_gD1.name= 'gD1'
+	at_gD1.group= 'Optional - Degradation parameters'
+	at_gD1.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('gD1')+'<br/>') + 
+		html_par('floating point value controlling cyclic degradation model for reloading stiffness degradation') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_gD1.setDefault(0.0)
+	
+	# gD2 
+	at_gD2= MpcAttributeMetaData()
+	at_gD2.type= MpcAttributeType.Real
+	at_gD2.name= 'gD2'
+	at_gD2.group= 'Optional - Degradation parameters'
+	at_gD2.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('gD2')+'<br/>') + 
+		html_par('floating point value controlling cyclic degradation model for reloading stiffness degradation') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_gD2.setDefault(0.0)
+	
+	# gD3
+	at_gD3= MpcAttributeMetaData()
+	at_gD3.type= MpcAttributeType.Real
+	at_gD3.name= 'gD3'
+	at_gD3.group= 'Optional - Degradation parameters'
+	at_gD3.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('gD3')+'<br/>') + 
+		html_par('floating point value controlling cyclic degradation model for reloading stiffness degradation') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_gD3.setDefault(0.0)
+	
+	# gD4
+	at_gD4= MpcAttributeMetaData()
+	at_gD4.type= MpcAttributeType.Real
+	at_gD4.name= 'gD4'
+	at_gD4.group= 'Optional - Degradation parameters'
+	at_gD4.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('gD4')+'<br/>') + 
+		html_par('floating point value controlling cyclic degradation model for reloading stiffness degradation') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_gD4.setDefault(0.0)
+	
+	# gDLim
+	at_gDLim= MpcAttributeMetaData()
+	at_gDLim.type= MpcAttributeType.Real
+	at_gDLim.name= 'gDLim'
+	at_gDLim.group= 'Optional - Degradation parameters'
+	at_gDLim.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('gDLim')+'<br/>') + 
+		html_par('floating point value controlling cyclic degradation model for reloading stiffness degradation') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_gDLim.setDefault(0.0)
+	
+	# gF1
+	at_gF1= MpcAttributeMetaData()
+	at_gF1.type= MpcAttributeType.Real
+	at_gF1.name= 'gF1'
+	at_gF1.group= 'Optional - Degradation parameters'
+	at_gF1.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('gF1')+'<br/>') + 
+		html_par('floating point value controlling cyclic degradation model for strength degradation') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_gF1.setDefault(0.0)
+	
+	# gF2
+	at_gF2= MpcAttributeMetaData()
+	at_gF2.type= MpcAttributeType.Real
+	at_gF2.name= 'gF2'
+	at_gF2.group= 'Optional - Degradation parameters'
+	at_gF2.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('gF2')+'<br/>') + 
+		html_par('floating point value controlling cyclic degradation model for strength degradation') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_gF2.setDefault(0.0)
+	
+	# gF3
+	at_gF3= MpcAttributeMetaData()
+	at_gF3.type= MpcAttributeType.Real
+	at_gF3.name= 'gF3'
+	at_gF3.group= 'Optional - Degradation parameters'
+	at_gF3.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('gF3')+'<br/>') + 
+		html_par('floating point value controlling cyclic degradation model for strength degradation') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_gF3.setDefault(0.0)
+	
+	# gF4
+	at_gF4= MpcAttributeMetaData()
+	at_gF4.type= MpcAttributeType.Real
+	at_gF4.name= 'gF4'
+	at_gF4.group= 'Optional - Degradation parameters'
+	at_gF4.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('gF4')+'<br/>') + 
+		html_par('floating point value controlling cyclic degradation model for strength degradation') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_gF4.setDefault(0.0)
+	
+	# gFLim
+	at_gFLim= MpcAttributeMetaData()
+	at_gFLim.type= MpcAttributeType.Real
+	at_gFLim.name= 'gFLim'
+	at_gFLim.group= 'Optional - Degradation parameters'
+	at_gFLim.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('gFLim')+'<br/>') + 
+		html_par('floating point value controlling cyclic degradation model for strength degradation') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_gFLim.setDefault(0.0)
+	
+	# gE
+	at_gE= MpcAttributeMetaData()
+	at_gE.type= MpcAttributeType.Real
+	at_gE.name= 'gE'
+	at_gE.group= 'Optional - Degradation parameters'
+	at_gE.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('gE')+'<br/>') + 
+		html_par('floating point value used to define maximum energy dissipation under cyclic loading. Total energy dissipation capacity is defined as this factor multiplied by the energy dissipated under monotonic loading.') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_gE.setDefault(100.0)
+		
+	# dmgType
+	at_dmgType= MpcAttributeMetaData()
+	at_dmgType.type= MpcAttributeType.String
+	at_dmgType.name= 'dmgType'
+	at_dmgType.group= 'Optional - Degradation parameters'
+	at_dmgType.description= (
+		html_par(html_begin()) +
+		html_par(html_boldtext('dmgType')+'<br/>') + 
+		html_par('string to indicate type of damage (option: "cycle", "energy")') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
+		html_end()
+		)
+	at_dmgType.sourceType = MpcAttributeSourceType.List
+	at_dmgType.setSourceList(['cycle', 'energy'])
+	at_dmgType.setDefault('cycle')
+	
+	# Hinge parameters
 	# Ky
 	at_Ky = make_attr('Ky', 'Hinge parameters', 'Expression for the definition of initial stiffness in y direction.\nInsert a valid tcl expression that will be evaluated step by step')
 	at_Ky.type = MpcAttributeType.String
@@ -1115,6 +1442,29 @@ def makeXObjectMetaData():
 	xom.addAttribute(at_thetaPCy)
 	xom.addAttribute(at_thetaPCz)
 	
+	xom.addAttribute(at_rDispP)
+	xom.addAttribute(at_rForceP)
+	xom.addAttribute(at_uForceP)
+	xom.addAttribute(at_rDispN)
+	xom.addAttribute(at_rForceN)
+	xom.addAttribute(at_uForceN)
+	xom.addAttribute(at_gK1)
+	xom.addAttribute(at_gK2)
+	xom.addAttribute(at_gK3)
+	xom.addAttribute(at_gK4)
+	xom.addAttribute(at_gKLim)
+	xom.addAttribute(at_gD1)
+	xom.addAttribute(at_gD2)
+	xom.addAttribute(at_gD3)
+	xom.addAttribute(at_gD4)
+	xom.addAttribute(at_gDLim)
+	xom.addAttribute(at_gF1)
+	xom.addAttribute(at_gF2)
+	xom.addAttribute(at_gF3)
+	xom.addAttribute(at_gF4)
+	xom.addAttribute(at_gFLim)
+	xom.addAttribute(at_gE)
+	xom.addAttribute(at_dmgType)
 	# auto-exclusive dependencies
 	xom.setBooleanAutoExclusiveDependency(at_Dimension, at_2D)
 	xom.setBooleanAutoExclusiveDependency(at_Dimension, at_3D)
@@ -1348,6 +1698,40 @@ def writeTcl (pinfo):
 	str_tcl +=  '-hardening {} '.format(alpha_s)
 	str_tcl += '\\\n{}{}'.format(pinfo.indent, tclin.utils.nIndent(nTab))
 	
+	# Define histeretic law parameters
+	rDispP = _get_xobj_attribute(xobj, "rDispP").real
+	rForceP = _get_xobj_attribute(xobj, "rForceP").real
+	uForceP = _get_xobj_attribute(xobj, "uForceP").real
+	rDispN = _get_xobj_attribute(xobj, "rDispN").real
+	rForceN = _get_xobj_attribute(xobj, "rForceN").real
+	uForceN = _get_xobj_attribute(xobj, "uForceN").real
+	str_tcl += '-hystereticParams {} {} {} {} {} {} '.format(rDispP, rForceP, uForceP, rDispN, rForceN, uForceN)
+	str_tcl += '\\\n{}{}'.format(pinfo.indent, tclin.utils.nIndent(nTab))
+	gK1 = _get_xobj_attribute(xobj, "gK1").real
+	gK2 = _get_xobj_attribute(xobj, "gK2").real
+	gK3 = _get_xobj_attribute(xobj, "gK3").real
+	gK4 = _get_xobj_attribute(xobj, "gK4").real
+	gKLim = _get_xobj_attribute(xobj, "gKLim").real
+	str_tcl += '-damageUnloadStiffness {} {} {} {} {} '.format(gK1, gK2, gK3, gK4, gKLim)
+	str_tcl += '\\\n{}{}'.format(pinfo.indent, tclin.utils.nIndent(nTab))
+	gD1 = _get_xobj_attribute(xobj, "gD1").real
+	gD2 = _get_xobj_attribute(xobj, "gD2").real
+	gD3 = _get_xobj_attribute(xobj, "gD3").real
+	gD4 = _get_xobj_attribute(xobj, "gD4").real
+	gDLim = _get_xobj_attribute(xobj, "gDLim").real
+	str_tcl += '-damageReloadStiffness {} {} {} {} {} '.format(gD1, gD2, gD3, gD4, gDLim)
+	str_tcl += '\\\n{}{}'.format(pinfo.indent, tclin.utils.nIndent(nTab))
+	gF1 = _get_xobj_attribute(xobj, "gF1").real
+	gF2 = _get_xobj_attribute(xobj, "gF2").real
+	gF3 = _get_xobj_attribute(xobj, "gF3").real
+	gF4 = _get_xobj_attribute(xobj, "gF4").real
+	gFLim = _get_xobj_attribute(xobj, "gFLim").real
+	str_tcl += '-damageForce {} {} {} {} {} '.format(gF1, gF2, gF3, gF4, gFLim)
+	str_tcl += '\\\n{}{}'.format(pinfo.indent, tclin.utils.nIndent(nTab))
+	gE = _get_xobj_attribute(xobj, "gE").real
+	dmgType = _get_xobj_attribute(xobj, "dmgType").string
+	str_tcl += '-damageType {} {} '.format(dmgType, gE)
+	str_tcl += '\\\n{}{}'.format(pinfo.indent, tclin.utils.nIndent(nTab))
 	# Get some geometric properties from the section
 	# This will be used for substitution of following geometric properties in the Tcl expressions
 	# __W__ 
