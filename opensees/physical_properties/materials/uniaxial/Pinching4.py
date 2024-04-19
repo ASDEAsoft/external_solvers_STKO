@@ -281,14 +281,14 @@ def makeXObjectMetaData():
 		html_end()
 		)
 	
-	# fForceN
-	at_fForceN = MpcAttributeMetaData()
-	at_fForceN.type= MpcAttributeType.Real
-	at_fForceN.name= 'rForceN'
-	at_fForceN.group= 'Optional parameters'
-	at_fForceN.description= (
+	# rForceN
+	at_rForceN = MpcAttributeMetaData()
+	at_rForceN.type= MpcAttributeType.Real
+	at_rForceN.name= 'rForceN'
+	at_rForceN.group= 'Optional parameters'
+	at_rForceN.description= (
 		html_par(html_begin()) +
-		html_par(html_boldtext('fForceN')+'<br/>') + 
+		html_par(html_boldtext('rForceN')+'<br/>') + 
 		html_par('floating point value defining the ratio of the force at which reloading begins to force corresponding to the minimum historic deformation demand') +
 		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Pinching4_Material','Pinching4 Material')+'<br/>') +
 		html_end()
@@ -555,7 +555,7 @@ def makeXObjectMetaData():
 	xom.addAttribute(at_rForceP)
 	xom.addAttribute(at_uForceP)
 	xom.addAttribute(at_rDispN)
-	xom.addAttribute(at_fForceN)
+	xom.addAttribute(at_rForceN)
 	xom.addAttribute(at_uForceN)
 	xom.addAttribute(at_gK1)
 	xom.addAttribute(at_gK2)
@@ -585,7 +585,7 @@ def makeXObjectMetaData():
 	xom.setVisibilityDependency(at_Optional, at_eNf4)
 	xom.setVisibilityDependency(at_Optional, at_eNd4)
 	xom.setVisibilityDependency(at_Optional, at_rDispN)
-	xom.setVisibilityDependency(at_Optional, at_fForceN)
+	xom.setVisibilityDependency(at_Optional, at_rForceN)
 	xom.setVisibilityDependency(at_Optional, at_uForceN)
 	
 	return xom
