@@ -3,7 +3,7 @@ import PyMpc.IO
 from PyMpc import *
 from mpc_utils_html import *
 import opensees.utils.tcl_input as tclin
-import opensees.physical_properties.utils.tester.GuiUtils as gu
+import opensees.utils.Gui.GuiUtils as gu
 from opensees.physical_properties.utils.tester.StrainHistory import *
 from opensees.physical_properties.utils.tester.Tester1D import Tester1D
 from opensees.physical_properties.utils.tester.Tester1D import Tester1DMaterialConfinedSection
@@ -112,7 +112,7 @@ class ColumnTimeSafeFiberSectionWidget(QWidget):
 		self.layout().addWidget(heading)
 		
 		# separator
-		self.separator_1 = gu.makeSeparator()
+		self.separator_1 = gu.makeHSeparator()
 		self.layout().addWidget(self.separator_1)
 		
 		# Section and options for computation of confinement
@@ -169,7 +169,7 @@ class ColumnTimeSafeFiberSectionWidget(QWidget):
 		# self.strain_hist_layout.setColumnStretch(3, 2)
 		
 		# separator
-		self.separator_2 = gu.makeSeparator()
+		self.separator_2 = gu.makeHSeparator()
 		self.layout().addWidget(self.separator_2)
 		
 		# Chart for unconfined and confined concrete
