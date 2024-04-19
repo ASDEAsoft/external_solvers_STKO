@@ -69,19 +69,55 @@ class mpco_cdata_ele_info_reader:
 		self.j = self.i + n
 		res = self.s[self.i : self.j]
 		self.i = self.j + 1
-		return res
+		return n,res
 	def read_all(self):
 		ele_id = self.read_int()
 		geom_id = self.read_int()
-		geom_name = self.read_str()
+		n_geom_name,geom_name = self.read_str()
 		subgeom_id = self.read_int()
 		type = self.read()
 		ppid = self.read_int()
-		ppname = self.read_str()
+		n_ppname,ppname = self.read_str()
 		epid = self.read_int()
-		epname = self.read_str()
+		n_epname,epname = self.read_str()
 		# the first item is kept as string... so it does not mess up the parser... startswith!
-		return [str(ele_id), geom_id, geom_name, subgeom_id, type, ppid, ppname, epid, epname]
+		return [str(ele_id), geom_id, n_geom_name, geom_name, subgeom_id, type, ppid, n_ppname, ppname, epid, n_epname, epname]
+
+def mpco_cdata_sset_reader(it):
+	id = int(next(it, None))
+	name = next(it, None)
+	j = name.find(' ')
+	n_name = int(name[:j])
+	name = name[j+1:j+1+n_name]
+	nn = int(next(it, None))
+	ne = int(next(it, None))
+	nodes = [0]*nn
+	eles = [0]*ne
+	counter = 0
+	while counter < nn:
+		words = next(it, None).split(' ')
+		for w in words:
+			nodes[counter] = int(w)
+			counter += 1
+	counter = 0
+	while counter < ne:
+		words = next(it, None).split(' ')
+		for w in words:
+			eles[counter] = int(w)
+			counter += 1
+	# the first item is kept as string... so it does not mess up the parser... startswith!
+	return [str(id), n_name, name, nn, ne, nodes, eles]
+
+class process_type:
+	'''
+	Defines what kind of proces this is
+	'''
+	
+	# the default
+	writing_tcl_for_analyis = 1
+	
+	# for material tester
+	writing_tcl_for_material_tester = 2
 
 class process_info:
 	def __init__(self):
@@ -97,6 +133,10 @@ class process_info:
 		utils for monitor
 		'''
 		self.monitor = False
+		'''
+		process type
+		'''
+		self.ptype = process_type.writing_tcl_for_analyis
 		'''
 		utils for indentation
 		'''
@@ -257,11 +297,13 @@ class process_info:
 		SECTION_OFFSET = 1
 		BEAM_PROFILE_ASSIGNMENT = 2
 		ELEMENT_INFO = 3
+		SELECTION_SET = 4
 		command_names = {
 			LOCAL_AXES :'*LOCAL_AXES',
 			SECTION_OFFSET : '*SECTION_OFFSET',
 			BEAM_PROFILE_ASSIGNMENT : '*BEAM_PROFILE_ASSIGNMENT',
-			ELEMENT_INFO : '*ELEMENT_INFO'
+			ELEMENT_INFO : '*ELEMENT_INFO',
+			SELECTION_SET : '*SELECTION_SET'
 		}
 		command_names_inv = {}
 		for k,v in command_names.items():
@@ -278,12 +320,17 @@ class process_info:
 					# split each line in words (watch out for ELEMENT_INFO!)
 					is_ele_info = False
 					lines = []
-					for line in contents:
+					iter_contents = iter(contents)
+					for line in iter_contents:
 						if line.startswith('*'):
 							is_ele_info = False
 							if line.startswith('*ELEMENT_INFO'):
 								is_ele_info = True
-							lines.append([line])
+							lines.append([line]) # append the command line here
+							# handle selection set here, it's a multiline... converted into a single line
+							if line.startswith('*SELECTION_SET'):
+								# parse selection set where names can contain white spaces...
+								lines.append(mpco_cdata_sset_reader(iter_contents))
 						else:
 							if is_ele_info:
 								# parse element info where names can contain white spaces...
@@ -299,7 +346,8 @@ class process_info:
 					command_words = {
 						LOCAL_AXES : [],
 						SECTION_OFFSET : [],
-						BEAM_PROFILE_ASSIGNMENT : []
+						BEAM_PROFILE_ASSIGNMENT : [],
+						ELEMENT_INFO : [],
 					}
 					pars = UNKNOWN
 					for words in lines:
@@ -341,14 +389,14 @@ class process_info:
 							pars = command_names_inv.get(w0, UNKNOWN)
 						else:
 							if pars == ELEMENT_INFO:
-								# (ele_id, geom_id, geom_name, subgeom_id, type, ppid, ppname, epid, epname)
-								ppid = words[5] # original physical property id
+								# (ele_id, geom_id, n_geom_name, geom_name, subgeom_id, type, ppid, n_ppname, ppname, epid, n_epname, epname)
+								ppid = words[6] # original physical property id
 								values = self.mpco_cdata_utils.mapped_physical_properties.get(ppid, None)
 								if values:
 									ele_id = int(words[0]) # it is a string from the read_all !
 									if ele_id in values:
 										new_ppid = values[ele_id]
-										words[5] = new_ppid
+										words[6] = new_ppid
 										mapped_lines.append(words)
 					if len(mapped_lines) > 0:
 						f.write(
@@ -363,9 +411,64 @@ class process_info:
 							'*ELEMENT_INFO\n'
 							)
 						for v in mapped_lines:
-							f.write('{} {} {} {} {} {} {} {} {} {} {} {}\n'.format(
-								v[0], v[1], len(v[2]), v[2], v[3], v[4], v[5], len(v[6]), v[6], v[7], len(v[8]), v[8]
-								))
+							f.write('{}\n'.format(' '.join(str(iv) for iv in v)))
+					#
+					# 3. add lines of SELECTION_SET for remapped elements
+					pars = UNKNOWN
+					mapped_lines = []
+					iter_lines = iter(lines)
+					for line in iter_lines:
+						if len(line) == 0:
+							continue
+						if line[0].startswith('*SELECTION_SET'):
+							line = next(iter_lines, None)
+							# (str(id), n_name, name, nn, ne, nodes, eles)
+							eles = line[6] # source elements
+							added_eles = []
+							for source_ele in eles:
+								all_mapped_eles = self.mpco_cdata_utils.mapped_elements.get(source_ele, [])
+								for mapped_ele in all_mapped_eles:
+									if not mapped_ele in eles:
+										added_eles.append(mapped_ele)
+							if len(added_eles) > 0:
+								# write updated (adding added_eles)
+								f.write(
+									'\n#Begin SELECTION SET data (FOR AUTO-GENERATED ELEMENTS).\n'
+									'#For each selection set the following data is provided:\n'
+									'#SET_ID (LENGTH+)SET_NAME NNODES NELEMENTS N1 ... N(NNODES) E1 ... E(NELEMENTS)\n'
+									'#Where: #SET_ID = the id of the selection set\n'
+									'#SET_NAME = the name of the selection set\n'
+									'#NNODES = the number of nodes\n'
+									'#NELEMENTS = the number of elements\n'
+									'*SELECTION_SET\n'
+									)
+								nodes = line[5]
+								num_nodes = len(nodes)
+								eles = eles + added_eles
+								num_eles = len(eles)
+								f.write('{}\n{} {}\n{}\n{}\n'.format(line[0], line[1], line[2], num_nodes, num_eles))
+								if num_nodes > 0:
+									counter = 0
+									for i in nodes:
+										counter += 1
+										if counter > 1 and counter <= 10: f.write(' ')
+										f.write(str(i))
+										if counter >= 10:
+											f.write('\n')
+											counter = 0
+									if counter != 0:
+										f.write('\n')
+								if num_eles > 0:
+									counter = 0
+									for i in eles:
+										counter += 1
+										if counter > 1 and counter <= 10: f.write(' ')
+										f.write(str(i))
+										if counter >= 10:
+											f.write('\n')
+											counter = 0
+									if counter != 0:
+										f.write('\n')
 
 class auto_generated_element_data:
 	def __init__(self):

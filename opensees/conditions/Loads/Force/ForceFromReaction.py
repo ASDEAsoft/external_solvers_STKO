@@ -255,7 +255,7 @@ def writeTcl_Force(pinfo, xobj):
 			for i in node_id:
 				# if doc.mesh.partitionData.nodePartition(i) != process_id:
 					# continue
-				if not doc.mesh.partitionData.isNodeOnParition(i, process_id):
+				if not doc.mesh.partitionData.isNodeOnPartition(i, process_id):
 					continue
 				if not first_done:
 					if process_block_count == 0:

@@ -112,7 +112,6 @@ import random
 import matplotlib
 # Make sure that we are using QT5
 matplotlib.use('Qt5Agg')
-
 from numpy import arange, sin, pi
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -121,82 +120,60 @@ from matplotlib import cm
 import matplotlib.pyplot as plt
 import numpy as np
 
-params = {'legend.fontsize': 'x-small',
-         'axes.labelsize': 'x-small',
-         'axes.titlesize':'x-small',
-         'xtick.labelsize':'x-small',
-         'ytick.labelsize':'x-small'}
-
-		
+plt_params = {
+	'legend.fontsize': 'x-small',
+	'axes.labelsize': 'x-small',
+	'axes.titlesize':'x-small',
+	'xtick.labelsize':'x-small',
+	'ytick.labelsize':'x-small'
+	}
 class MyMplCanvas(FigureCanvas):
 	"""Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
 	def __init__(self, parent=None, width=5, height=4, dpi=100):
 
-		# fig = Figure(figsize=(width, height), dpi=dpi)
-		
-		# fig, axs = plt.subplots(1, 2)
-		# x1 =[]
-		# y1= []
-		# self.ax_mass = plt.plot(x1, y1, label = 'test 1')
-		# self.ax_stiff =  plt.plot(x1, y1, label = 'test 2')
-		# self.ax_mK =  plt.plot(x1, y1, label = 'test 3')
-		# self.ax_f1 =  plt.plot(x1, y1, label = 'test 4')
-		# self.ax_f2 =  plt.plot(x1, y1, label = 'test 5')
-		# plt.legend() 
-		# fig = plt.figure()
-		
 		fig = Figure(figsize=(width, height), dpi=dpi)
 		FigureCanvas.__init__(self, fig)
-
+		# setup
 		self.control = parent
 		self.figure = fig
-
-		self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-		plt.rcParams.update(params)
+		plt.rcParams.update(plt_params)
 		
-		self.ax_mass = fig.add_subplot(111)
-		self.ax_mass.set_title('Damping')
-		self.ax_mass.set_xlabel('f[Hz]')
-		self.ax_mass.set_xlim(0.0, 15.0)
-		self.ax_mass.set_ylabel('csi')
-		self.ax_mass.set_ylim(0, 1)
-		self.ax_mass.grid()
-		self.ax_mass.plot()
+		# make sublot
+		self.subplot = fig.add_subplot(111)
+		self.subplot.set_title('Damping')
+		self.subplot.set_xlabel('f[Hz]')
+		self.subplot.set_xlim(0.0, 15.0)
+		self.subplot.set_ylabel('csi')
+		self.subplot.set_ylim(0.0, 1.0)
+		self.subplot.grid(linestyle=':')
+		self.subplot.plot()
 	
-		self.ax_stiff =  fig.add_subplot(111)
-		self.ax_mK= fig.add_subplot(111)
-		self.ax_f1= fig.add_subplot(111)
-		self.ax_f2= fig.add_subplot(111)
-		
-		# fig.legend((self.ax_f1,self.ax_f2), ('Line 3', 'Line 4'), 'upper right')
-		
+		# intialize
 		self.compute_initial_figure()
 
+		# done
 		self.setParent(parent)
-
 		FigureCanvas.updateGeometry(self)
 
 
 	def compute_initial_figure(self):
-		hl_ax_mass = self.ax_mass.plot([],[],'r-')
-		self.hl_ax_mass = hl_ax_mass[0]
+		self.hl_ax_mass = self.subplot.plot([],[])[0]
 		self.hl_ax_mass.set_label('Mass proportional')
-		self.ax_mass.legend()
-		hl_ax_stiff = self.ax_stiff.plot([],[],'g-')
-		self.hl_ax_stiff = hl_ax_stiff[0]
-		self.hl_ax_stiff.set_label('Stiffness proportional')
-		self.ax_stiff.legend()
-		hl_ax_mK = self.ax_mK.plot([],[])
-		self.hl_ax_mK = hl_ax_mK[0]
-		self.hl_ax_mK.set_label('Rayleigh Damping')
-		self.ax_mK.legend()
 		
-		hl_ax_f1 = self.ax_f1.plot([],[],'k:')
+		self.hl_ax_stiff = self.subplot.plot([],[])[0]
+		self.hl_ax_stiff.set_label('Stiffness proportional')
+ 
+		self.hl_ax_mK = self.subplot.plot([],[])[0]
+		self.hl_ax_mK.set_label('Rayleigh Damping')
+		
+		hl_ax_f1 = self.subplot.plot([],[],'k:')
 		self.hl_ax_f1 = hl_ax_f1[0]
-		hl_ax_f2 = self.ax_f2.plot([],[],'k:')
+		
+		hl_ax_f2 = self.subplot.plot([],[],'k:')
 		self.hl_ax_f2 = hl_ax_f2[0]
-
+		
+		self.subplot.legend()
+		
 	def update_figure(self, x, mass, stiff, mK, csi , xobj):
 
 		# update mass
@@ -233,8 +210,8 @@ class MyMplCanvas(FigureCanvas):
 		self.hl_ax_f2.set_xdata(x_2)
 		self.hl_ax_f2.set_ydata(csi_2)
 		
-		self.ax_mass.set_xlim(0.0, 1.1*f2)
-		self.ax_mass.set_ylim(0, csi)
+		self.subplot.set_xlim(0.0, 1.1*f2)
+		self.subplot.set_ylim(0, csi)
 
 		self.draw()
 		# FigureCanvas.updateGeometry(self)

@@ -176,6 +176,33 @@ def getRequestedNodalSpatialDim(xobj):
 	
 	return requested_node_dim_map
 
+def ensureNodesOnPartitions(xobj, pmap):
+	# make sure a master node is on every partition a slave node is
+	doc = App.caeDocument()
+	if doc is None: return
+	if doc.mesh is None: return
+	process_count = len(doc.mesh.partitionData.partitions)
+	if process_count <= 1: return
+	all_inter = xobj.parent.assignment.interactions
+	for inter in all_inter:
+		if (inter.type == MpcInteractionType.NodeToElement):
+			continue # will raise and error later on
+		moi = doc.mesh.getMeshedInteraction(inter.id)
+		for elem in moi.elements:
+			if (elem.numberOfMasterNodes() != 1 or elem.numberOfSlaveNodes() == 0):
+				continue # will raise and error later on
+			master_id = elem.nodes[0].id
+			master_parts = pmap.get(master_id, None)
+			if master_parts is None:
+				master_parts = []
+				pmap[master_id] = master_parts
+			for process_id in range(process_count):
+				for slave_counter in range(1, len(elem.nodes)):
+					slave_id = elem.nodes[slave_counter].id
+					if doc.mesh.partitionData.isNodeOnPartition(slave_id, process_id):
+						if not process_id in master_parts:
+							master_parts.append(process_id)
+
 def __process_rigidLink (doc, pinfo, is_partitioned, all_inter, process_id, process_block_count, type, indent):
 	first_done = False
 	for inter in all_inter:
@@ -186,16 +213,7 @@ def __process_rigidLink (doc, pinfo, is_partitioned, all_inter, process_id, proc
 			if (elem.numberOfMasterNodes() != 1 or elem.numberOfSlaveNodes() == 0):
 				raise Exception('wrong master-slave connectivity, expected: 1 master, N>0 slaves, given: {} masters, {} slaves'.format(elem.numberOfMasterNodes(), elem.numberOfSlaveNodes()))
 			
-			if is_partitioned:
-				if doc.mesh.partitionData.elementPartition(elem.id) != process_id:
-					continue
-				if not first_done:
-					if process_block_count == 0:
-						pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$STKO_VAR_process_id == ', process_id, '} {'))
-					else:
-						pinfo.out_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$STKO_VAR_process_id == ', process_id, '} {'))
-					first_done = True
-			
+			# check master node
 			master_id = elem.nodes[0].id
 			if not master_id in pinfo.node_to_model_map:
 				raise Exception('Error: master node without assigned element')		#nodo senza elemento assegnato
@@ -203,7 +221,8 @@ def __process_rigidLink (doc, pinfo, is_partitioned, all_inter, process_id, proc
 			ndf_master_map = pinfo.node_to_model_map[master_id][1]
 			if (pinfo.ndm != ndm_master_map) or (pinfo.ndf != ndf_master_map):
 				raise Exception('Error: different ndm/ndf in master node')		# ndm ed ndf applicati all'elemento devono essere uguali a quelli della mappa
-					
+			
+			# for each slave ... 
 			for slave_counter in range(1, len(elem.nodes)):
 				slave_id = elem.nodes[slave_counter].id
 				if not slave_id in pinfo.node_to_model_map:
@@ -215,6 +234,24 @@ def __process_rigidLink (doc, pinfo, is_partitioned, all_inter, process_id, proc
 				if (pinfo.ndm != ndm_slave_map) or (pinfo.ndf != ndf_slave_map):
 					raise Exception('Error: diffrent ndm/ndf in slave node')		# ndm ed ndf applicati all'elemento devono essere uguali a quelli della mappa
 				
+				# partition check
+				if is_partitioned:
+					# if doc.mesh.partitionData.elementPartition(elem.id) != process_id:
+						# continue
+					# The above does not work good with transformation method. the MP constraint should be in every partition
+					# the slave node belongs to. Note that we are sure that also the master node will be in that partition since
+					# they belong to a link element in stko mesh.
+					if not doc.mesh.partitionData.isNodeOnPartition(slave_id, process_id):
+						continue
+				
+				# write
+				if is_partitioned:
+					if not first_done:
+						if process_block_count == 0:
+							pinfo.out_file.write('\n{}{}{}{}\n'.format(pinfo.indent, 'if {$STKO_VAR_process_id == ', process_id, '} {'))
+						else:
+							pinfo.out_file.write('{}{}{}{}\n'.format(pinfo.indent, ' elseif {$STKO_VAR_process_id == ', process_id, '} {'))
+						first_done = True
 				pinfo.out_file.write('{}{}rigidLink {} {} {}\n'.format(pinfo.indent, indent, type, master_id, slave_id))
 				
 	if is_partitioned:

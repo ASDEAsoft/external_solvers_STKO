@@ -22,7 +22,7 @@ class _monitor_globals:
 		'Reaction Moment':('nodeReaction', MAP_COMP_R),
 	})
 	
-	# Massimo: added 5/11/2021. When a node is in more that 1 partition,
+	# Massimo: added 5/11/2021. When a node is in more than 1 partition,
 	# each partition value, by default, is accumulated to the others (SUM).
 	# this is fine for results such as reactions in a domain decomposition,
 	# but not for results such as displacements!
@@ -101,7 +101,7 @@ def makeXObjectMetaData():
 	at_typeXResult.name = 'Result/X'
 	at_typeXResult.group = 'Plot X Axis'
 	at_typeXResult.sourceType = MpcAttributeSourceType.List
-	at_typeXResult.setSourceList(['Displacement', 'Rotation', 'Velocity', 'Angular Velocity', 'Acceleration', 'Angular Acceleration', 'Reaction Force', 'Reaction Moment'])
+	at_typeXResult.setSourceList(list(_monitor_globals.MAP_RES_COMP))
 	at_typeXResult.setDefault('Displacement')
 	#node plot X
 	at_node_idX = MpcAttributeMetaData()
@@ -158,7 +158,7 @@ def makeXObjectMetaData():
 	at_typeYResult.name = 'Result/Y'
 	at_typeYResult.group = 'Plot Y Axis'
 	at_typeYResult.sourceType = MpcAttributeSourceType.List
-	at_typeYResult.setSourceList(['Displacement', 'Rotation', 'Velocity', 'Angular Velocity', 'Acceleration', 'Angular Acceleration', 'Reaction Force','Reaction Moment'])
+	at_typeYResult.setSourceList(list(_monitor_globals.MAP_RES_COMP))
 	at_typeYResult.setDefault('Displacement')
 	#node plot
 	at_node_idY = MpcAttributeMetaData()
@@ -326,7 +326,7 @@ def writeTcl(pinfo):
 		return a
 	
 	def writeBackgroundPlot(xLabel, yLabel):
-		with open("{}/{}.pltbg".format(pinfo.out_dir, _get_plot_name(xobj)), "w") as f:
+		with open("{}/{}.pltbg".format(pinfo.out_dir, _get_plot_name(xobj)), "w", encoding='utf-8') as f:
 			f.write('{}\t{}\n'.format(xLabel, yLabel))
 			for i in range (n):
 				f.write('{}\t {}\n'.format(xAxis.valueAt(i), yAxis.valueAt(i)))
@@ -334,7 +334,7 @@ def writeTcl(pinfo):
 	def nodePartitions(node_id):
 		partitions = []
 		for process_id in range(pinfo.process_count):
-			if doc.mesh.partitionData.isNodeOnParition(node_id, process_id):
+			if doc.mesh.partitionData.isNodeOnPartition(node_id, process_id):
 				partitions.append(process_id)
 		return partitions
 	
@@ -601,17 +601,19 @@ def initializeMonitor(pinfo):
 	if os.path.exists(dest_dir):
 		shutil.rmtree(dest_dir)
 	shutil.copytree(source_dir, dest_dir)
+	if sys.platform == 'linux':
+		os.chmod(dest_dir + os.sep + 'STKOMonitor.sh', 0o777)
 	
 	# outout file
 	f = pinfo.out_file
 	
 	# write tcl command to run the monitor
 	if sys.platform == 'win32':
-		with open('{}/LaunchSTKOMonitor.bat'.format(pinfo.out_dir), 'w+') as fmon:
+		with open('{}/LaunchSTKOMonitor.bat'.format(pinfo.out_dir), 'w+', encoding='utf-8') as fmon:
 			fmon.write('.\\STKOMonitor\\STKOMonitor.bat')
 	elif sys.platform == 'linux':
 		launcher_name = '{}/LaunchSTKOMonitor.sh'.format(pinfo.out_dir)
-		with open(launcher_name, 'w+') as fmon:
+		with open(launcher_name, 'w+', encoding='utf-8') as fmon:
 			fmon.write('./STKOMonitor/STKOMonitor.sh')
 		os.chmod(launcher_name, 0o777)
 	

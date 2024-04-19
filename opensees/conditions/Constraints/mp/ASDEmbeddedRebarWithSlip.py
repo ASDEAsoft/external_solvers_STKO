@@ -57,6 +57,22 @@ def makeXObjectMetaData():
 		)
 	son.setDefault(True)
 	
+	# tolerance
+	tol = MpcAttributeMetaData()
+	tol.type = MpcAttributeType.Real
+	tol.name = 'tolerance'
+	tol.group = 'Default'
+	tol.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('KP (Penalty)')+'<br/>') + 
+		html_par(
+			"A relative tolerance to consider a node inside or outside.<br/>"
+			) +
+		html_par(html_href(dp,'ASDEmbeddedRebarWithSlip')+'<br/>') +
+		html_end()
+		)
+	tol.setDefault(1.0e-2)
+	
 	mat = MpcAttributeMetaData()
 	mat.type = MpcAttributeType.Index
 	mat.name = 'Bar-Slip Material'
@@ -92,6 +108,7 @@ def makeXObjectMetaData():
 	xom.name = 'ASDEmbeddedRebarWithSlip'
 	xom.addAttribute(K)
 	xom.addAttribute(son)
+	xom.addAttribute(tol)
 	xom.addAttribute(mat)
 	xom.addAttribute(dia)
 	
@@ -150,6 +167,7 @@ def writeTcl_mpConstraints(pinfo):
 	ignore_outside = _geta(xobj, 'Ignore Nodes Outside').boolean
 	slip_tag = _geta(xobj, 'Bar-Slip Material').index
 	dia = _geta(xobj, 'Rebar Diameter').quantityScalar.value
+	tol = _geta(xobj, 'tolerance').real
 	
 	# some stats
 	stats = [0, 0]
@@ -174,17 +192,29 @@ def writeTcl_mpConstraints(pinfo):
 				orientation = elem.orientation.computeOrientation()
 				Vx = Math.vec3(orientation[0,0], orientation[1,0], orientation[2,0])
 				lump_factors = elem.computeLumpingFactors()
+				local_id = 1
 				for node, length in zip(elem.nodes, lump_factors):
 					slave_data = slave_node_map.get(node.id, None)
 					if slave_data is None:
-						slave_data = [Math.vec3(0.0,0.0,0.0), Math.vec3(0.0,0.0,0.0), 0.0]
+						#             Vx                      Vy                      L    local_id (1 for first ele-node, 2 for second), counter (< 2!)
+						slave_data = [Math.vec3(0.0,0.0,0.0), Math.vec3(0.0,0.0,0.0), 0.0, 0, 0]
 						slave_node_map[node.id] = slave_data
-					slave_data[0] += Vx
+					if slave_data[3] == local_id:
+						slave_data[0] -= Vx
+					else:
+						slave_data[0] += Vx
 					slave_data[2] += length
+					slave_data[3] = local_id
+					slave_data[4] += 1 # increase counter
+					if slave_data[4] > 2:
+						raise Exception(_err(pinfo.condition.id, 'This condition cannot be applied on complex wires (i.e. a wire where a vertex is shared by more than 2 edges)'))
+					local_id += 1
 		# normalize tangent vectors and compute Vy vectors
 		for slave_id, slave_data in slave_node_map.items():
 			Vx = slave_data[0]
 			Vx.normalize()
+			if Vx.norm() == 0.0:
+				raise Exception(_err(pinfo.condition.id, 'Found misaligned edges (this should never happen). Please contact STKO team.'))
 			if abs(Vx[2]) > 0.99:
 				temp = Math.vec3(1.0, 0.0, 0.0)
 			else:
@@ -294,14 +324,14 @@ def writeTcl_mpConstraints(pinfo):
 						'has a wrong family type ({})'.format(elem.id, family)
 						))
 				# check distance
-				if distance > 1.0e-2:
+				if distance > tol:
 					if ignore_outside:
 						stats[1] += 1
 						continue
 					else:
 						raise Exception(_err(pinfo.condition.id, 
 							'The constrained node of the Link element {} '
-							'is outside the embedding domain (error = {} %; Max allowed error = 1.0 %)'.format(elem.id, distance*100.0)
+							'is outside the embedding domain (error = {} %; Max allowed error = {} %)'.format(elem.id, distance*100.0, tol*100.0)
 							))
 				# open process if-statement block
 				block_indent = ''

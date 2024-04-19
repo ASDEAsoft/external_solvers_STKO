@@ -459,9 +459,9 @@ def writeTcl(pinfo):
 	write('}') # close the fiber loop
 	
 	# write elastic section
-	write('#elastic section')
+	write('# elastic section')
 	elastic_section_id = mat_id # save it for later
-	write('section Elastic {0} {1} {2} {3:.2e} {3:.2e} [expr {1}/2.5] {3:.2e}'.format(mat_id, Em/P, Aelem/(L**2), 10.0**(OM(Aelem/(L**2))-5)))
+	write('section Elastic {0} {1} {2} {3} {3} [expr {1}/2.5] {3}'.format(mat_id, Em/P, Aelem/(L**2), 10.0**(OM(Aelem/(L**2))-5)))
 	mat_id += 1
 	
 	# write midspan node
@@ -489,10 +489,28 @@ def writeTcl(pinfo):
 	write('geomTransf Linear {}  0.0 0.0 1.0'.format(ele_id_1))
 	write('geomTransf Linear {}  0.0 0.0 1.0'.format(ele_id_2))
 	write('# elements')
-	write('element beamWithHinges {0} {1}  {2} {3} [expr {4}*0.1] {10} [expr {4}*0.05] {5} {6} {8} {9}   [expr {5}/2.5] {7} {0}'.format(
+	write('# element beamWithHinges {0} {1}  {2} {3} [expr {4}*0.1] {10} [expr {4}*0.05] {5} {6} {8} {9}   [expr {5}/2.5] {7} {0}'.format(
 		ele_id_1, center_node_id, n1.id, fiber_section_id, rinf/L, Em/P, Aelem/(L**2), GJ/(F*L**2), Ieq/(L**4), 10.0**(OM(Ieq/(L**4))-8), elastic_section_id))
-	write('element beamWithHinges {0} {1}  {2} {3} [expr {4}*0.1] {10} [expr {4}*0.05] {5} {6} {8} {9}   [expr {5}/2.5] {7} {0}'.format(
+	write('# element beamWithHinges {0} {1}  {2} {3} [expr {4}*0.1] {10} [expr {4}*0.05] {5} {6} {8} {9}   [expr {5}/2.5] {7} {0}'.format(
 		ele_id_2, center_node_id, n3.id, fiber_section_id, rinf/L, Em/P, Aelem/(L**2), GJ/(F*L**2), Ieq/(L**4), 10.0**(OM(Ieq/(L**4))-8), elastic_section_id))
+	
+	# E   Em/P
+	# A   Aelem/(L**2)
+	#Iz   Ieq/(L**4)
+	#Iy   10.0**(OM(Ieq/(L**4))-8)
+	# G   (Em/P)/2.5
+	# J   GJ/(F*L**2)
+	# write elastic section for new beamWithHinges (forceBeamColumn)
+	write('# elastic section (for beamWithHinges -> forceBeamColumn+HingeRadau)')
+	elastic_section_id_fb = mat_id # save it for later
+	write('section Elastic {} {} {} {} {} {} {}'.format(
+		mat_id, Em/P, Aelem/(L**2), Ieq/(L**4), 10.0**(OM(Ieq/(L**4))-8), (Em/P)/2.5, GJ/(F*L**2)))
+	mat_id += 1
+	# elements with fb instead of beamWithHinges (new format)
+	write('element forceBeamColumn {}   {} {}   {}   "HingeRadau {} {} {} {} {}"'.format(
+		ele_id_1, center_node_id, n1.id, ele_id_1, fiber_section_id, rinf/L*0.1, elastic_section_id, rinf/L*0.05, elastic_section_id_fb))
+	write('element forceBeamColumn {}   {} {}   {}   "HingeRadau {} {} {} {} {}"'.format(
+		ele_id_2, center_node_id, n3.id, ele_id_2, fiber_section_id, rinf/L*0.1, elastic_section_id, rinf/L*0.05, elastic_section_id_fb))
 	
 	# write recorders for removal
 	# first create a directory for storing the collapse recorders outputs. remove it first, if it already exists.
@@ -512,12 +530,12 @@ def writeTcl(pinfo):
 			os.remove(filename)
 	# create the OOP-IIP tcl file needed by the recorder
 	OOP_IIP_filename = 'OOP_IIP_curve_wall_{}.tcl'.format(elem.id) # we use the quad element id for this wall file
-	with open('{}/{}'.format(pinfo.out_dir, OOP_IIP_filename), 'w') as OOP_IIP_file:
+	with open('{}/{}'.format(pinfo.out_dir, OOP_IIP_filename), 'w', encoding='utf-8') as OOP_IIP_file:
 		for i in range(Ninteraction):
 			OOP_IIP_file.write('{}\t{}\n'.format(OOPv[i]/L, IIPv[i]/L))
 	# write recorders for removal
 	write('# recorders for removal')
-	write('recorder Collapse -ele {}   -time  -crit INFILLWALL  -file "{}/CollapseSequence.out"  -file_infill "{}" -global_gravaxis 3 -checknodes {} {} {}'.format(
+	write('recorder Collapse -ele {}   -time  -crit INFILLWALL  -file "{}/CollapseSequence_[getPID].out"  -file_infill "{}" -global_gravaxis 3 -checknodes {} {} {}'.format(
 		ele_id_1, removal_dir, OOP_IIP_filename, n1.id, center_node_id, n3.id))
 	write('recorder Collapse -ele {}   -time  -crit INFILLWALL  -file_infill "{}" -global_gravaxis 3 -checknodes {} {} {}'.format(
 		ele_id_2, OOP_IIP_filename, n1.id, center_node_id, n3.id))

@@ -20,7 +20,7 @@ def makeXObjectMetaData():
 		return a
 
 	# numIntgrPts
-	at_numIntgrPts = mka('numIntgrPts', MpcAttributeType.Integer, 'Group', 'total number of integration points - recommended to exceed (1.5L ⁄ lc + 1) when default integration method is used (L = beam length and lc = characteristic length)')
+	at_numIntgrPts = mka('numIntgrPts', MpcAttributeType.Integer, 'Group', 'total number of integration points - recommended to exceed (1.5L / lc + 1) when default integration method is used (L = beam length and lc = characteristic length)')
 	at_numIntgrPts.setDefault(5)
 
 	# endSecTag1

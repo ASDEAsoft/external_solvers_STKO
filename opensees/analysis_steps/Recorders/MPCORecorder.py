@@ -43,6 +43,10 @@ def makeXObjectMetaData():
 	at_reactionMomentIncludingInertia = mka_nr('reactionMomentIncludingInertia')
 	at_rayleighForce = mka_nr('rayleighForce')
 	at_rayleighMoment = mka_nr('rayleighMoment')
+	at_unbalancedForce = mka_nr('unbalancedForce')
+	at_unbalancedMoment = mka_nr('unbalancedMoment')
+	at_unbalancedForceIncludingInertia = mka_nr('unbalancedForceIncludingInertia')
+	at_unbalancedMomentIncludingInertia = mka_nr('unbalancedMomentIncludingInertia')
 	at_pressure = mka_nr('pressure')
 	at_modesOfVibration = mka_nr('modesOfVibration')
 	at_modesOfVibrationRotational = mka_nr('modesOfVibrationRotational')
@@ -127,6 +131,10 @@ def makeXObjectMetaData():
 	xom.addAttribute(at_reactionMomentIncludingInertia)
 	xom.addAttribute(at_rayleighForce)
 	xom.addAttribute(at_rayleighMoment)
+	xom.addAttribute(at_unbalancedForce)
+	xom.addAttribute(at_unbalancedMoment)
+	xom.addAttribute(at_unbalancedForceIncludingInertia)
+	xom.addAttribute(at_unbalancedMomentIncludingInertia)
 	xom.addAttribute(at_pressure)
 	xom.addAttribute(at_modesOfVibration)
 	xom.addAttribute(at_modesOfVibrationRotational)
@@ -260,6 +268,14 @@ def writeTcl(pinfo):
 		sopt += ' "rayleighForce"'
 	if geta('rayleighMoment').boolean:
 		sopt += ' "rayleighMoment"'
+	if geta('unbalancedForce').boolean:
+		sopt += ' "unbalancedForce"'
+	if geta('unbalancedMoment').boolean:
+		sopt += ' "unbalancedMoment"'
+	if geta('unbalancedForceIncludingInertia').boolean:
+		sopt += ' "unbalancedForceIncludingInertia"'
+	if geta('unbalancedMomentIncludingInertia').boolean:
+		sopt += ' "unbalancedMomentIncludingInertia"'
 	if geta('pressure').boolean:
 		sopt += ' "pressure"'
 	if geta('modesOfVibration').boolean:

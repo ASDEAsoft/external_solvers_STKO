@@ -238,7 +238,7 @@ def writeTcl(pinfo):
 		# create an auxiliary file
 		param_file_name = 'setParameter_{}.tcl'.format(pinfo.analysis_step.id)
 		pinfo.out_file.write('{}source {}\n'.format(pinfo.indent, param_file_name))
-		with open('{}/{}'.format(pinfo.out_dir, param_file_name), 'w+') as param_file:
+		with open('{}/{}'.format(pinfo.out_dir, param_file_name), 'w+', encoding='utf-8') as param_file:
 			# check partitions
 			if pinfo.process_count > 1:
 				for pid, elements in pid_element_map.items():

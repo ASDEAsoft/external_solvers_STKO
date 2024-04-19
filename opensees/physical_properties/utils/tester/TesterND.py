@@ -112,12 +112,13 @@ class TesterND(QObject):
 	# (or just one if the material does not depend on other materials), the component data,
 	# and a list of strains.
 	# in case of multiple materials the last one will be tested.
-	def __init__(self, type, materials, cdata, time_history, strain_history, parent = None):
+	def __init__(self, type, materials, lch, cdata, time_history, strain_history, parent = None):
 		# base class initialization
 		super(TesterND, self).__init__(parent)
 		# self initialization
 		self.type = type # NDTraits types (0, 1, 3)
 		self.materials = materials
+		self.lch = lch
 		self.cdata = cdata
 		# copy the input strain vector in a private member. why? if the analysis does not finsh
 		# correctly, the stress will have less entries than the strain
@@ -173,6 +174,7 @@ class TesterND(QObject):
 		# write materials
 		buffer_materials = StringIO()
 		pinfo.out_file = buffer_materials
+		pinfo.ptype = tclin.process_type.writing_tcl_for_material_tester
 		write_physical_properties.write_physical_properties(self.materials, pinfo, 'materials')
 		pinfo.out_file = None
 		
@@ -201,6 +203,7 @@ class TesterND(QObject):
 		# and write to file
 		fo.write(template.replace(
 			'__materials__', buffer_materials.getvalue()).replace(
+			'__lch__', QLocale().toString(self.lch)).replace(
 			'__tag__', str(test_prop_id)).replace(
 			'__2Dtype__', NDTraits.TYPE[self.type]).replace( 
 			'__time__', buffer_time.getvalue()).replace(
@@ -208,7 +211,7 @@ class TesterND(QObject):
 			'__flags1__', buffer_flags1.getvalue()).replace(
 			'__flags2__', buffer_flags2.getvalue()).replace(
 			'__imps__', buffer_imps.getvalue()).replace(
-			'__out__', temp_output_file))
+			'__out__', os.path.relpath(temp_output_file, temp_dir)))
 		
 		# relase temporary buffers
 		buffer_materials.close()
@@ -234,15 +237,21 @@ class TesterND(QObject):
 		
 		# prepare test
 		(opensees_cmd, temp_dir, temp_script_file, temp_output_file) = self.__prepare_test()
+		
+		# bugfix 01/2024
+		# since the working dir may contain unicode characters that won't work fine in tcl
+		# we pass the relative path, since the process will run anyway in the working dir
+		temp_script_file_rel = os.path.relpath(temp_script_file, temp_dir)
+		
 		print('Running OpenSEES')
 		print('command: {}'.format(opensees_cmd))
-		print('args: {}'.format(temp_script_file))
+		print('args: {}'.format(temp_script_file_rel))
 		
 		# strain size
 		ssize = NDTraits.STRAIN_SIZE[self.type]
 		
 		# launch opensees and communicate
-		for item in tu.executeAsync([opensees_cmd, temp_script_file], temp_dir):
+		for item in tu.executeAsync([opensees_cmd, temp_script_file_rel], temp_dir):
 			if item.startswith('__R__'):
 				# this line contains precentage and strain/stress data
 				tokens = item[5:].split('|')
@@ -378,7 +387,13 @@ class TesterNDWidget(QWidget):
 		self.strain_hist_chart.addItem(self.strain_hist_chart_item)
 		# strain history chart frame
 		self.strain_hist_chart_frame = gu.makeChartFrame()
-		self.strain_hist_layout.addWidget(self.strain_hist_chart_frame, 0, 2, 7, 1)
+		self.strain_hist_layout.addWidget(self.strain_hist_chart_frame, 0, 2, 6, 2)
+		# lch
+		self.lch_label = QLabel('Lch')
+		self.lch_value = QLineEdit(locale.toString(1.0))
+		self.lch_value.setValidator(QDoubleValidator())
+		self.strain_hist_layout.addWidget(self.lch_label, 6, 2, 1, 1)
+		self.strain_hist_layout.addWidget(self.lch_value, 6, 3, 1, 1)
 		# strain history chart widget
 		self.strain_hist_mpc_chart_widget = MpcChartWidget()
 		self.strain_hist_mpc_chart_widget.chart = self.strain_hist_chart
@@ -390,7 +405,8 @@ class TesterNDWidget(QWidget):
 		# set up grid strech factors
 		self.strain_hist_layout.setColumnStretch(0, 0)
 		self.strain_hist_layout.setColumnStretch(1, 0)
-		self.strain_hist_layout.setColumnStretch(2, 2)
+		self.strain_hist_layout.setColumnStretch(2, 0)
+		self.strain_hist_layout.setColumnStretch(3, 2)
 		
 		# separator
 		self.separator_2 = gu.makeHSeparator()
@@ -406,6 +422,7 @@ class TesterNDWidget(QWidget):
 		self.components_layout.addWidget(self.components_descr_1, 0, 0, 1, 1)
 		self.components_layout.addWidget(self.components_descr_2, 1, 0, 1, 1)
 		self.components_strain = []
+		self.components_stress = []
 		self.components_groups = []
 		self.components_values = []
 		self.components_test = []
@@ -423,6 +440,7 @@ class TesterNDWidget(QWidget):
 			icg.layout().addWidget(ics)
 			ict = QLabel("(Tested)")
 			self.components_strain.append(ice)
+			self.components_stress.append(ics)
 			self.components_groups.append(icg)
 			self.components_values.append(icv)
 			self.components_test.append(ict)
@@ -519,12 +537,49 @@ class TesterNDWidget(QWidget):
 		self.old_percentage = 0.0
 		self.delta_percentage = 0.0
 		
+		#################################################### $JSON
 		# restore initial values from datastore
 		a = self.xobj.getAttribute(MpcXObjectMetaData.dataStoreAttributeName())
 		if a is None:
 			raise Exception("Cannot find dataStore Attribute")
-		# print('LOAD DS')
-		# print(a.string)
+		ds = a.string
+		try:
+			jds = json.loads(ds)
+			jds = jds['TesterND']
+			class_name = jds['name']
+			self.strain_hist_cbox.setCurrentText(class_name)
+			# call this to set up default values (no connections here)
+			self.onStrainHistoryTypeChanged()
+			num_cycles = jds.get('num_cycl',self.strain_hist_num_cyc_spinbox.value())
+			self.strain_hist_num_cyc_spinbox.setValue(num_cycles)
+			num_divisions = jds.get('num_div',self.strain_hist_divisions_spinbox.value())
+			self.strain_hist_divisions_spinbox.setValue(num_divisions)
+			target_strain = jds.get('target_strain', QLocale().toDouble(self.strain_hist_target_strain.text())[0])
+			self.strain_hist_target_strain.setText(QLocale().toString(target_strain))
+			tested_comp = jds.get('tested_comp', 0) 
+			self.strain_hist_component_cbox.setCurrentIndex(tested_comp)
+			scale_pos = jds.get('scale_positive',self.strain_hist_scale_positive_spinbox.value())
+			self.strain_hist_scale_positive_spinbox.setValue(scale_pos)
+			scale_neg = jds.get('scale_negative',self.strain_hist_scale_negative_spinbox.value())
+			self.strain_hist_scale_negative_spinbox.setValue(scale_neg)
+			ctypes = jds.get('components_types',None)
+			if ctypes:
+				for i, istrain, istress in zip(ctypes, self.components_strain, self.components_stress):
+					istrain.setChecked(i)
+					istress.setChecked(not i)
+			cvalues = jds.get('components_values',None)
+			if cvalues:
+				for i, ivalue in zip(cvalues, self.components_values):
+					ivalue.setText(locale.toString(i))
+			# call this to set up strain history with restored values (no connections here)
+			self.onStrainHistoryParamChanged()
+			self.onComponentsUpdated()
+			# lch
+			self.lch_value.setText(locale.toString(jds.get('lch', 1.0)))
+		except:
+			# if impossible to load, load default values
+			pass
+		#################################################### $JSON
 		
 		# set up connections
 		self.strain_hist_cbox.currentIndexChanged.connect(self.onStrainHistoryTypeChanged)
@@ -538,6 +593,7 @@ class TesterNDWidget(QWidget):
 		self.strain_hist_component_cbox.currentIndexChanged.connect(self.onComponentsUpdated)
 	
 	def onEditFinished(self):
+		#################################################### $JSON
 		# store initial values to datastore
 		a = self.xobj.getAttribute(MpcXObjectMetaData.dataStoreAttributeName())
 		if a is None:
@@ -547,10 +603,32 @@ class TesterNDWidget(QWidget):
 			jds = json.loads(ds)
 		except:
 			jds = {}
-		jds['Tester1D'] = {'Cyc':[1,2,3], 'pos':[1,2] }
-		# print('SAVE DS')
-		# print(jds)
+		# Creation of dictionary with intial values to store
+		locale = QLocale()
+		class_name = self.strain_hist_cbox.currentText()
+		num_cycles = self.strain_hist_num_cyc_spinbox.value()
+		num_divisions = self.strain_hist_divisions_spinbox.value()
+		target_strain = locale.toDouble(self.strain_hist_target_strain.text())[0]
+		tested_comp = self.strain_hist_component_cbox.currentIndex()
+		scale_pos = self.strain_hist_scale_positive_spinbox.value()
+		scale_neg = self.strain_hist_scale_negative_spinbox.value()
+		ctypes = [ i.isChecked() for i in self.components_strain ]
+		cvalues = [ locale.toDouble(i.text())[0] for i in self.components_values ]
+		lch = locale.toDouble(self.lch_value.text())[0]
+		jds['TesterND'] = {
+			'name': class_name,
+			'num_cycl': num_cycles,
+			'num_div': num_divisions,
+			'target_strain': target_strain,
+			'tested_comp': tested_comp,
+			'scale_positive': scale_pos,
+			'scale_negative': scale_neg,
+			'components_types': ctypes,
+			'components_values': cvalues,
+			'lch': lch,
+			}
 		a.string = json.dumps(jds, indent=4)
+		#################################################### $JSON
 	
 	def onComponentsUpdated(self):
 		# the tested component id (0 to 5)
@@ -719,7 +797,7 @@ class TesterNDWidget(QWidget):
 				cdata.append(tdata)
 			
 			# now we can run the tester
-			self.tester = TesterND(self.type, materials, cdata, self.strain_hist_time, self.strain_hist.strain)
+			self.tester = TesterND(self.type, materials, locale.toDouble(self.lch_value.text())[0], cdata, self.strain_hist_time, self.strain_hist.strain)
 			self.tester.testProcessUpdated.connect(self.onTestProcessUpdated)
 			parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
 			parent_dialog.setEnabled(False)

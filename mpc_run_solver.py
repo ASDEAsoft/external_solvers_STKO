@@ -17,25 +17,21 @@ def run(wdir, command, script, np, do_pause):
 	
 	if platform.system() == 'Linux':
 		
-		if platform.dist()[0] == 'Ubuntu':
-			# create and launch solver runner script
-			runner_name = '{}.sh'.format(runner_base_name)
-			fname = os.path.join(wdir, runner_name)
-			with open(fname, 'w+') as f:
-				f.write('#!/bin/sh\n')
-				f.write('"{}" "{}" {}\n'.format(command, script, np))
-				if do_pause:
-					f.write('read -p "Press [Enter] key to continue..." dummy')
-			os.chmod(fname, 0o777)
-			subprocess.Popen(['gnome-terminal', '--', './{}'.format(runner_name)], cwd=wdir)
-			# launch monitor
-			monitor_name = '{}.sh'.format(monitor_base_name)
-			if monitor_name in getfiles(wdir):
-				subprocess.Popen(['sh', './{}'.format(monitor_name)], cwd=wdir)
-			
-		else:
-			# todo: implement for other platforms
-			error()
+		# create and launch solver runner script
+		runner_name = '{}.sh'.format(runner_base_name)
+		fname = os.path.join(wdir, runner_name)
+		with open(fname, 'w+') as f:
+			f.write('#!/bin/sh\n')
+			f.write('"{}" "{}" {}\n'.format(command, script, np))
+			if do_pause:
+				f.write('read -p "Press [Enter] key to continue..." dummy')
+		os.chmod(fname, 0o777)
+		#subprocess.Popen(['gnome-terminal', '--', './{}'.format(runner_name)], cwd=wdir)
+		subprocess.Popen(['xterm', './{}'.format(runner_name)], cwd=wdir)
+		# launch monitor
+		monitor_name = '{}.sh'.format(monitor_base_name)
+		if monitor_name in getfiles(wdir):
+			subprocess.Popen(['sh', './{}'.format(monitor_name)], cwd=wdir)
 		
 		
 	elif platform.system() == 'Windows':

@@ -194,7 +194,7 @@ def preProcessElements(pinfo):
 	manager.extrusion_size = bbox.maxSize * 0.05
 	if manager.extrusion_size == 0.0:
 		raise Exception(_err('The soil domain seems to have an empty bounding box'))
-	manager.tolerance = max(1.0e-12, 1.0e-8*bbox.maxSize)
+	manager.tolerance = max(1.0e-12, 1.0e-4*bbox.maxSize)
 	
 	# map edge nodes to their boundary type and process_id (from elements)
 	# key = node_id
@@ -310,7 +310,7 @@ def preProcessElements(pinfo):
 	FMT = pinfo.get_double_formatter()
 	
 	# now we can write a ASDAbsorbingBoundary2D.tcl file to source before the elements
-	the_file = open('{}{}{}'.format(pinfo.out_dir, os.sep, 'ASDAbsorbingBoundary2D.tcl'), 'w+')
+	the_file = open('{}{}{}'.format(pinfo.out_dir, os.sep, 'ASDAbsorbingBoundary2D.tcl'), 'w+', encoding='utf-8')
 	save_file = pinfo.out_file
 	pinfo.out_file = the_file
 	

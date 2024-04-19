@@ -130,6 +130,7 @@ class Tester1D(QObject):
 		# write materials
 		buffer_materials = StringIO()
 		pinfo.out_file = buffer_materials
+		pinfo.ptype = tclin.process_type.writing_tcl_for_material_tester
 		write_physical_properties.write_physical_properties(self.materials, pinfo, 'materials')
 		pinfo.out_file = None
 		
@@ -151,7 +152,7 @@ class Tester1D(QObject):
 			'__tag__', str(test_prop_id)).replace(
 			'__time__', buffer_time.getvalue()).replace(
 			'__strain__', buffer_strain.getvalue()).replace(
-			'__out__', temp_output_file))
+			'__out__', os.path.relpath(temp_output_file, temp_dir)))
 		
 		# relase temporary buffers
 		buffer_materials.close()
@@ -174,12 +175,18 @@ class Tester1D(QObject):
 		
 		# prepare test
 		(opensees_cmd, temp_dir, temp_script_file, temp_output_file) = self.__prepare_test()
+		
+		# bugfix 01/2024
+		# since the working dir may contain unicode characters that won't work fine in tcl
+		# we pass the relative path, since the process will run anyway in the working dir
+		temp_script_file_rel = os.path.relpath(temp_script_file, temp_dir)
+		
 		print('Running OpenSEES')
 		print('command: {}'.format(opensees_cmd))
-		print('args: {}'.format(temp_script_file))
+		print('args: {}'.format(temp_script_file_rel))
 		
 		# launch opensees and communicate
-		for item in tu.executeAsync([opensees_cmd, temp_script_file], temp_dir):
+		for item in tu.executeAsync([opensees_cmd, temp_script_file_rel], temp_dir):
 			if item.startswith('__R__'):
 				# this line contains precentage and strain/stress data
 				tokens = item[5:].split()
@@ -645,8 +652,8 @@ class Tester1DWidget(QWidget):
 		
 	def unloadReferenceData(self):
 		# Erase the vectors for reference strain and stress
-		self.reference_strain.resize(0,1)
-		self.reference_stress.resize(0,1)
+		self.reference_strain.resize(0)
+		self.reference_stress.resize(0)
 		# Erse the data
 		self.chart_reference_data.y = PyMpc.Math.double_array([])
 		self.chart_reference_data.x = PyMpc.Math.double_array([])
@@ -684,7 +691,6 @@ class Tester1DWidget(QWidget):
 		reference_stress = []
 		for i in range(len(self.reference_stress)):
 			reference_stress.append(self.reference_stress.referenceValueAt(i))
-			
 		jds['Tester1D'] = {
 			'name': class_name, 
 			'num_cycl': num_cycles, 
@@ -697,7 +703,6 @@ class Tester1DWidget(QWidget):
 			'reference_stress': reference_stress 
 			}
 		a.string = json.dumps(jds, indent=4)
-		
 		#################################################### $JSON
 	
 	def onStrainHistoryTypeChanged(self):

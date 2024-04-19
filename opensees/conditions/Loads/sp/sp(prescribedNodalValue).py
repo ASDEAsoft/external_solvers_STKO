@@ -636,7 +636,7 @@ def __process_sp(pinfo, xobj, doc, all_geom, is_partitioned, process_id, process
 			if not is_partitioned :
 				pinfo.out_file.write('{} # sp node\n'.format(pinfo.indent))
 			if is_partitioned :
-				if not doc.mesh.partitionData.isNodeOnParition(node_id, process_id):
+				if not doc.mesh.partitionData.isNodeOnPartition(node_id, process_id):
 					continue
 			if is_partitioned :
 				if not first_done:
@@ -660,7 +660,7 @@ def __process_sp(pinfo, xobj, doc, all_geom, is_partitioned, process_id, process
 					node_list[node.id] = node
 		for node_id, node in node_list.items():
 			if is_partitioned :
-				if not doc.mesh.partitionData.isNodeOnParition(node_id, process_id):
+				if not doc.mesh.partitionData.isNodeOnPartition(node_id, process_id):
 					continue
 			if is_partitioned :
 				if not first_done:
@@ -684,7 +684,7 @@ def __process_sp(pinfo, xobj, doc, all_geom, is_partitioned, process_id, process
 					node_list[node.id] = node
 		for node_id, node in node_list.items():
 			if is_partitioned :
-				if not doc.mesh.partitionData.isNodeOnParition(node_id, process_id):
+				if not doc.mesh.partitionData.isNodeOnPartition(node_id, process_id):
 					continue
 			if is_partitioned :
 				if not first_done:
@@ -708,7 +708,7 @@ def __process_sp(pinfo, xobj, doc, all_geom, is_partitioned, process_id, process
 					node_list[node.id] = node
 		for node_id, node in node_list.items():
 			if is_partitioned :
-				if not doc.mesh.partitionData.isNodeOnParition(node_id, process_id):
+				if not doc.mesh.partitionData.isNodeOnPartition(node_id, process_id):
 					continue
 			if is_partitioned :
 				if not first_done:

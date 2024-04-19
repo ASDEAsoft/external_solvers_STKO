@@ -1,3 +1,7 @@
+# enable default 1D tester for this module
+from opensees.physical_properties.utils.tester.EnableTester1D import *
+from opensees.utils.override_utils import get_function_from_module
+
 import PyMpc.Units as u
 from PyMpc import *
 from mpc_utils_html import *
@@ -103,7 +107,9 @@ def _check_implex(xobj):
 	xobj.getAttribute('implexCheckError').visible = is_implex
 	xobj.getAttribute('implexErrorTolerance').visible = is_implex
 
+_onEditBegin = get_function_from_module(__name__, 'onEditBegin')
 def onEditBegin(editor, xobj):
+	if _onEditBegin: _onEditBegin(editor, xobj)
 	_check_implex(xobj)
 
 def onAttributeChanged(editor, xobj, attribute_name):
@@ -162,6 +168,3 @@ def writeTcl(pinfo):
 			pinfo.indent, tag, 
 			' '.join( ['-{} {}'.format(item[0], item[1]) for item in params] ))
 		)
-
-# enable default 3D tester for this module
-from opensees.physical_properties.utils.tester.EnableTester1D import *

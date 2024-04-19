@@ -36,7 +36,12 @@ def executeAsync(command, working_dir):
 			cwd=working_dir)
 	# Poll process for new output until finished
 	while process.poll() is None:
-		nextline = process.stdout.readline().decode().rstrip()
+		byline = process.stdout.readline()
+		try:
+			nextline = byline.decode().rstrip()
+		except:
+			print(byline)
+			nextline = ''
 		yield nextline
 	# do the same with the remaining output if any...
 	output = process.communicate()[0]

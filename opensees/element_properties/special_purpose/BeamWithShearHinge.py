@@ -95,6 +95,19 @@ def writeTcl(pinfo):
 		raise Exception('Wrong material type for "BeamWithShearHinge" element. Expected: "BeamWithShearHingeProperty", given: "{}"'.format(phys_prop.XObject.name))
 	xobj_pp_beam_index = _get_xobj_attribute(phys_prop.XObject, 'Beam Property').index
 	
+	# get or create the custom data for this element property.
+	# A map
+	# Key = tuple(geom_id, edge_id)
+	# Value = boolean
+	# Note for Value: now we just need to see if a key is present or not,
+	#   but for future usage, we may need to map other values.
+	gemap_name = 'BeamWithShearHinge'
+	if gemap_name in pinfo.custom_data:
+		gemap = pinfo.custom_data[gemap_name]
+	else:
+		gemap = dict()
+		pinfo.custom_data[gemap_name] = gemap
+	
 	# compute hinge position if necessary
 	def check_hinge():
 		center = 0.5-1.0e-6
@@ -104,25 +117,67 @@ def writeTcl(pinfo):
 				for i in range(len(domain.elements)):
 					trial = domain.elements[i]
 					if trial.id == elem.id:
+						# Found the Edge domain this element belongs to
 						#print('Found element {} in Geometry: {} - Edge: {}'.format(elem.id, geom_id, edge_id))
+						
+						# let's see if we already put a hinge in this edge
+						gemap_key = (geom_id, edge_id)
+						if gemap_key in gemap:
+							return None
+						
+						# find bounds of the whole edge
+						pmin = None
+						pmax = None
+						for ieinfo in domain.elementGeomInfos:
+							for iuv in ieinfo.uv:
+								if pmin is None:
+									pmin = iuv.x
+									pmax = iuv.x
+								else:
+									pmin = min(pmin, iuv.x)
+									pmax = max(pmax, iuv.x)
+						# parametric beam location in the middle of the edge
+						pmiddle = (pmin+pmax)/2.0
+						
+						# sort element nodes with parameters, sort also local node position
 						elem_param = domain.elementGeomInfos[i]
-						first_param = domain.elementGeomInfos[0]
-						last_param = domain.elementGeomInfos[-1]
-						U_first = first_param.uv[0].x
-						U_last = last_param.uv[-1].x
-						U_span = U_last - U_first
-						Ui = (elem_param.uv[0].x - U_first) / U_span
-						Uj = (elem_param.uv[1].x - U_first) / U_span
-						if Ui < center and Uj >= center:
-							Uc = (0.5-Ui)/(Uj-Ui)
-							Pi = elem.nodes[0].position
-							if Uc < 0.3:
-								return (Pi, 0.0)
-							Pj = elem.nodes[1].position
-							if Uc > 0.6:
-								return (Pj, 1.0)
-							Pc = Pi + (Pj - Pi)*Uc
-							return (Pc, Uc)
+						Ui = elem_param.uv[0].x
+						Uj = elem_param.uv[1].x
+						Pi = elem.nodes[0].position
+						Pj = elem.nodes[1].position
+						Li = 0
+						Lj = 1
+						if Ui > Uj:
+							Ui, Uj = Uj, Ui
+							Pi, Pj = Pj, Pi
+							Li, Lj = Lj, Li
+						
+						# check whether pmiddle is within the element parameters (or on the boundaries)
+						tolerance = 1.0e-3*(Uj-Ui)
+						if pmiddle < Ui-tolerance or pmiddle > Uj+tolerance:
+							return None
+						
+						# normalize element parameters
+						Uspan = Uj-Ui
+						Uc = (pmiddle-Ui)/Uspan
+						Uj = (Uj-Ui)/Uspan
+						Ui = 0.0
+						Lc = None
+						# to avoid very small elements...
+						Usmall = 0.1
+						if Uc < Usmall:
+							Uc = 0.0
+							Lc = Li
+						elif Uc > 1.0-Usmall:
+							Uc = 1.0
+							Lc = Lj
+						
+						# compute hinge point
+						Pc = Pi + (Pj - Pi)*Uc
+						
+						# store as already processed and return
+						gemap[gemap_key] = True
+						return (Pc, Uc, Lc)
 		return None
 	hp = check_hinge()
 	
@@ -266,6 +321,7 @@ def writeTcl(pinfo):
 		# we have to crete an hinge
 		hpos = hp[0]
 		hparam = hp[1]
+		hloc = hp[2]
 		#print('Creating shear hinge at position ({}, {}, {}) [param {}]'.format(hpos.x, hpos.y, hpos.z, hparam))
 		
 		# apply correction for joints (2D)??
@@ -279,7 +335,7 @@ def writeTcl(pinfo):
 		exterior_node_j = node_vect[1]
 		
 		# case 1: hinge at first position
-		if hparam == 0.0:
+		if hloc == 0:
 			
 			# create an extra node at start
 			M1 = get_node_mass(exterior_node_i)
@@ -299,7 +355,7 @@ def writeTcl(pinfo):
 			define_beam()
 		
 		# case 2: hinge at last position
-		elif hparam == 1.0:
+		elif hloc == 1:
 			
 			# create an extra node at end
 			M2 = get_node_mass(exterior_node_j)

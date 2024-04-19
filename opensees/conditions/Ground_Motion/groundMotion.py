@@ -401,6 +401,7 @@ class _gstore:
 			},
 		3 : {
 			3 : make_3DU(),
+			4 : make_3DU(),
 			6 : make_3DUR()
 			}
 		}
@@ -474,7 +475,7 @@ def writeTcl_groundMotion(pinfo, xobj, tag):
 	def append_node(node_id):
 		if pcount > 1:
 			for pid in range(pcount):
-				if partition_data.isNodeOnParition(node_id, pid):
+				if partition_data.isNodeOnPartition(node_id, pid):
 					nodes[pid].append(node_id)
 		else:
 			nodes.append(node_id)

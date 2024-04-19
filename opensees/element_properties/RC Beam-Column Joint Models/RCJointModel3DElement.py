@@ -318,7 +318,7 @@ def preProcessElements(pinfo):
 	FMT = pinfo.get_double_formatter()
 	
 	# now we can write a RCJointModel3D.tcl file to source before the elements
-	joint_file = open('{}{}{}'.format(pinfo.out_dir, os.sep, 'RCJointModel3D.tcl'), 'w+')
+	joint_file = open('{}{}{}'.format(pinfo.out_dir, os.sep, 'RCJointModel3D.tcl'), 'w+', encoding='utf-8')
 	save_file = pinfo.out_file
 	pinfo.out_file = joint_file
 	
@@ -354,7 +354,7 @@ def preProcessElements(pinfo):
 			pid_count = 0 # number of joints processed in this partition
 			# process each joint
 			for _, joint in manager.items.items():
-				if doc.mesh.partitionData.isNodeOnParition(joint.source_node, processor_id):
+				if doc.mesh.partitionData.isNodeOnPartition(joint.source_node, processor_id):
 					# this joint can be processed on this partition
 					# open process scope (only for the first one in this processor)
 					if pid_count == 0:

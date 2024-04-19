@@ -128,7 +128,7 @@ def writeTcl(pinfo):
 		elif at.type == MpcAttributeType.QuantityScalar:
 			at.quantityScalar.value = val
 		elif at.type == MpcAttributeType.QuantityVector:
-			at.quantityVector.resize(len(val), 1)
+			at.quantityVector.resize(len(val))
 			for i in range(len(val)):
 				at.quantityVector.setValueAt(i, val[i])
 	# save original data
