@@ -665,6 +665,7 @@ class RectangularSectionDomain:
 			eps_a = self.eps_a_U
 			kappa_y = self.kappa_y_U
 			kappa_z = self.kappa_z_U
+			name = 'ultimate'
 		elif condition == 'Y':
 			# I asked to compute the domain for ultimate conditions
 			if self.eps_a_Y is None:
@@ -672,6 +673,7 @@ class RectangularSectionDomain:
 			eps_a = self.eps_a_Y
 			kappa_y = self.kappa_y_Y
 			kappa_z = self.kappa_z_Y
+			name = 'yield'
 		else:
 			raise Exception("RectangularSectionDomain::computeDomainForCondition - Unknown code for condition. Should be U (ultimate) or Y (yield). Given {}".format(condition))
 			
@@ -698,7 +700,7 @@ class RectangularSectionDomain:
 		t0 = time()
 		# if _verbose: print('totIntegrations to be done: {}'.format(totIntegrations))
 		if emitterText is not None:
-			emitterText('Integrating ultimate strain profiles to compute domain...')
+			emitterText(f'Integrating {name} strain profiles to compute domain...')
 			
 		for ea, kx, ky in zip(eps_a, kappa_y, kappa_z):
 			N, My, Mz = self.integrate(ea, kx, ky)
@@ -1709,7 +1711,10 @@ class DomainResultDataWidget(QDialog):
 		
 		# Combo box to select data
 		self.selectData = QComboBox()
-		self.selectData.addItems(["N-My", "N-Mz", "My-Mz (N={:.3g})".format(self.N)])
+		stringNMy = parent.xlabel + '-' + parent.ylabel
+		stringNMz = parent.xlabel + '-' + parent.zlabel
+		stringMyMz = parent.ylabel + '-' + parent.zlabel + f' (N={self.N:.3g})'
+		self.selectData.addItems([stringNMy, stringNMz, stringMyMz])
 		mainLayout.addWidget(self.selectData)
 		
 		# Table
