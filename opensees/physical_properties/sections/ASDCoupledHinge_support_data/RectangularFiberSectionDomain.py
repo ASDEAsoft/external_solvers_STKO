@@ -35,6 +35,7 @@ from PySide2.QtGui import (
 	QDoubleValidator,
 	QKeySequence,
 	QGuiApplication,
+	QIcon,
 	)
 import shiboken2
 # import random
@@ -58,6 +59,8 @@ params = {	'legend.fontsize': 'x-small',
 			'axes.titlesize':'x-small',
 			'xtick.labelsize':'x-small',
 			'ytick.labelsize':'x-small'}
+
+_TOL = 1e-8
 
 _verbose = False
 
@@ -116,7 +119,7 @@ class MyMplCanvas(FigureCanvas):
 		# # FigureCanvas.updateGeometry(self)
 
 class MaterialsForRectangularSection:
-	def __init__(self, fc, eps_c, eps_cu, n, fcc, eps_cc, eps_ccu, nc, Es, fy, eps_su, eps_sy = None):
+	def __init__(self, fc, eps_c, eps_cu, n, fcc, eps_cc, eps_ccu, nc, Es, fy, eps_su, eps_sy = None, spalling = False):
 		# Unconfined concrete
 		self.fc = fc if fc < 0 else -fc
 		self.eps_c = eps_c if eps_c < 0 else -eps_c
@@ -127,6 +130,10 @@ class MaterialsForRectangularSection:
 		self.eps_cc = eps_cc if eps_cc < 0 else -eps_cc
 		self.eps_ccu = eps_ccu if eps_ccu < 0 else -eps_ccu
 		self.nc = nc
+		if abs(self.eps_ccu - self.eps_cu) <= _TOL:
+			self.spalling = False
+		else:
+			self.spalling = True
 		# Steel
 		self.Es = Es
 		self.fy = fy
@@ -658,6 +665,7 @@ class RectangularSectionDomain:
 			eps_a = self.eps_a_U
 			kappa_y = self.kappa_y_U
 			kappa_z = self.kappa_z_U
+			name = 'ultimate'
 		elif condition == 'Y':
 			# I asked to compute the domain for ultimate conditions
 			if self.eps_a_Y is None:
@@ -665,6 +673,7 @@ class RectangularSectionDomain:
 			eps_a = self.eps_a_Y
 			kappa_y = self.kappa_y_Y
 			kappa_z = self.kappa_z_Y
+			name = 'yield'
 		else:
 			raise Exception("RectangularSectionDomain::computeDomainForCondition - Unknown code for condition. Should be U (ultimate) or Y (yield). Given {}".format(condition))
 			
@@ -691,7 +700,7 @@ class RectangularSectionDomain:
 		t0 = time()
 		# if _verbose: print('totIntegrations to be done: {}'.format(totIntegrations))
 		if emitterText is not None:
-			emitterText('Integrating ultimate strain profiles to compute domain...')
+			emitterText(f'Integrating {name} strain profiles to compute domain...')
 			
 		for ea, kx, ky in zip(eps_a, kappa_y, kappa_z):
 			N, My, Mz = self.integrate(ea, kx, ky)
@@ -1008,6 +1017,7 @@ class ContainerDomainGraphs(QWidget):
 		validator.setTop(Nmax)
 		self.editN.setValidator(validator)
 		self.buttonDetail = QToolButton()
+		self.buttonDetail.setIcon(QIcon(":/odb/fiber_plot"))
 		self.buttonDetail.setCheckable(True)
 		self.buttonData = QPushButton('Data')
 		
@@ -1701,7 +1711,10 @@ class DomainResultDataWidget(QDialog):
 		
 		# Combo box to select data
 		self.selectData = QComboBox()
-		self.selectData.addItems(["N-My", "N-Mz", "My-Mz (N={:.3g})".format(self.N)])
+		stringNMy = parent.xlabel + '-' + parent.ylabel
+		stringNMz = parent.xlabel + '-' + parent.zlabel
+		stringMyMz = parent.ylabel + '-' + parent.zlabel + f' (N={self.N:.3g})'
+		self.selectData.addItems([stringNMy, stringNMz, stringMyMz])
 		mainLayout.addWidget(self.selectData)
 		
 		# Table
