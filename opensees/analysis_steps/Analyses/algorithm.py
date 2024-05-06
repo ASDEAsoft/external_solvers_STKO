@@ -340,7 +340,7 @@ def algorithmCommand(xom, group_suffix=''):
 		html_end()
 		)
 	at_formTangent_ModifiedNewton.sourceType = MpcAttributeSourceType.List
-	at_formTangent_ModifiedNewton.setSourceList(['-secant', '-initial'])
+	at_formTangent_ModifiedNewton.setSourceList(['-secant', '-initial', '-initialFactorOnce'])
 	at_formTangent_ModifiedNewton.setDefault('-secant')
 	
 	# factorOnce
