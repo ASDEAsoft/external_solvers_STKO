@@ -2,190 +2,165 @@ from PyMpc import *
 from mpc_utils_html import *
 
 def constraintsCommand(xom):
-
-	# constraintsCommand
-	at_constraintsCommand = MpcAttributeMetaData()
-	at_constraintsCommand.type = MpcAttributeType.String
-	at_constraintsCommand.name = 'constraints'
-	at_constraintsCommand.group = 'constraints'
-	at_constraintsCommand.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('constraintsCommand')+'<br/>') + 
-		html_par('') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Constraints_Command','Constraints Command')+'<br/>') +
-		html_end()
-		)
-	at_constraintsCommand.sourceType = MpcAttributeSourceType.List
-	at_constraintsCommand.setSourceList(['Plain Constraints', 'Lagrange Multipliers', 'Penalty Method', 'Transformation Method'])
-	at_constraintsCommand.setDefault('Plain Constraints')
 	
-	# lagrangeMultipliers
-	at_LagrangeMultipliers = MpcAttributeMetaData()
-	at_LagrangeMultipliers.type = MpcAttributeType.Boolean
-	at_LagrangeMultipliers.name = 'Lagrange Multipliers'
-	at_LagrangeMultipliers.group = 'constraints'
-	at_LagrangeMultipliers.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('LagrangeMultipliers')+'<br/>') + 
-		html_par('Lagrange Multipliers') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Lagrange_Multipliers','Lagrange Multipliers')+'<br/>') +
-		html_end()
-		)
-	at_LagrangeMultipliers.editable = False
+	# utils
+	def _mka(name, type, descr, link):
+		a = MpcAttributeMetaData()
+		a.type = type
+		a.name = name
+		a.group = 'constraints'
+		a.description = (
+			html_par(html_begin()) +
+			html_par(html_boldtext(name)+'<br/>') + 
+			html_par(descr if descr else '') +
+			html_par(link + '<br/>') +
+			html_end()
+			)
+		return a
+	def _mka_lm(name, type, descr):
+		return _mka(name, type, descr,
+			html_href('https://opensees.github.io/OpenSeesDocumentation/user/manual/analysis/constraint/lagrangeMultipliers.html','Lagrange Multipliers'))
+	def _mka_pn(name, type, descr):
+		return _mka(name, type, descr,
+			html_href('https://opensees.github.io/OpenSeesDocumentation/user/manual/analysis/constraint/PenaltyMethod.html','Penalty Method'))
+	def _mka_auto(name, type, descr):
+		return _mka(name, type, descr,
+			html_href('https://opensees.github.io/OpenSeesDocumentation/user/manual/analysis/constraint/Auto.html','Auto Method'))
 	
-	# optional
-	at_Optional_lagrangeMultipliers = MpcAttributeMetaData()
-	at_Optional_lagrangeMultipliers.type = MpcAttributeType.Boolean
-	at_Optional_lagrangeMultipliers.name = 'Optional lagrangeMultipliers'
-	at_Optional_lagrangeMultipliers.group = 'constraints'
-	at_Optional_lagrangeMultipliers.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('Optional lagrangeMultipliers')+'<br/>') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Lagrange_Multipliers','Lagrange Multipliers')+'<br/>') +
-		html_end()
-		)
+	# types
+	types = _mka('constraints', MpcAttributeType.String, 'The list of available constraint handlers', 
+		html_href('https://opensees.github.io/OpenSeesDocumentation/user/manual/analysis/constraints.html','Constraints Command'))
+	types.sourceType = MpcAttributeSourceType.List
+	types.setSourceList(['Plain Constraints', 'Lagrange Multipliers', 'Penalty Method', 'Transformation Method', 'Auto'])
+	types.setDefault('Transformation Method')
 	
-	# alphaS/lagrangeMultipliers
-	at_alphaS = MpcAttributeMetaData()
-	at_alphaS.type = MpcAttributeType.Real
-	at_alphaS.name = 'alphaS/LagrangeMultipliers'
-	at_alphaS.group = 'constraints'
-	at_alphaS.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('alphaS')+'<br/>') +
-		html_par('&alpha;S factor on singe points. optional, default = 1.0')+
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Lagrange_Multipliers','Lagrange Multipliers')+'<br/>') +
-		html_end()
-		)
-	at_alphaS.setDefault(1.0)
+	# lm
+	lm = _mka_lm('Lagrange Multipliers', MpcAttributeType.Boolean, '')
+	lm.editable = False
+	# lm_opt
+	lm_opt = _mka_lm('Optional lagrangeMultipliers', MpcAttributeType.Boolean, '')
+	# lm_alphaS
+	lm_alphaS = _mka_lm('alphaS/LagrangeMultipliers', MpcAttributeType.Real, '')
+	lm_alphaS.setDefault(1.0)
+	# lm_alphaM
+	lm_alphaM = _mka_lm('alphaM/LagrangeMultipliers', MpcAttributeType.Real, '')
+	lm_alphaM.setDefault(1.0)
 	
-	# alphaM/lagrangeMultipliers
-	at_alphaM = MpcAttributeMetaData()
-	at_alphaM.type = MpcAttributeType.Real
-	at_alphaM.name = 'alphaM/LagrangeMultipliers'
-	at_alphaM.group = 'constraints'
-	at_alphaM.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('alphaM')+'<br/>') +
-		html_par('&alpha;M factor on multi-points, optional default = 1.0')+
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Lagrange_Multipliers','Lagrange Multipliers')+'<br/>') +
-		html_end()
-		)
-	at_alphaM.setDefault(1.0)
+	# pn
+	pn = _mka_pn('Penalty Method', MpcAttributeType.Boolean, '')
+	pn.editable = False
+	# pn_alphaS
+	pn_alphaS = _mka_pn('alphaS/penaltyMethod', MpcAttributeType.Real, '')
+	pn_alphaS.setDefault(1.e18)
+	# pn_alphaM
+	pn_alphaM = _mka_pn('alphaM/penaltyMethod', MpcAttributeType.Real, '')
+	pn_alphaM.setDefault(1.e18)
 	
-	# penaltyMethod
-	at_penaltyMethod = MpcAttributeMetaData()
-	at_penaltyMethod.type = MpcAttributeType.Boolean
-	at_penaltyMethod.name = 'Penalty Method'
-	at_penaltyMethod.group = 'constraints'
-	at_penaltyMethod.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('penaltyMethod')+'<br/>') + 
-		html_par('Penalty Method') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Penalty_Method','Penalty Method')+'<br/>') +
-		html_end()
-		)
-	at_penaltyMethod.editable = False
+	# auto
+	auto = _mka_auto('Auto', MpcAttributeType.Boolean, '')
+	auto.editable = False
+	# auto_verbose
+	auto_verbose = _mka_auto('-verbose/auto', MpcAttributeType.Boolean, '')
+	auto_verbose.setDefault(False)
+	# auto_type
+	auto_type = _mka_auto('Type/auto', MpcAttributeType.String, '')
+	auto_type.sourceType = MpcAttributeSourceType.List
+	auto_type.setSourceList(['Automatic', 'User-Defined'])
+	auto_type.setDefault('Automatic')
+	# auto_oom
+	auto_oom_switch = _mka_auto('Automatic', MpcAttributeType.Boolean, '')
+	auto_oom_switch.editable = False
+	auto_oom = _mka_auto('oom/auto', MpcAttributeType.Integer, 'The increase in order-of-magnitude of the penalty stiffness wrt the original stiffness')
+	auto_oom.setDefault(3)
+	# auto_user
+	auto_user_switch = _mka_auto('User-Defined', MpcAttributeType.Boolean, '')
+	auto_user_switch.editable = False
+	auto_user = _mka_auto('userPenalty/auto', MpcAttributeType.Real, '')
+	auto_user.setDefault(1.0e18)
 	
-	# alphaS/penaltyMethod
-	at_alphaS_1 = MpcAttributeMetaData()
-	at_alphaS_1.type = MpcAttributeType.Real
-	at_alphaS_1.name = 'alphaS/penaltyMethod'
-	at_alphaS_1.group = 'constraints'
-	at_alphaS_1.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('alphaS')+'<br/>') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Penalty_Method','Penalty Method')+'<br/>') +
-		html_end()
-		)
-	at_alphaS_1.setDefault(1.e18)
+	# add
+	xom.addAttribute(types)
+	xom.addAttribute(lm)
+	xom.addAttribute(lm_opt)
+	xom.addAttribute(lm_alphaS)
+	xom.addAttribute(lm_alphaM)
+	xom.addAttribute(pn)
+	xom.addAttribute(pn_alphaS)
+	xom.addAttribute(pn_alphaM)
+	xom.addAttribute(auto)
+	xom.addAttribute(auto_verbose)
+	xom.addAttribute(auto_type)
+	xom.addAttribute(auto_oom_switch)
+	xom.addAttribute(auto_oom)
+	xom.addAttribute(auto_user_switch)
+	xom.addAttribute(auto_user)
 	
-	# alphaM/penaltyMethod
-	at_alphaM_1 = MpcAttributeMetaData()
-	at_alphaM_1.type = MpcAttributeType.Real
-	at_alphaM_1.name = 'alphaM/penaltyMethod'
-	at_alphaM_1.group = 'constraints'
-	at_alphaM_1.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('alphaM')+'<br/>') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Penalty_Method','Penalty Method')+'<br/>') +
-		html_end()
-		)
-	at_alphaM_1.setDefault(1.e18)
-	
-	xom.addAttribute(at_constraintsCommand)
-	xom.addAttribute(at_LagrangeMultipliers)
-	xom.addAttribute(at_Optional_lagrangeMultipliers)
-	xom.addAttribute(at_alphaS)
-	xom.addAttribute(at_alphaM)
-	xom.addAttribute(at_penaltyMethod)
-	xom.addAttribute(at_alphaS_1)
-	xom.addAttribute(at_alphaM_1)
-	
-	
-	# LagrangeMultipliers-alphaS LagrangeMultipliers-alphaM
-	xom.setVisibilityDependency(at_LagrangeMultipliers, at_Optional_lagrangeMultipliers)
-	
-	xom.setVisibilityDependency(at_Optional_lagrangeMultipliers, at_alphaS)
-	xom.setVisibilityDependency(at_LagrangeMultipliers, at_alphaS)
-	
-	xom.setVisibilityDependency(at_Optional_lagrangeMultipliers, at_alphaM)
-	xom.setVisibilityDependency(at_LagrangeMultipliers, at_alphaM)
-	
-	# penalty Methods-alphaS penalty Methods-alphaM
-	xom.setVisibilityDependency(at_penaltyMethod, at_alphaS_1)
-	xom.setVisibilityDependency(at_penaltyMethod, at_alphaM_1)
-	
+	# connections
+	# lm
+	xom.setVisibilityDependency(lm, lm_opt)
+	xom.setVisibilityDependency(lm_opt, lm_alphaS)
+	xom.setVisibilityDependency(lm, lm_alphaS)
+	xom.setVisibilityDependency(lm_opt, lm_alphaM)
+	xom.setVisibilityDependency(lm, lm_alphaM)
+	# pn
+	xom.setVisibilityDependency(pn, pn_alphaS)
+	xom.setVisibilityDependency(pn, pn_alphaM)
+	# auto
+	xom.setVisibilityDependency(auto, auto_verbose)
+	xom.setVisibilityDependency(auto, auto_type)
+	xom.setVisibilityDependency(auto, auto_oom)
+	xom.setVisibilityDependency(auto_oom_switch, auto_oom)
+	xom.setVisibilityDependency(auto, auto_user)
+	xom.setVisibilityDependency(auto_user_switch, auto_user)
+	xom.setBooleanAutoExclusiveDependency(auto_type, auto_oom_switch)
+	xom.setBooleanAutoExclusiveDependency(auto_type, auto_user_switch)
 	# auto-exclusive dependencies
-	xom.setBooleanAutoExclusiveDependency(at_constraintsCommand, at_LagrangeMultipliers)
-	xom.setBooleanAutoExclusiveDependency(at_constraintsCommand, at_penaltyMethod)
+	xom.setBooleanAutoExclusiveDependency(types, lm)
+	xom.setBooleanAutoExclusiveDependency(types, pn)
+	xom.setBooleanAutoExclusiveDependency(types, auto)
 
 def writeTcl_constraints(pinfo, xobj):
 	
-	sopt = ''
-	constraintsCommand_at = xobj.getAttribute('constraints')
-	if(constraintsCommand_at is None):
-		raise Exception('Error: cannot find "constraints" attribute')
-	constraints = constraintsCommand_at.string
+	# utility
+	def _geta(name):
+		a = xobj.getAttribute(name)
+		if(a is None):
+			raise Exception('Error: cannot find "{}" attribute'.format(name))
+		return a
 	
+	# the constraint type
+	constraints = _geta('constraints').string
+	
+	# plain
 	if constraints == 'Plain Constraints':
-		str_tcl = '{}constraints Plain\n'.format(pinfo.indent)
-		
+		str_tcl = '{}constraints Plain\n'.format(
+			pinfo.indent)
+	# lagrange multipliers
 	elif constraints == 'Lagrange Multipliers':
-		at_optional = xobj.getAttribute('Optional lagrangeMultipliers')
-		if(at_optional is None):
-			raise Exception('Error: cannot find "optional" attribute')
-		optional = at_optional.boolean
-		
-		if optional:
-			alphaS_at = xobj.getAttribute('alphaS/LagrangeMultipliers')
-			if(alphaS_at is None):
-				raise Exception('Error: cannot find "alphaS" attribute')
-			sopt += ' {}'.format(alphaS_at.real)
-			
-			alphaM_at = xobj.getAttribute('alphaM/LagrangeMultipliers')
-			if(alphaM_at is None):
-				raise Exception('Error: cannot find "alphaM" attribute')
-			sopt += ' {}'.format(alphaM_at.real)
-			
+		sopt = ''
+		if _geta('Optional lagrangeMultipliers').boolean:
+			sopt = ' {} {}'.format(
+				_geta('alphaS/LagrangeMultipliers').real,
+				_geta('alphaM/LagrangeMultipliers').real)
 		str_tcl = '{}constraints Lagrange{}\n'.format (pinfo.indent, sopt)
-	
+	# penalty
 	elif constraints == 'Penalty Method':
-		
-		alphaS_at = xobj.getAttribute('alphaS/penaltyMethod')
-		if(alphaS_at is None):
-			raise Exception('Error: cannot find "alphaS" attribute')
-		alphaS = alphaS_at.real
-		
-		alphaM_at = xobj.getAttribute('alphaM/penaltyMethod')
-		if(alphaM_at is None):
-			raise Exception('Error: cannot find "alphaM" attribute')
-		alphaM = alphaM_at.real
-	
-		str_tcl = '{}constraints Penalty {} {}\n'.format (pinfo.indent, alphaS, alphaM)
-		
+		str_tcl = '{}constraints Penalty {} {}\n'.format(
+			pinfo.indent,
+			_geta('alphaS/penaltyMethod').real,
+			_geta('alphaM/penaltyMethod').real)
+	# transformation
 	elif constraints == 'Transformation Method':
-		str_tcl = '{}constraints Transformation\n'.format(pinfo.indent)
+		str_tcl = '{}constraints Transformation\n'.format(
+			pinfo.indent)
+	# auto
+	elif constraints == 'Auto':
+		str_tcl = '{}constraints Auto{}{}{}\n'.format(
+			pinfo.indent,
+			' -verbose' if _geta('-verbose/auto').boolean else '',
+			' -autoPenalty {}'.format(_geta('oom/auto').integer) if _geta('Automatic').boolean else '',
+			' -userPenalty {}'.format(_geta('userPenalty/auto').real) if _geta('User-Defined').boolean else ''
+		)
 	
 	# now write the string into the file
 	pinfo.out_file.write(str_tcl)
