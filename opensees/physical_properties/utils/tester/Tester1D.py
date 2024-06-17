@@ -71,11 +71,12 @@ class Tester1D(QObject):
 	# (or just one if the material does not depend on other materials)
 	# and a list of strains.
 	# in case of multiple materials the last one will be tested.
-	def __init__(self, materials, time_history, strain_history, parent = None):
+	def __init__(self, materials, lch, time_history, strain_history, parent = None):
 		# base class initialization
 		super(Tester1D, self).__init__(parent)
 		# self initialization
 		self.materials = materials
+		self.lch = lch
 		# copy the input strain vector in a private member. why? if the analysis does not finsh
 		# correctly, the stress will have less entries than the strain
 		self.__timeHistoryInput = time_history
@@ -149,6 +150,7 @@ class Tester1D(QObject):
 		# and write to file
 		fo.write(template.replace(
 			'__materials__', buffer_materials.getvalue()).replace(
+			'__lch__', QLocale().toString(self.lch)).replace(
 			'__tag__', str(test_prop_id)).replace(
 			'__time__', buffer_time.getvalue()).replace(
 			'__strain__', buffer_strain.getvalue()).replace(
@@ -354,6 +356,10 @@ class Tester1DWidget(QWidget):
 	def __init__(self, editor, xobj, parent = None):
 		# base class initialization
 		super(Tester1DWidget, self).__init__(parent)
+		
+		# the locale
+		locale = QLocale()
+		
 		# layout
 		self.setLayout(QVBoxLayout())
 		self.layout().setContentsMargins(0,0,0,0)
@@ -395,7 +401,7 @@ class Tester1DWidget(QWidget):
 		self.custom_hist_button.setText("...")
 		self.custom_hist_button.setToolTip("Click to edit the custom strain history")
 		self.custom_hist_button.setMaximumWidth(24)
-		self.strain_hist_layout.addWidget(self.custom_hist_button, 0, 2, 1, 1)
+		self.strain_hist_layout.addWidget(self.custom_hist_button, 0, 2, 1, 1) # todo put the CBox in a layout with no-margin and put this on the right
 		self.custom_hist_vector = MpcQuantityVector()
 		# strain history num_cyc spin box
 		self.strain_hist_num_cyc_spinbox = QSpinBox()
@@ -433,7 +439,13 @@ class Tester1DWidget(QWidget):
 		self.strain_hist_chart.addItem(self.strain_hist_chart_item)
 		# strain history chart frame
 		self.strain_hist_chart_frame = gu.makeChartFrame()
-		self.strain_hist_layout.addWidget(self.strain_hist_chart_frame, 0, 2, 6, 1)
+		self.strain_hist_layout.addWidget(self.strain_hist_chart_frame, 0, 2, 5, 2)
+		# lch
+		self.lch_label = QLabel('Lch')
+		self.lch_value = QLineEdit(locale.toString(1.0))
+		self.lch_value.setValidator(QDoubleValidator())
+		self.strain_hist_layout.addWidget(self.lch_label, 5, 2, 1, 1)
+		self.strain_hist_layout.addWidget(self.lch_value, 5, 3, 1, 1)
 		# strain history chart widget
 		self.strain_hist_mpc_chart_widget = MpcChartWidget()
 		self.strain_hist_mpc_chart_widget.chart = self.strain_hist_chart
@@ -445,7 +457,8 @@ class Tester1DWidget(QWidget):
 		# set up grid strech factors
 		self.strain_hist_layout.setColumnStretch(0, 0)
 		self.strain_hist_layout.setColumnStretch(1, 0)
-		self.strain_hist_layout.setColumnStretch(2, 2)
+		self.strain_hist_layout.setColumnStretch(2, 0)
+		self.strain_hist_layout.setColumnStretch(3, 2)
 		
 		# separator
 		self.separator_2 = gu.makeHSeparator()
@@ -578,6 +591,8 @@ class Tester1DWidget(QWidget):
 			
 			# call this to set up strain history with restored values (no connections here)
 			self.onStrainHistoryParamChanged()
+			# lch
+			self.lch_value.setText(locale.toString(jds.get('lch', 1.0)))
 		except:
 			# if impossible to load, load default values
 			pass
@@ -700,7 +715,8 @@ class Tester1DWidget(QWidget):
 			'scale_negative': scale_neg, 
 			'custom_vector': custom_vector, 
 			'reference_strain': reference_strain, 
-			'reference_stress': reference_stress 
+			'reference_stress': reference_stress,
+			'lch': lch
 			}
 		a.string = json.dumps(jds, indent=4)
 		#################################################### $JSON
@@ -876,7 +892,8 @@ class Tester1DWidget(QWidget):
 			materials[parent_component.id] = parent_component
 			
 			# now we can run the tester
-			self.tester = Tester1D(materials, self.strain_hist_time, self.strain_hist.strain)
+			locale = QLocale()
+			self.tester = Tester1D(materials, locale.toDouble(self.lch_value.text())[0], self.strain_hist_time, self.strain_hist.strain)
 			self.tester.testProcessUpdated.connect(self.onTestProcessUpdated)
 			parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
 			parent_dialog.setEnabled(False)
