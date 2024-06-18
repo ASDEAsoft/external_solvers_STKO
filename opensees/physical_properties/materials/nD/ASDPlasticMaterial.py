@@ -63,12 +63,23 @@ def _check(xobj):
 			xobj.getAttribute(param_name).visible = True
 		for var_name, var_type in setting.get('variables', {}).items():
 			source_hl = HL_scalar if var_type == 'scalar' else HL_tensor
+			for trial_name in (var_name, '{}-Value'.format(var_name)):
+				attr = xobj.getAttribute(trial_name)
+				if attr: attr.visible = True
 			attr = xobj.getAttribute(var_name)
-			attr.visible = True
 			curr_hl = attr.string
 			hl = source_hl[curr_hl]
 			for param_name in hl.get('parameters', {}):
 				xobj.getAttribute(param_name).visible = True
+	# make sure all tensors are with 6-components
+	for _, attr in xobj.attributes.items():
+		if attr.type == MpcAttributeType.QuantityVector:
+			source = attr.quantityVector.referenceValue
+			if len(source) != 6:
+				new_value = Math.vec(6)
+				for i in range(min(len(source), 6)):
+					new_value[i] = source[i]
+				attr.quantityVector.referenceValue = new_value
 
 _onEditBegin = get_function_from_module(__name__, 'onEditBegin')
 def onEditBegin(editor, xobj):
@@ -148,8 +159,15 @@ def makeXObjectMetaData():
 						attr = mka(key, 'Variables', '',  MpcAttributeType.String, dval=source[0])
 						attr.sourceType = MpcAttributeSourceType.List
 						attr.setSourceList(source)
-						# done
+						# the variable
 						variable_dict[key] = attr
+						# and its initialization value
+						val_key = '{}-Value'.format(key)
+						if value == 'scalar':
+							attr_val = mka(val_key, 'Variables', '',  MpcAttributeType.Real, dval=0.0)
+						else:
+							attr_val = mka(val_key, 'Variables', '',  MpcAttributeType.QuantityVector)
+						variable_dict[val_key] = attr_val
 	
 	# parameters
 	param_dict = {}
@@ -185,16 +203,39 @@ def makeXObjectMetaData():
 
 def writeTcl(pinfo):
 	
+	# xobj and tag
 	xobj = pinfo.phys_prop.XObject
 	tag = xobj.parent.componentId
 	
+	# get the structure
+	js = _globals.js()
+	
 	# get basic parameters
-	E = _geta(xobj, 'E').quantityScalar.value
-	v = _geta(xobj, 'v').real
-	rho = _geta(xobj, 'rho').quantityScalar.value
-	eta = _geta(xobj, 'eta').real
-	Kc = _geta(xobj, 'Kc').real
-	cdf = _geta(xobj, 'CDF').real
+	el = _geta(xobj, 'Elasticity').string
+	yf = _geta(xobj, 'Yeld Function').string
+	pf = _geta(xobj, 'Plastic Flow').string
+	
+	# build the IV_TYPE string
+	YF = js['YF']
+	current_YF = YF[yf]
+	PF = js['PF']
+	current_PF = PF[pf]
+	processed = {}
+	for item in (current_YF, current_PF):
+		vars = list(item.get('variables', {}).keys())
+		for var in vars:
+			if not var in processed:
+				processed[var] = xobj.getAttribute(var).string
+	IV_TYPE = ''.join('{}({}):'.format(var_name, har_type) for var_name,har_type in processed.items())
+	
+	
+	
+	raise Exception(IV_TYPE)
+	
+	
+	
+	
+	
 	
 	# obtain the hardening points
 	hl_fun = _globals.presets[_geta(xobj, 'Preset').string][0]
