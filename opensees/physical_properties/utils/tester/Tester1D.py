@@ -682,6 +682,7 @@ class Tester1DWidget(QWidget):
 	def onEditFinished(self):
 		#################################################### $JSON
 		# store initial values to datastore
+		locale = QLocale()
 		a = self.xobj.getAttribute(MpcXObjectMetaData.dataStoreAttributeName())
 		if a is None:
 			raise Exception("Cannot find dataStore Attribute")
@@ -706,6 +707,7 @@ class Tester1DWidget(QWidget):
 		reference_stress = []
 		for i in range(len(self.reference_stress)):
 			reference_stress.append(self.reference_stress.referenceValueAt(i))
+		lch = locale.toDouble(self.lch_value.text())[0]
 		jds['Tester1D'] = {
 			'name': class_name, 
 			'num_cycl': num_cycles, 
