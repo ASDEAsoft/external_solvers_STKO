@@ -9,6 +9,7 @@ import opensees.utils.tcl_input as tclin
 import math
 import json
 import os
+import io
 
 ####################################################################################
 # Utilities
@@ -80,6 +81,7 @@ def _check(xobj):
 				for i in range(min(len(source), 6)):
 					new_value[i] = source[i]
 				attr.quantityVector.referenceValue = new_value
+				#IO.write_cerr('ASDPlasticMaterial Warning: attribute "{}" changed to 6-components'.format(attr.name))
 
 _onEditBegin = get_function_from_module(__name__, 'onEditBegin')
 def onEditBegin(editor, xobj):
@@ -203,6 +205,9 @@ def makeXObjectMetaData():
 
 def writeTcl(pinfo):
 	
+	# the stream
+	ss = io.StringIO()
+	
 	# xobj and tag
 	xobj = pinfo.phys_prop.XObject
 	tag = xobj.parent.componentId
@@ -214,6 +219,7 @@ def writeTcl(pinfo):
 	el = _geta(xobj, 'Elasticity').string
 	yf = _geta(xobj, 'Yeld Function').string
 	pf = _geta(xobj, 'Plastic Flow').string
+	ss.write('{0}nDMaterial ASDPlasticMaterial {1} \\\n{0}{5}{2} \\\n{0}{5}{3} \\\n{0}{5}{4} \\\n'.format(pinfo.indent, tag, yf, pf, el, pinfo.tabIndent))
 	
 	# build the IV_TYPE string
 	YF = js['YF']
@@ -227,14 +233,39 @@ def writeTcl(pinfo):
 			if not var in processed:
 				processed[var] = xobj.getAttribute(var).string
 	IV_TYPE = ''.join('{}({}):'.format(var_name, har_type) for var_name,har_type in processed.items())
+	ss.write('{0}{1}{2} \\\n'.format(pinfo.indent, pinfo.tabIndent, IV_TYPE))
 	
+	# internal variables
+	ss.write('{0}{1}Begin_Internal_Variables \\\n'.format(pinfo.indent, pinfo.tabIndent))
+	var_val_postfix = '-Value'
+	for _, attr in xobj.attributes.items():
+		if attr.visible and attr.group == 'Variables' and attr.name.endswith(var_val_postfix):
+			ss.write('{0}{1}{1}{2}'.format(pinfo.indent, pinfo.tabIndent, attr.name[:-len(var_val_postfix)]))
+			if attr.type == MpcAttributeType.QuantityVector:
+				for i in range(6):
+					ss.write(' {:.8g}'.format(attr.quantityVector.valueAt(i)))
+			elif attr.type == MpcAttributeType.Real:
+				ss.write(' {:.8g}'.format(attr.real))
+			else:
+				raise Exception('ASDPlasticMaterial Error: unexpected variable type {} {}'.format(attr.name, attr.type))
+			ss.write(' \\\n')
+	ss.write('{0}{1}End_Internal_Variables \\\n'.format(pinfo.indent, pinfo.tabIndent))
 	
+	# parameters
+	ss.write('{0}{1}Begin_Model_Parameters \\\n'.format(pinfo.indent, pinfo.tabIndent))
+	for _, attr in xobj.attributes.items():
+		if attr.visible and attr.group == 'Parameters':
+			ss.write('{0}{1}{1}{2}'.format(pinfo.indent, pinfo.tabIndent, attr.name))
+			if attr.type == MpcAttributeType.Real:
+				ss.write(' {:.8g} \\\n'.format(attr.real))
+			else:
+				raise Exception('ASDPlasticMaterial Error: unexpected parameter type {} {}'.format(attr.name, attr.type))
+	ss.write('{0}{1}End_Model_Parameters \\\n'.format(pinfo.indent, pinfo.tabIndent))
 	
-	raise Exception(IV_TYPE)
+	# integration options
 	
-	
-	
-	
+	print(ss.getvalue())
+	1/0
 	
 	
 	# obtain the hardening points
