@@ -3,6 +3,18 @@ from PyMpc import *
 from mpc_utils_html import *
 import opensees.utils.tcl_input as tclin
 
+def makeExtrusionShellDataInfo(xobj):
+	thickness_at = xobj.getAttribute('thickness')
+	if(thickness_at is None):
+		raise Exception('Error: cannot find "thickness" attribute')
+	thickness = thickness_at.quantityVector
+	n = len(thickness)
+	h = 0.0
+	for i in range(n):
+		h += thickness.valueAt(i)
+	info = MpcSectionExtrusionShellDataInfo(h)
+	return info
+
 def makeXObjectMetaData():
 	
 	# matTag
