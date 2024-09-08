@@ -147,7 +147,7 @@ def makeXObjectMetaData():
 	
 	return xom
 
-def writeTcl(pinfo, xobj):
+def writeTcl(pinfo):
 	
 	#section Iso2spring $matTag $tol $k1 $Fyo $k2o $kvo $hb $PE <$Po>
 	

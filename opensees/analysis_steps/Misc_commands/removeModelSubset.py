@@ -171,7 +171,7 @@ def writeTcl(pinfo):
 	# write for sequential or partitioned models
 	if is_partitioned:
 		for process_id in range(len(pdata.partitions)):
-			rem_nodes_p = [i for i in rem_nodes if pdata.isNodeOnParition(i, process_id)]
+			rem_nodes_p = [i for i in rem_nodes if pdata.isNodeOnPartition(i, process_id)]
 			rem_eles_p = [i for i in rem_eles if pdata.elementPartition(i) == process_id]
 			if len(rem_nodes_p) + len(rem_eles_p) > 0:
 				pinfo.setProcessId(process_id)

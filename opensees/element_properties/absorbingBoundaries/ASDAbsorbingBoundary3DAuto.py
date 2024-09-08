@@ -81,6 +81,16 @@ class _globals:
 		F : ( 0.0,-1.0, 0.0),
 		K : ( 0.0, 1.0, 0.0)
 		}
+	# boundary tangent for global direction upon fixing distorsion
+	# (make sure the undistored element is globally aligned XYZ)
+	# bugfix in not finding the initial permutation
+	boundary_tangents = {
+		B : ( 1.0, 0.0, 0.0),
+		L : ( 0.0,-1.0, 0.0),
+		R : ( 0.0, 1.0, 0.0),
+		F : ( 1.0, 0.0, 0.0),
+		K : (-1.0, 0.0, 0.0)
+		}
 	# permutations Q4
 	perms = (
 		(0,1,2,3),
@@ -383,7 +393,7 @@ def preProcessElements(pinfo):
 	# source it
 	pinfo.out_file.write('source ASDAbsorbingBoundary3D.tcl\n')
 
-def _q4_remove_distortion(nodes):
+def _q4_remove_distortion(nodes, btype):
 	import numpy as np
 	# position matrix
 	P = np.zeros((3,4))
@@ -405,10 +415,13 @@ def _q4_remove_distortion(nodes):
 	dx = npnormalize(dx)
 	dy = npnormalize(dy)
 	dz = npnormalize(np.cross(dx, dy))
-	if abs(dz[0]) > 0.99:
-		dx = np.asarray([0.0,1.0,0.0])
-	else:
-		dy = np.asarray([1.0,0.0,0.0])
+	#if abs(dz[0]) > 0.99:
+	#	dx = np.asarray([0.0,1.0,0.0])
+	#else:
+	#	dy = np.asarray([1.0,0.0,0.0])
+	#dy = npnormalize(np.cross(dz, dx))
+	# bugfix for global alignement (after computing z)
+	dx = np.asarray(_globals.boundary_tangents[btype])
 	dy = npnormalize(np.cross(dz, dx))
 	RT = np.asarray((dx,dy,dz))
 	J0 = np.matmul(RT, J0)
@@ -503,6 +516,9 @@ def writeTcl(pinfo):
 			opt += ' -fy {}'.format(fy)
 		if fz != 0:
 			opt += ' -fz {}'.format(fz)
+	nlmat_tag = _geta(xobjm, 'material').index # optional, it can be 0
+	if nlmat_tag > 0:
+		opt += ' -mat {}'.format(nlmat_tag)
 	
 	# get extrusion vector
 	vx, vy, vz = _globals.boundary_vectors[btype]
@@ -517,7 +533,7 @@ def writeTcl(pinfo):
 	P2 = copynode(elem.nodes[1])
 	P3 = copynode(elem.nodes[2])
 	P4 = copynode(elem.nodes[3])
-	_q4_remove_distortion((P1,P2,P3,P4))
+	_q4_remove_distortion((P1,P2,P3,P4), btype)
 	N = (P2.position-P1.position).cross(P3.position-P1.position).normalized()
 	FN = Math.vec3(vx, vy, vz).normalized()
 	if N.dot(FN) < 0.0:

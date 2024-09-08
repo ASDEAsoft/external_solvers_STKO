@@ -1,0 +1,83 @@
+{
+    "HL": {
+        "tensor": {
+            "TensorLinearHardeningFunction": {
+                "parameters": {
+                    "TensorLinearHardeningParameter": 0
+                }
+            },
+            "ArmstrongFrederickHardeningFunction": {
+                "parameters": {
+                    "AF_ha": 0,
+                    "AF_cr": 0
+                }
+            }
+        },
+        "scalar": {
+            "ScalarLinearHardeningFunction": {
+                "parameters": {
+                    "ScalarLinearHardeningParameter": 0
+                }
+            }
+        }
+    },
+    "EL": {
+        "LinearIsotropic3D": {
+            "parameters": {
+                "YoungsModulus": 0,
+                "PoissonsRatio": 0
+            },
+            "variables": {}
+        }
+    },
+    "YF": {
+        "VonMises": {
+            "parameters": {},
+            "variables": {
+                "BackStress": "tensor",
+                "VonMisesRadius": "scalar"
+            }
+        },
+        "DruckerPrager": {
+            "parameters": {},
+            "variables": {
+                "BackStress": "tensor",
+                "VonMisesRadius": "scalar"
+            }
+        },
+        "RoundedMohrCoulomb": {
+            "parameters": {
+                "RMC_m": 0,
+                "RMC_qa": 0,
+                "RMC_pc": 0,
+                "RMC_e": 0
+            },
+            "variables": {
+                "ScalarInternalVariable": "scalar"
+            }
+        }
+    },
+    "PF": {
+        "VonMises": {
+            "parameters": {},
+            "variables": {
+                "BackStress": "tensor"
+            }
+        },
+        "DruckerPrager": {
+            "parameters": {},
+            "variables": {
+                "BackStress": "tensor",
+                "VonMisesRadius": "scalar"
+            }
+        },
+        "ConstantDilatency": {
+            "parameters": {
+                "Dilatancy": 0
+            },
+            "variables": {
+                "BackStress": "tensor"
+            }
+        }
+    }
+}

@@ -475,7 +475,7 @@ def writeTcl_groundMotion(pinfo, xobj, tag):
 	def append_node(node_id):
 		if pcount > 1:
 			for pid in range(pcount):
-				if partition_data.isNodeOnParition(node_id, pid):
+				if partition_data.isNodeOnPartition(node_id, pid):
 					nodes[pid].append(node_id)
 		else:
 			nodes.append(node_id)

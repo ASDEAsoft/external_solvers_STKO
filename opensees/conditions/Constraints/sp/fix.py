@@ -619,7 +619,7 @@ def writeTcl_spConstraints(pinfo):
 			for node_id in nodes:
 				if (node_id in pinfo.node_to_model_map):
 				
-					if not doc.mesh.partitionData.isNodeOnParition(node_id, process_id):
+					if not doc.mesh.partitionData.isNodeOnPartition(node_id, process_id):
 						continue
 					if not first_done:
 						if process_block_count == 0:

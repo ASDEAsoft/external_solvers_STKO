@@ -334,7 +334,7 @@ def writeTcl(pinfo):
 	def nodePartitions(node_id):
 		partitions = []
 		for process_id in range(pinfo.process_count):
-			if doc.mesh.partitionData.isNodeOnParition(node_id, process_id):
+			if doc.mesh.partitionData.isNodeOnPartition(node_id, process_id):
 				partitions.append(process_id)
 		return partitions
 	

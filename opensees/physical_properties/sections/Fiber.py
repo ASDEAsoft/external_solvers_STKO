@@ -141,7 +141,21 @@ def makeXObjectMetaData():
 		)
 	at_mat_torsion.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
 	at_mat_torsion.indexSource.addAllowedNamespace("materials.uniaxial")
- 
+	
+	# -noCentroid
+	at_noCentroid = MpcAttributeMetaData()
+	at_noCentroid.type = MpcAttributeType.Boolean
+	at_noCentroid.name = '-noCentroid'
+	at_noCentroid.group = 'Optional parameters'
+	at_noCentroid.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('-noCentroid')+'<br/>') + 
+		html_par('Default = False. If checked (True), the section will not be centered at its centroid. The beam element will thus pass through the (0,0) coordinate of the section. This can be effectively used to create section offsets inside the Fiber Section itself') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Fiber_Section','Fiber Section')+'<br/>') +
+		html_end()
+		)
+	at_noCentroid.setDefault(False)
+	
 	xom = MpcXObjectMetaData()
 	xom.name = 'Fiber'
 	xom.addAttribute(at_Dimension)
@@ -153,6 +167,7 @@ def makeXObjectMetaData():
 	xom.addAttribute(at_Torsion)
 	xom.addAttribute(at_GJ)
 	xom.addAttribute(at_mat_torsion)
+	xom.addAttribute(at_noCentroid)
 	
 	# auto-exclusive dependencies
 	# Dimension
@@ -203,6 +218,26 @@ def getSectionOffset(xobj):
 		offset_z = odata.z
 	return offset_y, offset_z
 
+def _section_commit_centering(xobj):
+	at_Section = xobj.getAttribute('Fiber section')
+	if(at_Section is None):
+		raise Exception('Error: cannot find "Fiber section" attribute')
+	Section = at_Section.customObject
+	at_noCentroid = xobj.getAttribute('-noCentroid')
+	if at_noCentroid is None:
+		raise Exception('Error: cannot find "-noCentroid" attribute')
+	noCentroid = at_noCentroid.boolean
+	Section.autoCenter = not noCentroid
+	Section.regenerateVisualRepresentation()
+	Section.commitChanges() # this must be after regen! for the autoCenter to pick the new vrep!
+
+def onEditBegin(editor, xobj):
+	_section_commit_centering(xobj)
+
+def onAttributeChanged(editor, xobj, attribute_name):
+	if attribute_name == '-noCentroid':
+		_section_commit_centering(xobj)
+
 def writeTcl (pinfo):
 	xobj = pinfo.phys_prop.XObject
 	tag = xobj.parent.componentId
@@ -240,6 +275,17 @@ def writeTcl (pinfo):
 	
 	cx = Section.centroid.x
 	cy = Section.centroid.y
+	
+	# added 2024. -noCentroid
+	at_noCentroid = xobj.getAttribute('-noCentroid')
+	if at_noCentroid is None:
+		raise Exception('Error: cannot find "-noCentroid" attribute')
+	noCentroid = at_noCentroid.boolean
+	if noCentroid:
+		cx = 0.0
+		cy = 0.0
+		sopt += ' -noCentroid'
+	
 	sopt1 = ''
 	for group in Section.punctualFibers:
 		for fiber in group.fibers.fibers:

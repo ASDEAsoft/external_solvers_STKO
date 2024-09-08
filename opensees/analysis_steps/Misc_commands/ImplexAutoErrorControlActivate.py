@@ -7,6 +7,12 @@ from opensees.utils.parameter_utils import ParameterManager
 def _err(msg):
 	return 'Error in "ImplexAutoErrorControlActivate" :\n{}'.format(msg)
 
+class _globals:
+	target_physical_properties = [
+		'DamageTC1D', 'DamageTC3D',
+		'ASDConcrete1D', 'ASDConcrete3D',
+	]
+
 def _find_phys_props(doc):
 	'''
 	find all physical properties using IMPLEX
@@ -16,7 +22,7 @@ def _find_phys_props(doc):
 	for id, prop in doc.physicalProperties.items():
 		xobj = prop.XObject
 		name = xobj.name
-		if name == 'DamageTC3D' or name == 'DamageTC1D' or name == 'ASDConcrete3D':
+		if name in _globals.target_physical_properties:
 			if xobj.getAttribute('integration').string == 'IMPL-EX':
 				direct[prop.id] = prop
 	

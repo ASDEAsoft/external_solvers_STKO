@@ -74,7 +74,7 @@ def makeConditionRepresentationData(xobj):
 	d.on_edges = True
 	d.on_faces = False
 	d.on_solids = False
-	d.on_interactions = False
+	d.on_interactions = True
 	return d
 
 def _err(xobj, msg):
@@ -110,27 +110,32 @@ def onAttributeChanged(editor, xobj, attribute_name):
 		_check_vectors(xobj, attribute_name)
 
 def _mapNodesToElements(doc, condition):
+	def _process_element(ele):
+		if len(ele.nodes) != 2:
+			raise Exception(_err(condition.XObject,
+			"Only 2-node line elements are allowed.\n"
+			"Please use Linear order in Mesh Controls."))
+		for node in ele.nodes:
+			connected_elements = map_node_eles.get(node.id, None)
+			if connected_elements is None:
+				connected_elements = []
+				map_node_eles[node.id] = connected_elements
+			connected_elements.append(ele)
+			if len(connected_elements) > 2:
+				raise Exception(_err(condition.XObject,
+				"Found a node connected "
+				"to more than 2 edges (this is not allowed)"))
 	map_node_eles = {}
-	geometries = condition.assignment.geometries
-	for geom, subset in geometries.items():
+	for geom, subset in condition.assignment.geometries.items():
 		mesh_of_geom = doc.mesh.getMeshedGeometry(geom.id)
 		for eid in subset.edges:
 			edge = mesh_of_geom.edges[eid]
 			for ele in edge.elements:
-				if len(ele.nodes) != 2:
-					raise Exception(_err(condition.XObject,
-					"Only 2-node line elements are allowed.\n"
-					"Please use Linear order in Mesh Controls."))
-				for node in ele.nodes:
-					connected_elements = map_node_eles.get(node.id, None)
-					if connected_elements is None:
-						connected_elements = []
-						map_node_eles[node.id] = connected_elements
-					connected_elements.append(ele)
-					if len(connected_elements) > 2:
-						raise Exception(_err(condition.XObject,
-						"Found a node connected "
-						"to more than 2 edges (this is not allowed)"))
+				_process_element(ele)
+	for inter in condition.assignment.interactions:
+		mesh_of_inter = doc.mesh.getMeshedInteraction(inter.id)
+		for ele in mesh_of_inter.elements:
+			_process_element(ele)
 	return map_node_eles
 
 def _findPathBoundaries(condition, map_node_eles):

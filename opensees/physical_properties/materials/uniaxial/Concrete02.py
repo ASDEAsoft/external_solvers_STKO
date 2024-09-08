@@ -199,6 +199,9 @@ def getMaterialProperties(xobj):
 def getParamsConfinedVersion(xobj,fcc,epscc0,epsccu,fccu):
 	# This function returns the paramters of the materials
 	#	in confined version, given the main parameters
+
+	# Estimate fracture energy
+	gc = 0.5 * epscc0 * fcc + 0.5 * (fcc + fccu) * (epsccu - epscc0)
 	
 	# get Parameters of unconfined version
 	fc = __get_xobj_attribute(xobj, 'fpc').quantityScalar.value
@@ -213,5 +216,14 @@ def getParamsConfinedVersion(xobj,fcc,epscc0,epsccu,fccu):
 	# Mantain E and compute a different epsc0
 	epscc0 = 2 * fcc / Ec
 	# epscc0 = (epscc0 + (2 * fcc / Ec))/2
+	
+	# # Option 1: pass through point fccu, epsccu but tend to the same residual as unconfined
+	# epsccu = epscc0 + (fcu - fcc) * (epsccu - epscc0) / (fccu - fcc)
+	# fccu = fcu
+	
+	# Option 2: proposal energy equivalence
+	# Increase residual stress by same ammount of peak stress TODO: check if something better can be done
+	fccu = fcu * fcc / fc
+	epsccu = (2 * gc - fcc * epscc0)/(fcc + fccu) + epscc0
 	
 	return (fcc, epscc0, fccu, epsccu, lambd, ft, Ets)

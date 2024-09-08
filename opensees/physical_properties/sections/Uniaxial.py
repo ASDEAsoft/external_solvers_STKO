@@ -50,11 +50,11 @@ def makeXObjectMetaData():
 	
 	return xom
 
-def writeTcl(pinfo, xobj):
+def writeTcl(pinfo):
 	
 	#section Uniaxial $secTag $matTag $quantity
 	
-	
+	xobj = pinfo.phys_prop.XObject
 	tag = xobj.parent.componentId
 	
 	# mandatory parameters

@@ -266,7 +266,7 @@ def getParamsConfinedVersion(xobj,fcc,epscc0,epsccu,fccu):
 			#solution is between C and B
 			yA, nA = yC, nC
 		else:
-			#solution is between A and Calculate
+			#solution is between A and C
 			yB, nB = yC, nC
 		it += 1
 	# print('Computed n = ', nC)

@@ -40,8 +40,8 @@ def makeXObjectMetaData():
 		html_end()
 		)
 	at_zeroLength_i.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
-	at_zeroLength_i.indexSource.addAllowedNamespace("special_purpose")
-	at_zeroLength_i.indexSource.addAllowedClass("zeroLengthMaterial")
+	at_zeroLength_i.indexSource.addAllowedNamespaceList(["special_purpose", "sections"])
+	at_zeroLength_i.indexSource.addAllowedClassList(["zeroLengthMaterial", "ASDCoupledHinge_RectangularRC"])
 	
 	# zeroLength_j
 	at_zeroLength_j = MpcAttributeMetaData()
@@ -56,8 +56,8 @@ def makeXObjectMetaData():
 		html_end()
 		)
 	at_zeroLength_j.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
-	at_zeroLength_j.indexSource.addAllowedNamespace("special_purpose")
-	at_zeroLength_j.indexSource.addAllowedClass("zeroLengthMaterial")
+	at_zeroLength_j.indexSource.addAllowedNamespaceList(["special_purpose", "sections"])
+	at_zeroLength_j.indexSource.addAllowedClassList(["zeroLengthMaterial", "ASDCoupledHinge_RectangularRC"])
 	
 	
 	xom = MpcXObjectMetaData()

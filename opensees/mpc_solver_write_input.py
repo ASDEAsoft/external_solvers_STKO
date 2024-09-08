@@ -398,12 +398,65 @@ def write_tcl_int(out_dir):
 	# done
 	PyMpc.App.monitor().sendMessage('Done.Input file correctly written!')
 
+class _mp_handler:
+	def __init__(self):
+		self.pmap_remove = {}
+	def begin(self):
+		print('MP Handler: begin')
+		doc = PyMpc.App.caeDocument()
+		if doc is None: return
+		if doc.mesh is None: return
+		pmap = {}
+		for _, cond in doc.conditions.items():
+			xobj = cond.XObject
+			if xobj is None: continue
+			imodule = importlib.import_module('opensees.conditions.{}'.format(xobj.completeName))
+			if hasattr(imodule, 'ensureNodesOnPartitions'):
+				print(xobj.completeName, '[ensureNodesOnPartitions]')
+				imodule.ensureNodesOnPartitions(xobj, pmap)
+		print('P.MAP:')
+		for node_id, partitions in pmap.items():
+			print(node_id, partitions)
+		for node_id, partitions in pmap.items():
+			rem_part = self.pmap_remove.get(node_id, None)
+			if rem_part is None:
+				rem_part = []
+				self.pmap_remove[node_id] = rem_part
+			for pid in partitions:
+				if not doc.mesh.partitionData.isNodeOnPartition(node_id, pid):
+					rem_part.append(pid)
+					before = doc.mesh.partitionData.isNodeOnPartition(node_id, pid)
+					doc.mesh.partitionData.addNode(doc.mesh.getNode(node_id), pid)
+					after = doc.mesh.partitionData.isNodeOnPartition(node_id, pid)
+					print('... adding node {} to partition {} [{}, {}]'.format(node_id, pid, before, after))
+		self.pmap_remove = {i:j for i,j in self.pmap_remove.items() if j} # purge empty values
+		print('P.MAP (Remove):')
+		for node_id, partitions in self.pmap_remove.items():
+			print(node_id, partitions)
+	def end(self):
+		print('MP Handler: end')
+		if len(self.pmap_remove) == 0: return
+		doc = PyMpc.App.caeDocument()
+		if doc is None: return
+		if doc.mesh is None: return
+		for node_id, partitions in self.pmap_remove.items():
+			for pid in partitions:
+				before = doc.mesh.partitionData.isNodeOnPartition(node_id, pid)
+				doc.mesh.partitionData.removeNode(doc.mesh.getNode(node_id), pid)
+				after = doc.mesh.partitionData.isNodeOnPartition(node_id, pid)
+				print('... removing node {} from partition {} [{}, {}]'.format(node_id, pid, before, after))
+
 def write_tcl(out_dir):
 	'''
 	Use this code block to just run the process of writing input files
 	without profiling
 	'''
-	write_tcl_int(out_dir)
+	mp = _mp_handler()
+	try:
+		mp.begin()
+		write_tcl_int(out_dir)
+	finally:
+		mp.end()
 	'''
 	Use this code block to profile the process of writing input files
 	to look for possible bottlenecks.
