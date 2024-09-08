@@ -103,6 +103,14 @@ proc ASD_ABS_BND_SOURCE_RESULT {src_ele} {
 	for {set gpi 1} {$gpi <= 100} {incr gpi} {
 		set KT [eleResponse $src_ele material $gpi tangent]
 		set n [llength $KT]
+		# if the element does not support material keyword (1-point elements)...
+		if {$n == 0} {
+			if {$gpi == 1} {
+				# try this
+				set KT [eleResponse $src_ele tangent]
+				set n [llength $KT]
+			}
+		}
 		if {$n == 0} { break }
 		incr num_gauss
 		set G [lindex $KT [expr ($n-1)]]
@@ -121,6 +129,14 @@ proc ASD_ABS_BND_SOURCE_RESULT {src_ele} {
 	for {set gpi 1} {$gpi <= 100} {incr gpi} {
 		set S [eleResponse $src_ele material $gpi stress]
 		set n [llength $S]
+		# if the element does not support material keyword (1-point elements)...
+		if {$n == 0} {
+			if {$gpi == 1} {
+				# try this
+				set S [eleResponse $src_ele stress]
+				set n [llength $S]
+			}
+		}
 		if {$n == 0} { break }
 		incr num_gauss
 		set s11 [expr [lindex $S 0]]
@@ -128,16 +144,14 @@ proc ASD_ABS_BND_SOURCE_RESULT {src_ele} {
 		set s33 [expr [lindex $S 2]]
 		set p [expr max(1.0, -($s11 + $s22 + $s33)/3.0)]
 		set BB [eleResponse $src_ele material $gpi backbone $p]
-		#set G [lindex $BB 3]; # skip first row
 		
 		# or use octa shear strain
 		set E [eleResponse $src_ele material $gpi strain]
-		set e11 [expr [lindex $E 0]]
-		set e22 [expr [lindex $E 1]]
-		set e12 [expr ([lindex $E 2]/2.0)]
-		set eoct [expr max(0.0, ($e11*$e11 + $e22*$e22 - $e11*$e22 ) / 3.0 + $e12*$e12)]
-		set goct [expr $eoct * 2.0]
-
+		set g12 [expr abs([lindex $E 3])]
+		set g23 [expr abs([lindex $E 4])]
+		set g13 [expr abs([lindex $E 5])]
+		set gamma [expr max($g12, max($g23, $g13))]
+		
 		# search
 		set G 0.0
 		set nbb [expr [llength $BB]/2.0-1]
@@ -147,7 +161,7 @@ proc ASD_ABS_BND_SOURCE_RESULT {src_ele} {
 			set xx [lindex $BB $j]
 			set yy [lindex $BB $k]
 			set G $yy
-			if {$goct < $xx} {
+			if {$gamma < $xx} {
 				#puts "found: $xx $G"
 				break
 			}
@@ -254,7 +268,7 @@ def writeTcl(pinfo):
 	# the ASD_ABS_BND_RESULTS
 	ss.write(_tem.result_alloc)
 	# the ASD_ABS_BND_SOURCE_RESULT procedure
-	ss.write(_tem.G_secant)
+	ss.write(_tem.G_tangent)
 	# The update function
 	ss.write(_tem.update_proc)
 	# write to file

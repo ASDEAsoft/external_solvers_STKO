@@ -155,6 +155,9 @@ def writeTcl(pinfo):
 			opt += ' -fy {}'.format(fy)
 		if fz != 0:
 			opt += ' -fz {}'.format(fz)
+	nlmat_tag = _geta(xobjm, 'material').index # optional, it can be 0
+	if nlmat_tag > 0:
+		opt += ' -mat {}'.format(nlmat_tag)
 	
 	# check element type
 	if (elem.geometryFamilyType()) != MpcElementGeometryFamilyType.Hexahedron or len(elem.nodes)!=8:
