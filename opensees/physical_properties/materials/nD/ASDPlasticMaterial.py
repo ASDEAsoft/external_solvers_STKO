@@ -219,7 +219,7 @@ def writeTcl(pinfo):
 	el = _geta(xobj, 'Elasticity').string
 	yf = _geta(xobj, 'Yeld Function').string
 	pf = _geta(xobj, 'Plastic Flow').string
-	ss.write('{0}nDMaterial ASDPlasticMaterial {1} \\\n{0}{5}{2} \\\n{0}{5}{3} \\\n{0}{5}{4} \\\n'.format(pinfo.indent, tag, yf, pf, el, pinfo.tabIndent))
+	ss.write('{0}nDMaterial ASDPlasticMaterial {1} \\\n{0}{5}{2}_YF \\\n{0}{5}{3}_PF \\\n{0}{5}{4}_EL \\\n'.format(pinfo.indent, tag, yf, pf, el, pinfo.tabIndent))
 	
 	# build the IV_TYPE string
 	YF = js['YF']
@@ -263,54 +263,7 @@ def writeTcl(pinfo):
 	ss.write('{0}{1}End_Model_Parameters \\\n'.format(pinfo.indent, pinfo.tabIndent))
 	
 	# integration options
-	
-	print(ss.getvalue())
-	1/0
-	
-	
-	# obtain the hardening points
-	hl_fun = _globals.presets[_geta(xobj, 'Preset').string][0]
-	Te,Ts,Td,Ce,Cs,Cd,auto_reg,lch_ref = hl_fun(xobj)
-	def to_tcl(x):
-		return ' '.join(str(i) for i in x)
-	
-	# command format
-	command = ("{0}nDMaterial ASDConcrete3D {1} {2} {3} \\\n"
-		"{0}\t-Te {6} \\\n"
-		"{0}\t-Ts {7} \\\n"
-		"{0}\t-Td {8} \\\n"
-		"{0}\t-Ce {9} \\\n"
-		"{0}\t-Cs {10} \\\n"
-		"{0}\t-Cd {11} \\\n"
-		"{0}\t-rho {4} -eta {5} -Kc {12} -cdf {13}").format(pinfo.indent, tag, E, v, rho, eta, 
-			to_tcl(Te), to_tcl(Ts), to_tcl(Td), to_tcl(Ce), to_tcl(Cs), to_tcl(Cd), Kc, cdf)
-	
-	if _geta(xobj, 'integration').string == 'IMPL-EX':
-		#if _geta(xobj, 'implexCheckError').boolean:
-		#	command += ' \\\n{}\t-implex -implexAlpha {} -implexControl {} {}'.format(
-		#		pinfo.indent,
-		#		_geta(xobj, 'implexAlpha').real,
-		#		_geta(xobj, 'implexErrorTolerance').real,
-		#		_geta(xobj, 'implexErrorTimeReductionLimit').real)
-		#else:
-		#	command += ' \\\n{}\t-implex -implexAlpha {}'.format(pinfo.indent, _geta(xobj, 'implexAlpha').real)
-		#
-		# Note 1
-		command += ' \\\n{}\t-implex -implexAlpha {}'.format(pinfo.indent, _geta(xobj, 'implexAlpha').real)
-	
-	if _geta(xobj, '-crackPlanes').boolean:
-		command += ' \\\n{}\t-crackPlanes {} {} {}'.format(pinfo.indent, 
-			_geta(xobj, 'nct').integer,
-			_geta(xobj, 'ncc').integer,
-			_geta(xobj, 'smoothingAngle').real)
-	
-	if _geta(xobj, 'constitutiveTensorType').string == 'Tangent':
-		command += ' \\\n{}\t-tangent'.format(pinfo.indent)
-	
-	if auto_reg:
-		command += ' \\\n{}\t-autoRegularization {}'.format(pinfo.indent, lch_ref)
-	
-	command += '\n'
+	# TODO
 	
 	# now write the string into the file
-	pinfo.out_file.write(command)
+	pinfo.out_file.write(ss.getvalue())
