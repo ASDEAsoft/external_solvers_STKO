@@ -108,6 +108,24 @@ def makeXObjectMetaData():
 		)
 	at_genericLoad.indexSource.type = MpcAttributeIndexSourceType.Condition
 	at_genericLoad.indexSource.addAllowedNamespace("Loads.Generic")
+	
+	# massToLoad
+	at_massToLoad = MpcAttributeMetaData()
+	at_massToLoad.type = MpcAttributeType.IndexVector
+	at_massToLoad.name = 'massToLoad'
+	at_massToLoad.group = 'Load pattern'
+	at_massToLoad.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('massToLoad')+'<br/>') + 
+		html_par('command to generate loads from masses')+
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Plain_Pattern','Plain Pattern')+'<br/>') +
+		html_end()
+		)
+	at_massToLoad.indexSource.type = MpcAttributeIndexSourceType.Condition
+	at_massToLoad.indexSource.addAllowedNamespace("Mass")
+	at_massToLoad.indexSource.addAllowedClass("AutoEdgeMass")
+	
+	# the xobject meta data
 	xom = MpcXObjectMetaData()
 	xom.name = 'loadPattern'
 	xom.addAttribute(at_tsTag)
@@ -116,6 +134,7 @@ def makeXObjectMetaData():
 	xom.addAttribute(at_eleLoad)
 	xom.addAttribute(at_sp)
 	xom.addAttribute(at_genericLoad)
+	xom.addAttribute(at_massToLoad)
 	
 	xom.addAttribute(at_fact)
 	xom.addAttribute(at_cFactor)
@@ -248,6 +267,26 @@ def writeTcl(pinfo):
 		if hasattr(module, 'writeTcl_Load'):
 			pinfo.condition = item
 			module.writeTcl_Load(pinfo, xobj_genericLoad)
+	
+	'''
+	massToLoad
+	'''
+	massToLoad_at = xobj.getAttribute('massToLoad')
+	if(massToLoad_at is None):
+		raise Exception('Error: cannot find "massToLoad" attribute')
+	massToLoad = massToLoad_at.indexVector
+	
+	for i in massToLoad:
+		if i == 0: continue
+		item = doc.conditions[i]
+		xobj_massToLoad = item.XObject
+		if(xobj_massToLoad is None):
+			raise Exception('null XObject in Patterns object')
+		module_name = 'opensees.conditions.{}.{}'.format(xobj_massToLoad.Xnamespace, xobj_massToLoad.name)
+		module = importlib.import_module(module_name)
+		if hasattr(module, 'convertToLoad'):
+			pinfo.condition = item
+			module.convertToLoad(pinfo, xobj_massToLoad)
 	
 	str_tcl = '{}{}\n'.format(pinfo.indent, '}')
 	pinfo.out_file.write(str_tcl)

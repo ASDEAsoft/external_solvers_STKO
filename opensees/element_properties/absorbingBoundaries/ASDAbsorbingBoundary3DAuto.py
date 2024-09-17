@@ -516,6 +516,9 @@ def writeTcl(pinfo):
 			opt += ' -fy {}'.format(fy)
 		if fz != 0:
 			opt += ' -fz {}'.format(fz)
+	nlmat_tag = _geta(xobjm, 'material').index # optional, it can be 0
+	if nlmat_tag > 0:
+		opt += ' -mat {}'.format(nlmat_tag)
 	
 	# get extrusion vector
 	vx, vy, vz = _globals.boundary_vectors[btype]

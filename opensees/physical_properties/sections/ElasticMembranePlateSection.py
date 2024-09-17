@@ -3,6 +3,14 @@ from PyMpc import *
 from mpc_utils_html import *
 import opensees.utils.tcl_input as tclin
 
+def makeExtrusionShellDataInfo(xobj):
+	h_at = xobj.getAttribute('h')
+	if(h_at is None):
+		raise Exception('Error: cannot find "h" attribute')
+	h = h_at.quantityScalar.value
+	info = MpcSectionExtrusionShellDataInfo(h)
+	return info
+
 def makeXObjectMetaData():
 	
 	# E
