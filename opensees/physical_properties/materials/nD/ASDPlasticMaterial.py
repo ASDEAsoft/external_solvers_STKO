@@ -184,6 +184,15 @@ def makeXObjectMetaData():
 					# done
 					param_dict[key] = attr
 	
+	# integration options
+	f_tol = mka('f_relative_tol', 'Integration Options', 'Yield function relative tolerance', MpcAttributeType.Real, dval=1.0e-6)
+	s_tol = mka('stress_relative_tol', 'Integration Options', 'Stress relative tolerance', MpcAttributeType.Real, dval=1.0e-6)
+	niter = mka('n_max_iterations', 'Integration Options', 'Maximum number of iteration for return mapping', MpcAttributeType.Integer, dval=100)
+	yretu = mka('return_to_yield_surface', 'Integration Options', 'Return to yield surface', MpcAttributeType.Boolean, dval=True)
+	metho = mka('method', 'Integration Options', 'Integration method', MpcAttributeType.String, dval='Runge_Kutta_45_Error_Control')
+	metho.sourceType = MpcAttributeSourceType.List
+	metho.setSourceList(['Forward_Euler', 'Runge_Kutta_45_Error_Control'])
+	
 	# xom
 	xom = MpcXObjectMetaData()
 	xom.name = 'ASDPlasticMaterial'
@@ -199,6 +208,12 @@ def makeXObjectMetaData():
 	# Parameters
 	for _, attr in param_dict.items():
 		xom.addAttribute(attr)
+	# misc
+	xom.addAttribute(f_tol)
+	xom.addAttribute(s_tol)
+	xom.addAttribute(niter)
+	xom.addAttribute(yretu)
+	xom.addAttribute(metho)
 	
 	# done
 	return xom
@@ -263,7 +278,18 @@ def writeTcl(pinfo):
 	ss.write('{0}{1}End_Model_Parameters \\\n'.format(pinfo.indent, pinfo.tabIndent))
 	
 	# integration options
-	# TODO
-	
+	f_tol = _geta(xobj, 'f_relative_tol').real
+	s_tol = _geta(xobj, 'stress_relative_tol').real
+	niter = _geta(xobj, 'n_max_iterations').integer
+	yretu = 1 if _geta(xobj, 'return_to_yield_surface') else 0
+	metho = _geta(xobj, 'method').string
+	ss.write('{0}{1}Begin_Integration_Options \\\n'.format(pinfo.indent, pinfo.tabIndent))
+	ss.write('{0}{1}{1}f_relative_tol {2:.6e}'.format(pinfo.indent, pinfo.tabIndent, f_tol))
+	ss.write('{0}{1}{1}stress_relative_tol {2:.6e}'.format(pinfo.indent, pinfo.tabIndent, s_tol))
+	ss.write('{0}{1}{1}n_max_iterations {2}'.format(pinfo.indent, pinfo.tabIndent, niter))
+	ss.write('{0}{1}{1}return_to_yield_surface {2}'.format(pinfo.indent, pinfo.tabIndent, yretu))
+	ss.write('{0}{1}{1}method {2}'.format(pinfo.indent, pinfo.tabIndent, metho))
+	ss.write('{0}{1}End_Integration_Options \\\n'.format(pinfo.indent, pinfo.tabIndent))
+	print(ss.getvalue())
 	# now write the string into the file
 	pinfo.out_file.write(ss.getvalue())
