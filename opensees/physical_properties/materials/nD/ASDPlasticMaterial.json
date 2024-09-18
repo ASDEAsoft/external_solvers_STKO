@@ -71,7 +71,7 @@
                 "VonMisesRadius": "scalar"
             }
         },
-        "ConstantDilatency": {
+        "ConstantDilatancy": {
             "parameters": {
                 "Dilatancy": 0
             },

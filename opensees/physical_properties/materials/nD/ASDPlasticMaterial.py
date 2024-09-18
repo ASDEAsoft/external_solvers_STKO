@@ -9,6 +9,7 @@ import opensees.utils.tcl_input as tclin
 import math
 import json
 import os
+import io
 
 ####################################################################################
 # Utilities
@@ -80,6 +81,7 @@ def _check(xobj):
 				for i in range(min(len(source), 6)):
 					new_value[i] = source[i]
 				attr.quantityVector.referenceValue = new_value
+				#IO.write_cerr('ASDPlasticMaterial Warning: attribute "{}" changed to 6-components'.format(attr.name))
 
 _onEditBegin = get_function_from_module(__name__, 'onEditBegin')
 def onEditBegin(editor, xobj):
@@ -182,6 +184,15 @@ def makeXObjectMetaData():
 					# done
 					param_dict[key] = attr
 	
+	# integration options
+	f_tol = mka('f_relative_tol', 'Integration Options', 'Yield function relative tolerance', MpcAttributeType.Real, dval=1.0e-6)
+	s_tol = mka('stress_relative_tol', 'Integration Options', 'Stress relative tolerance', MpcAttributeType.Real, dval=1.0e-6)
+	niter = mka('n_max_iterations', 'Integration Options', 'Maximum number of iteration for return mapping', MpcAttributeType.Integer, dval=100)
+	yretu = mka('return_to_yield_surface', 'Integration Options', 'Return to yield surface', MpcAttributeType.Boolean, dval=True)
+	metho = mka('method', 'Integration Options', 'Integration method', MpcAttributeType.String, dval='Runge_Kutta_45_Error_Control')
+	metho.sourceType = MpcAttributeSourceType.List
+	metho.setSourceList(['Forward_Euler', 'Runge_Kutta_45_Error_Control'])
+	
 	# xom
 	xom = MpcXObjectMetaData()
 	xom.name = 'ASDPlasticMaterial'
@@ -197,11 +208,20 @@ def makeXObjectMetaData():
 	# Parameters
 	for _, attr in param_dict.items():
 		xom.addAttribute(attr)
+	# misc
+	xom.addAttribute(f_tol)
+	xom.addAttribute(s_tol)
+	xom.addAttribute(niter)
+	xom.addAttribute(yretu)
+	xom.addAttribute(metho)
 	
 	# done
 	return xom
 
 def writeTcl(pinfo):
+	
+	# the stream
+	ss = io.StringIO()
 	
 	# xobj and tag
 	xobj = pinfo.phys_prop.XObject
@@ -214,6 +234,7 @@ def writeTcl(pinfo):
 	el = _geta(xobj, 'Elasticity').string
 	yf = _geta(xobj, 'Yeld Function').string
 	pf = _geta(xobj, 'Plastic Flow').string
+	ss.write('{0}nDMaterial ASDPlasticMaterial {1} \\\n{0}{5}{2}_YF \\\n{0}{5}{3}_PF \\\n{0}{5}{4}_EL \\\n'.format(pinfo.indent, tag, yf, pf, el, pinfo.tabIndent))
 	
 	# build the IV_TYPE string
 	YF = js['YF']
@@ -227,59 +248,48 @@ def writeTcl(pinfo):
 			if not var in processed:
 				processed[var] = xobj.getAttribute(var).string
 	IV_TYPE = ''.join('{}({}):'.format(var_name, har_type) for var_name,har_type in processed.items())
+	ss.write('{0}{1}{2} \\\n'.format(pinfo.indent, pinfo.tabIndent, IV_TYPE))
 	
+	# internal variables
+	ss.write('{0}{1}Begin_Internal_Variables \\\n'.format(pinfo.indent, pinfo.tabIndent))
+	var_val_postfix = '-Value'
+	for _, attr in xobj.attributes.items():
+		if attr.visible and attr.group == 'Variables' and attr.name.endswith(var_val_postfix):
+			ss.write('{0}{1}{1}{2}'.format(pinfo.indent, pinfo.tabIndent, attr.name[:-len(var_val_postfix)]))
+			if attr.type == MpcAttributeType.QuantityVector:
+				for i in range(6):
+					ss.write(' {:.8g}'.format(attr.quantityVector.valueAt(i)))
+			elif attr.type == MpcAttributeType.Real:
+				ss.write(' {:.8g}'.format(attr.real))
+			else:
+				raise Exception('ASDPlasticMaterial Error: unexpected variable type {} {}'.format(attr.name, attr.type))
+			ss.write(' \\\n')
+	ss.write('{0}{1}End_Internal_Variables \\\n'.format(pinfo.indent, pinfo.tabIndent))
 	
+	# parameters
+	ss.write('{0}{1}Begin_Model_Parameters \\\n'.format(pinfo.indent, pinfo.tabIndent))
+	for _, attr in xobj.attributes.items():
+		if attr.visible and attr.group == 'Parameters':
+			ss.write('{0}{1}{1}{2}'.format(pinfo.indent, pinfo.tabIndent, attr.name))
+			if attr.type == MpcAttributeType.Real:
+				ss.write(' {:.8g} \\\n'.format(attr.real))
+			else:
+				raise Exception('ASDPlasticMaterial Error: unexpected parameter type {} {}'.format(attr.name, attr.type))
+	ss.write('{0}{1}End_Model_Parameters \\\n'.format(pinfo.indent, pinfo.tabIndent))
 	
-	raise Exception(IV_TYPE)
-	
-	
-	
-	
-	
-	
-	# obtain the hardening points
-	hl_fun = _globals.presets[_geta(xobj, 'Preset').string][0]
-	Te,Ts,Td,Ce,Cs,Cd,auto_reg,lch_ref = hl_fun(xobj)
-	def to_tcl(x):
-		return ' '.join(str(i) for i in x)
-	
-	# command format
-	command = ("{0}nDMaterial ASDConcrete3D {1} {2} {3} \\\n"
-		"{0}\t-Te {6} \\\n"
-		"{0}\t-Ts {7} \\\n"
-		"{0}\t-Td {8} \\\n"
-		"{0}\t-Ce {9} \\\n"
-		"{0}\t-Cs {10} \\\n"
-		"{0}\t-Cd {11} \\\n"
-		"{0}\t-rho {4} -eta {5} -Kc {12} -cdf {13}").format(pinfo.indent, tag, E, v, rho, eta, 
-			to_tcl(Te), to_tcl(Ts), to_tcl(Td), to_tcl(Ce), to_tcl(Cs), to_tcl(Cd), Kc, cdf)
-	
-	if _geta(xobj, 'integration').string == 'IMPL-EX':
-		#if _geta(xobj, 'implexCheckError').boolean:
-		#	command += ' \\\n{}\t-implex -implexAlpha {} -implexControl {} {}'.format(
-		#		pinfo.indent,
-		#		_geta(xobj, 'implexAlpha').real,
-		#		_geta(xobj, 'implexErrorTolerance').real,
-		#		_geta(xobj, 'implexErrorTimeReductionLimit').real)
-		#else:
-		#	command += ' \\\n{}\t-implex -implexAlpha {}'.format(pinfo.indent, _geta(xobj, 'implexAlpha').real)
-		#
-		# Note 1
-		command += ' \\\n{}\t-implex -implexAlpha {}'.format(pinfo.indent, _geta(xobj, 'implexAlpha').real)
-	
-	if _geta(xobj, '-crackPlanes').boolean:
-		command += ' \\\n{}\t-crackPlanes {} {} {}'.format(pinfo.indent, 
-			_geta(xobj, 'nct').integer,
-			_geta(xobj, 'ncc').integer,
-			_geta(xobj, 'smoothingAngle').real)
-	
-	if _geta(xobj, 'constitutiveTensorType').string == 'Tangent':
-		command += ' \\\n{}\t-tangent'.format(pinfo.indent)
-	
-	if auto_reg:
-		command += ' \\\n{}\t-autoRegularization {}'.format(pinfo.indent, lch_ref)
-	
-	command += '\n'
-	
+	# integration options
+	f_tol = _geta(xobj, 'f_relative_tol').real
+	s_tol = _geta(xobj, 'stress_relative_tol').real
+	niter = _geta(xobj, 'n_max_iterations').integer
+	yretu = 1 if _geta(xobj, 'return_to_yield_surface') else 0
+	metho = _geta(xobj, 'method').string
+	ss.write('{0}{1}Begin_Integration_Options \\\n'.format(pinfo.indent, pinfo.tabIndent))
+	ss.write('{0}{1}{1}f_relative_tol {2:.6e}'.format(pinfo.indent, pinfo.tabIndent, f_tol))
+	ss.write('{0}{1}{1}stress_relative_tol {2:.6e}'.format(pinfo.indent, pinfo.tabIndent, s_tol))
+	ss.write('{0}{1}{1}n_max_iterations {2}'.format(pinfo.indent, pinfo.tabIndent, niter))
+	ss.write('{0}{1}{1}return_to_yield_surface {2}'.format(pinfo.indent, pinfo.tabIndent, yretu))
+	ss.write('{0}{1}{1}method {2}'.format(pinfo.indent, pinfo.tabIndent, metho))
+	ss.write('{0}{1}End_Integration_Options \\\n'.format(pinfo.indent, pinfo.tabIndent))
+	print(ss.getvalue())
 	# now write the string into the file
-	pinfo.out_file.write(command)
+	pinfo.out_file.write(ss.getvalue())
