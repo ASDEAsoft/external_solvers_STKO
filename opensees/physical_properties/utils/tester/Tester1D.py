@@ -121,6 +121,7 @@ class Tester1D(QObject):
 		# create process info
 		pinfo = tclin.process_info()
 		pinfo.out_dir = temp_dir
+		pinfo.next_physicalProperties_id = App.caeDocument().physicalProperties.getlastkey(0)+1
 		
 		# get template
 		template_filename = '{}/template_1d.tcl'.format(os.path.dirname(__file__))
@@ -269,6 +270,7 @@ class Tester1DMaterialConfinedSection(QObject):
 		# create process info
 		pinfo = tclin.process_info()
 		pinfo.out_dir = temp_dir
+		pinfo.next_physicalProperties_id = App.caeDocument().physicalProperties.getlastkey(0)+1
 		
 		# get template
 		template_filename = '{}/template_1d.tcl'.format(os.path.dirname(__file__))

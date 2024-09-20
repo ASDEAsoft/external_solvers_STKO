@@ -164,6 +164,7 @@ class TesterND(QObject):
 		# create process info
 		pinfo = tclin.process_info()
 		pinfo.out_dir = temp_dir
+		pinfo.next_physicalProperties_id = App.caeDocument().physicalProperties.getlastkey(0)+1
 		
 		# get template
 		template_filename = '{}/{}'.format(os.path.dirname(__file__), NDTraits.TEMPLATE[self.type])
