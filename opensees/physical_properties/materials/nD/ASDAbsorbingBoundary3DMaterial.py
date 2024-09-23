@@ -30,7 +30,7 @@ def makeXObjectMetaData():
 	rho = mka('rho', MpcAttributeType.QuantityScalar, 'The mass density of the soil domain', dimension = u.F*u.t*u.t/u.L/u.L/u.L/u.L)
 	
 	# material
-	material = mka('material', MpcAttributeType.Index, 'integer tag of previously defined 3d material')
+	material = mka('material', MpcAttributeType.Index, 'integer tag of previously defined 3d material (WARNING: under beta testing...)')
 	material.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
 	material.indexSource.addAllowedNamespace('materials.nD')
 	
