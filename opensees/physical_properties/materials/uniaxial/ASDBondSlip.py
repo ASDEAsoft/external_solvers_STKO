@@ -7,6 +7,7 @@ from PyMpc import *
 from mpc_utils_html import *
 import opensees.utils.tcl_input as tclin
 import math
+from scipy.optimize import least_squares
 
 def _err(msg):
 	return 'Error in ASDBondSlip: {}'.format(msg)
@@ -45,10 +46,29 @@ class _globals:
 class _mc2020:
 	alpha = 0.4
 	tolerance = 1.0e-4
-	def _discretize(ymax,s1):
-		# dicretize the first part of the equation in 4 points
-		Y = [0.0, 0.3*ymax, 0.6*ymax, 0.8*ymax]
-		X = [(ti/ymax)**(1/_mc2020.alpha)*s1 for ti in Y]
+	def _discretize(tmax, ymax, s1):
+		# input: ymax can be < tmax in case of splitting failure
+		def _tau_fun(x): return tmax*(x/s1)**_mc2020.alpha
+		def _tau_inv(t): return (t/tmax)**(1.0/_mc2020.alpha)*s1
+		def _tau_tan(x): return _mc2020.alpha*_tau_fun(x)/x
+		# According to the mc2020, the unloading modulus is 6*tmax:
+		#   try to find the abscissa that match 6.tmax tangent
+		Ed = 6*tmax
+		x1 = least_squares(lambda x : _tau_tan(x) - Ed, 1.0e-8, bounds = (1.0e-8, s1)).x[0]
+		y1 = _tau_fun(x1)
+		# if this first point is >= ymax, do not discretize... the peak point will be added anyway
+		if y1 >= ymax*0.99:
+			return ([], [])
+		# dicretize the range y1-ymax
+		Y = [0.0, y1]
+		DY = ymax - y1
+		dY = 0.2*ymax
+		Ndiv = int(round(DY/dY))
+		if Ndiv > 1:
+			dY = DY/Ndiv
+			for i in range(Ndiv-1):
+				Y.append(Y[-1]+dY)
+		X = [_tau_inv(ti) for ti in Y]
 		return (X,Y)
 	def _make_po_good(fc, cclear):
 		tmax = 2.5*math.sqrt(fc)
@@ -56,27 +76,111 @@ class _mc2020:
 		s2 = 2.0
 		s3 = cclear if cclear > s2 else s2+0.01
 		tu = 0.4*tmax
-		X,Y = _mc2020._discretize(tmax,s1)
+		X,Y = _mc2020._discretize(tmax, tmax, s1)
+		X.extend([s1, s2, s3])
+		Y.extend([tmax, tmax, tu])
+		return (X,Y)
+	def _make_po_poor(fc, cclear):
+		tmax = 1.25*math.sqrt(fc)
+		s1 = 1.8
+		s2 = 3.6
+		s3 = cclear if cclear > s2 else s2+0.01
+		tu = 0.4*tmax
+		X,Y = _mc2020._discretize(tmax, tmax, s1)
+		X.extend([s1, s2, s3])
+		Y.extend([tmax, tmax, tu])
+		return (X,Y)
+	def _make_sp_good_u(fc, cclear):
+		# same as good in po...
+		tmax_po = 2.5*math.sqrt(fc)
+		s1_po = 1.0
+		# eval tsplit and its abscissa s1 following curve in po...
+		tmax = 7.0*(fc/25.0)**0.25 # tbu,split
+		s1 = (tmax/tmax_po)**(1/_mc2020.alpha)*s1_po # s1 = s(tbu,split)
+		s2 = s1*1.00001
+		s3 = 1.2*s1_po # todo: not mentioned...
+		tu = tmax*_mc2020.tolerance
+		X,Y = _mc2020._discretize(tmax_po, tmax, s1_po)
+		X.extend([s1, s2, s3])
+		Y.extend([tmax, tmax, tu])
+		return (X,Y)
+	def _make_sp_good_c(fc, cclear):
+		# same as good in po...
+		tmax_po = 2.5*math.sqrt(fc)
+		s1_po = 1.0
+		# eval tsplit and its abscissa s1 following curve in po...
+		tmax = 8.0*(fc/25.0)**0.25 # tbu,split
+		s1 = (tmax/tmax_po)**(1/_mc2020.alpha)*s1_po # s1 = s(tbu,split)
+		s2 = s1*1.00001
+		s3 = 0.5*cclear
+		if s3 <= s2: s3 = s2+0.01
+		tu = 0.4*tmax
+		X,Y = _mc2020._discretize(tmax_po, tmax, s1_po)
+		X.extend([s1, s2, s3])
+		Y.extend([tmax, tmax, tu])
+		return (X,Y)
+	def _make_sp_poor_u(fc, cclear):
+		# same as good in po...
+		tmax_po = 1.25*math.sqrt(fc)
+		s1_po = 1.8
+		# eval tsplit and its abscissa s1 following curve in po...
+		tmax = 5.0*(fc/25.0)**0.25 # tbu,split
+		s1 = (tmax/tmax_po)**(1/_mc2020.alpha)*s1_po # s1 = s(tbu,split)
+		s2 = s1*1.00001
+		s3 = 1.2*s1_po # todo: not mentioned...
+		tu = tmax*_mc2020.tolerance
+		X,Y = _mc2020._discretize(tmax_po, tmax, s1_po)
+		X.extend([s1, s2, s3])
+		Y.extend([tmax, tmax, tu])
+		return (X,Y)
+	def _make_sp_poor_c(fc, cclear):
+		# same as good in po...
+		tmax_po = 1.25*math.sqrt(fc)
+		s1_po = 1.8
+		# eval tsplit and its abscissa s1 following curve in po...
+		tmax = 5.5*(fc/25.0)**0.25 # tbu,split
+		s1 = (tmax/tmax_po)**(1/_mc2020.alpha)*s1_po # s1 = s(tbu,split)
+		s2 = s1*1.00001
+		s3 = 0.5*cclear
+		if s3 <= s2: s3 = s2+0.01
+		tu = 0.4*tmax
+		X,Y = _mc2020._discretize(tmax_po, tmax, s1_po)
 		X.extend([s1, s2, s3])
 		Y.extend([tmax, tmax, tu])
 		return (X,Y)
 	def make(pull_out, good_bond, confined, fc, cclear):
 		# obtain discrete points of the total backbone curve
-		X,Y = _mc2020._make_po_good(fc, cclear)
-		# according to _discretize function, the peak force is at the 5-th entry
-		tpeak = Y[4]
-		xpeak = X[4]
-		tu = Y[-1]
+		if pull_out:
+			if good_bond:
+				X1,Y1 = _mc2020._make_po_good(fc, cclear)
+			else:
+				X1,Y1 = _mc2020._make_po_poor(fc, cclear)
+		else:
+			if good_bond:
+				if confined:
+					X1,Y1 = _mc2020._make_sp_good_c(fc, cclear)
+				else:
+					X1,Y1 = _mc2020._make_sp_good_u(fc, cclear)
+			else:
+				if confined:
+					X1,Y1 = _mc2020._make_sp_poor_c(fc, cclear)
+				else:
+					X1,Y1 = _mc2020._make_sp_poor_u(fc, cclear)
+		# get peak and residual forces
+		tpeak = Y1[-2]
+		tu = Y1[-1]
+		# obtain the tolerance for zero-stress and the factor for the parallel material
 		stress_null = tpeak*_mc2020.tolerance
-		# now create the pinching part, and the frictional residual parts
-		# so that their sum is equal to the total backbone
-		Y1 = [yi-tu*(xi/xpeak) if xi < xpeak else yi-tu for xi,yi in zip(X,Y)]
-		Y2 = [tu*(xi/xpeak) if xi < xpeak else tu for xi,yi in zip(X,Y)]
-		# according to the mc2020, the unloading modulus is secant up to 0.6*tmax (3rd point in _discretize)
-		xdam = X[2]
-		D = [1.0 if xi <= xdam else 0.0 for xi in X]
+		factor = 1.0-tu/tpeak
+		# compute the X2 and Y2 removing the last point (i.e. remove softening)
+		X2 = X1[:-1]
+		Y2 = Y1[:-1]
+		# remove the residual part from the first component
+		Y1[-1] = 0.0
+		D1 = [0.0]*len(X1)
+		D2 = [0.0]*len(X2)
 		# done
-		return (X, Y1, Y2, D, stress_null)
+		return (X1, Y1, X2, Y2, D1, D2, stress_null, factor)
 
 def onAttributeChanged(editor, xobj, attribute_name):
 	if attribute_name == 'Failure Mode':
@@ -220,17 +324,18 @@ def writeTcl(pinfo):
 	cclear = cclear*mm
 	
 	# define basic points according to MC2020
-	X, Y1, Y2, D, stress_null = _mc2020.make(pull_out, good_bond, confined, fc, cclear)
+	X1, Y1, X2, Y2, D1, D2, stress_null, factor = _mc2020.make(pull_out, good_bond, confined, fc, cclear)
 	
 	# convert back to original units
-	X = [ix/mm for ix in X]
+	X1 = [ix/mm for ix in X1]
+	X2 = [ix/mm for ix in X2]
 	Y1 = [iy/MPa for iy in Y1]
 	Y2 = [iy/MPa for iy in Y2]
 	stress_null /= MPa
 	
 	# define null backbone points
-	E1 = Y1[1]/X[1]
-	E2 = Y2[1]/X[1]
+	E1 = Y1[1]/X1[1]
+	E2 = Y2[1]/X2[1]
 	strain_null = stress_null/E1
 	X_null = [0.0, strain_null, strain_null*2]
 	Y_null = [0.0, stress_null, stress_null]
@@ -241,6 +346,10 @@ def writeTcl(pinfo):
 	# define 3 extra material IDs
 	def next_id():
 		id = pinfo.next_physicalProperties_id
+		if id == tag:
+			# this can happen only while testing a property in new command (on empty doc)
+			id += 1
+			pinfo.next_physicalProperties_id += 1
 		pinfo.next_physicalProperties_id += 1
 		return id
 	id_pos = next_id()
@@ -253,7 +362,7 @@ def writeTcl(pinfo):
 	# positive pinching material
 	pinfo.out_file.write(_globals.concrete_format.format(
 		pinfo.indent, id_pos, E1, eta, 
-		to_tcl(X), to_tcl(Y1), to_tcl(D),
+		to_tcl(X1), to_tcl(Y1), to_tcl(D1),
 		to_tcl(X_null), to_tcl(Y_null), to_tcl(D_null),
 		' -tangent' if tangent else '',
 		' -implex' if implex else ''))
@@ -261,16 +370,15 @@ def writeTcl(pinfo):
 	pinfo.out_file.write(_globals.concrete_format.format(
 		pinfo.indent, id_neg, E1, eta, 
 		to_tcl(X_null), to_tcl(Y_null), to_tcl(D_null),
-		to_tcl(X), to_tcl(Y1), to_tcl(D),
+		to_tcl(X1), to_tcl(Y1), to_tcl(D1),
 		' -tangent' if tangent else '',
 		' -implex' if implex else ''))
 	# frictional material
-	DP = [0.0]*len(X)
 	pinfo.out_file.write(_globals.concrete_format.format(
 		pinfo.indent, id_res, E2, eta, 
-		to_tcl(X), to_tcl(Y2), to_tcl(DP),
-		to_tcl(X), to_tcl(Y2), to_tcl(DP),
+		to_tcl(X2), to_tcl(Y2), to_tcl(D2),
+		to_tcl(X2), to_tcl(Y2), to_tcl(D2),
 		' -tangent' if tangent else '',
 		' -implex' if implex else ''))
 	# combine
-	pinfo.out_file.write('{}uniaxialMaterial Parallel {}  {} {} {} -factors {} {} {}\n'.format(pinfo.indent, tag, id_pos, id_neg, id_res, 1.0, 1.0, 1.0))
+	pinfo.out_file.write('{}uniaxialMaterial Parallel {}  {} {} {} -factors {} {} {}\n'.format(pinfo.indent, tag, id_pos, id_neg, id_res, factor, factor, 1.0-factor))
