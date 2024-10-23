@@ -400,51 +400,74 @@ def write_tcl_int(out_dir):
 
 class _mp_handler:
 	def __init__(self):
+		# define an empty dictionary
+		# key = node added temporarily on other partitions
+		# value = [list] of other partitions
 		self.pmap_remove = {}
+		self.verbose = False
 	def begin(self):
 		print('MP Handler: begin')
 		doc = PyMpc.App.caeDocument()
 		if doc is None: return
 		if doc.mesh is None: return
-		pmap = {}
-		for _, cond in doc.conditions.items():
-			xobj = cond.XObject
-			if xobj is None: continue
-			imodule = importlib.import_module('opensees.conditions.{}'.format(xobj.completeName))
-			if hasattr(imodule, 'ensureNodesOnPartitions'):
-				print(xobj.completeName, '[ensureNodesOnPartitions]')
-				imodule.ensureNodesOnPartitions(xobj, pmap)
-		print('P.MAP:')
-		for node_id, partitions in pmap.items():
-			print(node_id, partitions)
-		for node_id, partitions in pmap.items():
-			rem_part = self.pmap_remove.get(node_id, None)
-			if rem_part is None:
-				rem_part = []
-				self.pmap_remove[node_id] = rem_part
-			for pid in partitions:
-				if not doc.mesh.partitionData.isNodeOnPartition(node_id, pid):
-					rem_part.append(pid)
-					before = doc.mesh.partitionData.isNodeOnPartition(node_id, pid)
-					doc.mesh.partitionData.addNode(doc.mesh.getNode(node_id), pid)
-					after = doc.mesh.partitionData.isNodeOnPartition(node_id, pid)
-					print('... adding node {} to partition {} [{}, {}]'.format(node_id, pid, before, after))
+		# process all conditions that implement the ensureNodesOnPartitions method.
+		# this method will add in pmap dictionary at key = master, all pid of the slaves of master.
+		# Note: this must be iterative, since a node that is being added in an iteration 
+		#       can be both a slave and a master! make it recursive
+		MAX_ITER = 10*len(doc.interactions)
+		for ITER in range(MAX_ITER):
+			pmap = {}
+			NUM_MOD = 0
+			for _, cond in doc.conditions.items():
+				xobj = cond.XObject
+				if xobj is None: continue
+				imodule = importlib.import_module('opensees.conditions.{}'.format(xobj.completeName))
+				if hasattr(imodule, 'ensureNodesOnPartitions'):
+					print(xobj.completeName, '[ensureNodesOnPartitions]')
+					imodule.ensureNodesOnPartitions(xobj, pmap)
+			if self.verbose:
+				print('P.MAP:')
+				for node_id, partitions in pmap.items():
+					print(node_id, partitions)
+			for node_id, partitions in pmap.items():
+				rem_part = self.pmap_remove.get(node_id, None)
+				if rem_part is None:
+					rem_part = []
+					self.pmap_remove[node_id] = rem_part
+				for pid in partitions:
+					if not doc.mesh.partitionData.isNodeOnPartition(node_id, pid):
+						rem_part.append(pid)
+						NUM_MOD += 1
+						if self.verbose:
+							before = doc.mesh.partitionData.isNodeOnPartition(node_id, pid)
+						doc.mesh.partitionData.addNode(doc.mesh.getNode(node_id), pid)
+						if self.verbose:
+							after = doc.mesh.partitionData.isNodeOnPartition(node_id, pid)
+							print('... adding node {} to partition {} [{}, {}]'.format(node_id, pid, before, after))
+			print('   iter: {} - # mod: {}'.format(ITER, NUM_MOD))
+			if NUM_MOD == 0:
+				break
 		self.pmap_remove = {i:j for i,j in self.pmap_remove.items() if j} # purge empty values
-		print('P.MAP (Remove):')
-		for node_id, partitions in self.pmap_remove.items():
-			print(node_id, partitions)
+		if self.verbose:
+			print('P.MAP (Remove):')
+			for node_id, partitions in self.pmap_remove.items():
+				print(node_id, partitions)
 	def end(self):
+		# remove nodes added temporarily on other partitions...
 		print('MP Handler: end')
+		print('   removing {} nodes added temporarily on other partitions'.format(len(self.pmap_remove)))
 		if len(self.pmap_remove) == 0: return
 		doc = PyMpc.App.caeDocument()
 		if doc is None: return
 		if doc.mesh is None: return
 		for node_id, partitions in self.pmap_remove.items():
 			for pid in partitions:
-				before = doc.mesh.partitionData.isNodeOnPartition(node_id, pid)
+				if self.verbose:
+					before = doc.mesh.partitionData.isNodeOnPartition(node_id, pid)
 				doc.mesh.partitionData.removeNode(doc.mesh.getNode(node_id), pid)
-				after = doc.mesh.partitionData.isNodeOnPartition(node_id, pid)
-				print('... removing node {} from partition {} [{}, {}]'.format(node_id, pid, before, after))
+				if self.verbose:
+					after = doc.mesh.partitionData.isNodeOnPartition(node_id, pid)
+					print('... removing node {} from partition {} [{}, {}]'.format(node_id, pid, before, after))
 
 def write_tcl(out_dir):
 	'''
