@@ -1,3 +1,4 @@
+from PyMpc import *
 
 def getExtrusionDataAllItems(prop):
 	'''
