@@ -264,7 +264,7 @@ def writeTcl(pinfo):
 	# build material and direction vectors
 	mat_string = ''
 	dir_string = ''
-	if d.Dimension == 2:
+	if ndm == 2:
 		if UR:
 			max_num_mat = 3
 		else:
