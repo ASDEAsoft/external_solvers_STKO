@@ -147,7 +147,15 @@ def write_tcl_int(out_dir):
 	main_file.write('{}\t\t}}\n'.format(pinfo.indent))
 	main_file.write('{}\t}}\n'.format(pinfo.indent))
 	main_file.write('{}}}\n'.format(pinfo.indent))
-	
+ 
+	#for thermal analysis 
+	for astep_id, astep in doc.analysisSteps.items():
+		xobj = astep.XObject
+		if (xobj is not None) and (xobj.name == 'StartThermoMechanicalAnalysis'):
+			pinfo.is_thermo_mechanical_analysis = True
+			break
+ 
+  
 	main_file.write('\n{}# =================================================================================\n'.format(pinfo.indent))
 	main_file.write('{}# SOURCING\n'.format(pinfo.indent))
 	main_file.write('{}# =================================================================================\n\n'.format(pinfo.indent))
