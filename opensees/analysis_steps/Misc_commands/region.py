@@ -296,6 +296,11 @@ def writeTcl(pinfo):
 			raise Exception('Error: Cannot find "List Name" attribute')
 		list_name = at_list_name.string
 		str_list = '\n{0}# List generated from region command.\n{0}set {1} {{\\\n{0}'.format(pinfo.indent, list_name)
+		# update region data
+		region_data = pinfo.regions_data
+		region_data[regTag] = {
+			'name': list_name,
+		}
 		counter = 0
 		for i in tags:
 			counter += 1
@@ -340,3 +345,4 @@ def writeTcl(pinfo):
 	if rayleigh_at.boolean:
 		pinfo.out_file.write(' \\\n{}-rayleigh{}'.format(pinfo.indent, sopt))
 	pinfo.out_file.write('\n')
+ 

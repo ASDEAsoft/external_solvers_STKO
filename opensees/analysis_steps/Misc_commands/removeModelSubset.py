@@ -52,7 +52,7 @@ def makeXObjectMetaData():
 	
 	return xom
 
-def _process_sets(doc, sets):
+def _process_sets(doc, sets, pinfo=None):
 	nodes = []
 	eles = []
 	# process a list of elements
@@ -61,10 +61,16 @@ def _process_sets(doc, sets):
 			# add current element
 			if not elem.id in eles:
 				eles.append(elem.id)
+				if pinfo is not None:
+					pinfo.remove_element_from_loaded_subset(elem.id)
+
 			# process all nodes of this element
 			for node in elem.nodes:
 				if not node.id in nodes:
 					nodes.append(node.id)
+					if pinfo is not None:
+						pinfo.remove_node_from_loaded_subset(node.id)
+      
 	# process all selection sets
 	for selection_set_id in sets:
 		selection_set = doc.selectionSets[selection_set_id]
@@ -77,6 +83,9 @@ def _process_sets(doc, sets):
 				node = mesh_of_geom.vertices[vertex_id]
 				if not node.id in nodes:
 					nodes.append(node.id)
+					if pinfo is not None:
+						pinfo.remove_node_from_loaded_subset(node.id)
+      
 			# process all edges
 			for domain_id in geometry_subset.edges:
 				domain = mesh_of_geom.edges[domain_id];
@@ -159,7 +168,7 @@ def writeTcl(pinfo):
 	keep_nodes, _ = _process_sets(doc, keep_sets.indexVector)
 	
 	# a list of elements and nodes to be removed
-	rem_nodes, rem_eles = _process_sets(doc, remove_sets.indexVector)
+	rem_nodes, rem_eles = _process_sets(doc, remove_sets.indexVector, pinfo)
 	
 	# remove nodes to be kept
 	rem_nodes = [i for i in rem_nodes if not i in keep_nodes]

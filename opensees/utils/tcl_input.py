@@ -233,6 +233,23 @@ class process_info:
 		cdata utilities
 		'''
 		self.mpco_cdata_utils = mpco_cdata_utils_t()
+  
+		'''
+		is thermo mechanical analysis
+  		'''
+		self.is_thermo_mechanical_analysis = False
+		'''
+		region data
+		'''
+		self.regions_data = {}
+  
+	def remove_node_from_loaded_subset(self, node_id):
+		self.loaded_node_subset.remove(node_id)
+	
+	def remove_element_from_loaded_subset(self, element_id):
+		self.loaded_element_subset.remove(element_id)
+  
+	
 		
 	def setProcessCount(self, pc):
 		'''
@@ -266,6 +283,8 @@ class process_info:
 		'''
 		update model builder, needed for some elements/materials
 		'''
+		if self.is_thermo_mechanical_analysis:
+			_ndf = 1
 		if _ndf == 32:
 			_ndf = 2
 		if _ndf == 33:
