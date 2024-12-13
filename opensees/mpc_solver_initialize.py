@@ -83,6 +83,7 @@ def initialize():
 	__load_module_internal(['conditions', 'GroundMotion'], doc.registerMetaDataCondition)
 	__load_module_internal(['conditions', 'Multi_Support_Excitation_Pattern'], doc.registerMetaDataCondition)
 	__load_module_internal(['conditions', 'Uniform_Excitation_Pattern'], doc.registerMetaDataCondition)
+	__load_module_internal(['conditions', 'DigitalTwin'], doc.registerMetaDataCondition)
 	
 	# register all metadata of definition
 	__load_module_internal(['definitions', 'frictionModel'], doc.registerMetaDataDefinition)
