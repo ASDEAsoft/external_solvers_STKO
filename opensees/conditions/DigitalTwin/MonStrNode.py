@@ -9,10 +9,38 @@ from mpc_utils_html import *
 from PyMpc.Math import *
 import os
 
+import importlib
+import opensees.conditions.DigitalTwin.MonStrNodeGui
+importlib.reload(opensees.conditions.DigitalTwin.MonStrNodeGui)
+
+from opensees.conditions.DigitalTwin.MonStrNodeGui import MonStrNodeWidget
+from PySide2.QtWidgets import QSplitter
+import shiboken2
+
 '''
 A global class with some utility
 '''
 class _global:
+	'''
+	stores a reference to the gui generated for this object
+	'''
+	gui = None
+	_gui_hide_xobj_editor = False
+	def clearGui(editor, xobj):
+		if _global.gui is not None:
+			if _global._gui_hide_xobj_editor:
+				splitter = shiboken2.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
+				splitter.widget(0).show()
+			_global.gui.setParent(None)
+			_global.gui.deleteLater()
+			_global.gui = None
+	def buildGui(editor, xobj):
+		_global.clearGui(editor, xobj)
+		_global.gui = MonStrNodeWidget()
+		splitter = shiboken2.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
+		splitter.addWidget(_global.gui)
+		if _global._gui_hide_xobj_editor:
+			splitter.widget(0).hide()
 	'''
 	the glyph prototype to be allocated only once for peformance reasons.
 	'''
@@ -44,6 +72,18 @@ class _global:
 				_global._glyph_proto = face
 		# return the instance
 		return _global._glyph_proto
+
+def onEditBegin(editor, xobj):
+	print('onEditBegin')
+	_global.buildGui(editor, xobj)
+
+def onEditorClosing(editor, xobj):
+	print('onEditorClosing')
+	_global.clearGui(editor, xobj)
+
+def onEditFinished(editor, xobj):
+	print('onEditFinished')
+	...
 
 def makeXObjectMetaData():
 	
