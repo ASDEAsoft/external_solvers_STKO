@@ -146,6 +146,7 @@ class ASDAbsorbingBoundary3DInfoManager:
 		self.tolerance = 1.0e-12
 		self.nodes = {} #key = _position_t, value = node_id
 		self.elements = {} #key = partition, value = element ids
+		self.element_volumes = {} #key = partition, value = (element_id:int, volume:float, nodes:list (boundary_types):tuple), only for FF boundaries
 	def getBoundaryType(self, elem):
 		p = Math.vec3(0.0,0.0,0.0)
 		for node in elem.nodes:
@@ -649,6 +650,15 @@ def writeTcl(pinfo):
 			reg_value = []
 			manager.elements[this_partition] = reg_value
 		reg_value.append(etag)
+		# compute element volume
+		if (isinstance(bcode, tuple) and not _globals.B in bcode) or (isinstance(bcode, int) and bcode != _globals.B):
+			ex_volume = Math.vec3((P2.x+P3.x-P1.x-P4.x)/2.0, (P2.y+P3.y-P1.y-P4.y)/2.0, (P2.z+P3.z-P1.z-P4.z)/2.0).cross(
+				Math.vec3((P4.x+P3.x-P1.x-P2.x)/2.0, (P4.y+P3.y-P1.y-P2.y)/2.0, (P4.z+P3.z-P1.z-P2.z)/2.0)).norm() * Math.vec3(Nx, Ny, Nz).norm()
+			reg_vol_value = manager.element_volumes.get(this_partition, None)
+			if reg_vol_value is None:
+				reg_vol_value = []
+				manager.element_volumes[this_partition] = reg_vol_value
+			reg_vol_value.append((etag, ex_volume, conn, bcode))
 		# return generated objects
 		return (P5, N5, P6, N6, P7, N7, P8, N8)
 	
