@@ -162,7 +162,7 @@ def writeTcl(pinfo):
 	
 	# checks
 	if phys_prop is None:
-		raise Exception('Missing physical property for element {} ("{}")'.format(elem.id, xobj.name))
+		raise Exception('Missing physical property for element {} ("{}")'.format(elem.id, elem_prop.XObject.name))
 	if not phys_prop.XObject.Xnamespace.startswith('materials.nD'):
 		raise Exception('Physical property must be "materials.nD" and not: "{}"'.format(phys_prop.XObject.Xnamespace))
 	if (elem.geometryFamilyType() != MpcElementGeometryFamilyType.Quadrilateral) or (len(elem.nodes) != 4):
