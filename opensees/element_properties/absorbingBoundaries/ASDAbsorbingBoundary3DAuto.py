@@ -146,6 +146,7 @@ class ASDAbsorbingBoundary3DInfoManager:
 		self.tolerance = 1.0e-12
 		self.nodes = {} #key = _position_t, value = node_id
 		self.elements = {} #key = partition, value = element ids
+		self.element_volumes = {} #key = partition, value = (element_id:int, volume:float, nodes:list (boundary_types):tuple), only for FF boundaries
 	def getBoundaryType(self, elem):
 		p = Math.vec3(0.0,0.0,0.0)
 		for node in elem.nodes:
@@ -504,6 +505,7 @@ def writeTcl(pinfo):
 	G = _geta(xobjm, 'G').quantityScalar.value
 	v = _geta(xobjm, 'v').real
 	rho = _geta(xobjm, 'rho').quantityScalar.value
+	mat_rho = rho
 	btype = manager.getBoundaryType(elem)
 	opt = ''
 	if btype == _globals.B:
@@ -519,6 +521,19 @@ def writeTcl(pinfo):
 	nlmat_tag = _geta(xobjm, 'material').index # optional, it can be 0
 	if nlmat_tag > 0:
 		opt += ' -mat {}'.format(nlmat_tag)
+		# try to get rho from material
+		nlmat_prop = App.caeDocument().getPhysicalProperty(nlmat_tag)
+		if nlmat_prop is None:
+			raise Exception('ASDAbsorbingBoundary3DAuto Error: Cannot find Physical property (ID = {}) for Nonlinear material'.format(nlmat_tag))
+		mat_rho_at = nlmat_prop.XObject.attributes.get('rho', None)
+		if mat_rho_at.type == MpcAttributeType.Real:
+			mat_rho = mat_rho_at.real
+		elif mat_rho_at.type == MpcAttributeType.QuantityScalar:
+			mat_rho = mat_rho_at.quantityScalar.value
+		if mat_rho != rho:
+			nlmat_rho = mat_rho # save it for message
+			mat_rho = rho if nlmat_rho == 0.0 else nlmat_rho
+			IO.write_cerr('ASDAbsorbingBoundary3DAuto Warning:\n   the mass density from the ASDAbsorbingBoundary3DMaterial {:.6g}\n   does not mach the mass density of the nonlinear material {:.6g}.\n   {:.6g} will be used\n'.format(rho, nlmat_rho, mat_rho))
 	
 	# get extrusion vector
 	vx, vy, vz = _globals.boundary_vectors[btype]
@@ -649,6 +664,15 @@ def writeTcl(pinfo):
 			reg_value = []
 			manager.elements[this_partition] = reg_value
 		reg_value.append(etag)
+		# compute element volume
+		if (isinstance(bcode, tuple) and not _globals.B in bcode) or (isinstance(bcode, int) and bcode != _globals.B):
+			ex_volume = Math.vec3((P2.x+P3.x-P1.x-P4.x)/2.0, (P2.y+P3.y-P1.y-P4.y)/2.0, (P2.z+P3.z-P1.z-P4.z)/2.0).cross(
+				Math.vec3((P4.x+P3.x-P1.x-P2.x)/2.0, (P4.y+P3.y-P1.y-P2.y)/2.0, (P4.z+P3.z-P1.z-P2.z)/2.0)).norm() * Math.vec3(Nx, Ny, Nz).norm()
+			reg_vol_value = manager.element_volumes.get(this_partition, None)
+			if reg_vol_value is None:
+				reg_vol_value = []
+				manager.element_volumes[this_partition] = reg_vol_value
+			reg_vol_value.append((etag, ex_volume, conn, bcode, mat_rho))
 		# return generated objects
 		return (P5, N5, P6, N6, P7, N7, P8, N8)
 	
