@@ -36,7 +36,7 @@ class _global:
 			_global.gui = None
 	def buildGui(editor, xobj):
 		_global.clearGui(editor, xobj)
-		_global.gui = MonStrNodeWidget()
+		_global.gui = MonStrNodeWidget(xobj)
 		splitter = shiboken2.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
 		splitter.addWidget(_global.gui)
 		if _global._gui_hide_xobj_editor:
@@ -112,7 +112,6 @@ def makeXObjectMetaData():
 	node_dx = mka(MpcAttributeType.QuantityMatrix, 'XDirection')
 	node_dy = mka(MpcAttributeType.QuantityMatrix, 'YDirection')
 	node_color = mka(MpcAttributeType.QuantityMatrix, 'Color')
-	
 	
 	# XObject meta data
 	xom = MpcXObjectMetaData()
