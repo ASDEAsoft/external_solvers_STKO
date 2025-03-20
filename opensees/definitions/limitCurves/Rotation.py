@@ -14,23 +14,10 @@ def makeXObjectMetaData():
 			html_par(html_begin()) +
 			html_par(html_boldtext(name)+'<br/>') + 
 			html_par(descr) +
-			html_par(html_href('https://opensees.berkeley.edu/wiki/index.php/Limit_Curve','Limit Curve')+'<br/>') +
+			html_par(html_href("https://opensees.berkeley.edu/wiki/index.php/Limit_Curve", 'Limit Curve')+'<br/>') +
 			html_end()
 			)
 		return a
-	
-	# mu
-	at_mu = MpcAttributeMetaData()
-	at_mu.type = MpcAttributeType.Real
-	at_mu.name = 'mu'
-	at_mu.group = 'Group'
-	at_mu.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('mu')+'<br/>') + 
-		html_par('coefficient of friction') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Coulomb_Friction','Coulomb Friction')+'<br/>') +
-		html_end()
-		)
 	
 	eleTag = mka(MpcAttributeType.Index, 'eleTag', 'Reference', 'Tag of zero-length element associated with hinge')
 	eleTag.indexSource.type = MpcAttributeIndexSourceType.SelectionSet
