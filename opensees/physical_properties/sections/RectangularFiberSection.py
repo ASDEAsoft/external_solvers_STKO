@@ -864,7 +864,8 @@ class RectangularFiberSectionWidget(QWidget):
 				materials[mat_cover.id] = mat_cover
 				
 				# now we can run the tester
-				self.tester = Tester1D(materials, self.strain_hist_time, self.strain_hist.strain)
+				lch = 1.0 # not needed in this tester, just for compatibility
+				self.tester = Tester1D(materials, lch, self.strain_hist_time, self.strain_hist.strain)
 				#self.tester.testProcessUpdated.connect(self.onTestUnconfinedProcessUpdated)
 				#parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
 				#parent_dialog.setEnabled(False)
@@ -977,7 +978,8 @@ class RectangularFiberSectionWidget(QWidget):
 				materials[mat_core.id] = mat_core
 				
 				# now we can run the tester
-				self.tester = Tester1D(materials, self.strain_hist_time, self.strain_hist.strain)
+				lch = 1.0 # not needed in this tester, just for compatibility
+				self.tester = Tester1D(materials, lch, self.strain_hist_time, self.strain_hist.strain)
 				#self.tester.testProcessUpdated.connect(self.onTestConfinedProcessUpdated)
 				#parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
 				#parent_dialog.setEnabled(False)
@@ -1015,7 +1017,8 @@ class RectangularFiberSectionWidget(QWidget):
 						for param in params:
 							materialTclString += " {}".format(param)
 						# now we can run the tester
-						self.tester = Tester1DMaterialConfinedSection(materialTclString, self.strain_hist_time, self.strain_hist.strain)
+						lch = 1.0 # not needed in this tester, just for compatibility
+						self.tester = Tester1DMaterialConfinedSection(materialTclString, lch, self.strain_hist_time, self.strain_hist.strain)
 						#self.tester.testProcessUpdated.connect(self.onTestConfinedProcessUpdated)
 						#parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
 						#parent_dialog.setEnabled(False)

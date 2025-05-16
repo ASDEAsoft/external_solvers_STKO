@@ -184,7 +184,7 @@ class Tester1D(QObject):
 		# we pass the relative path, since the process will run anyway in the working dir
 		temp_script_file_rel = os.path.relpath(temp_script_file, temp_dir)
 		
-		print('Running OpenSEES')
+		print('Running OpenSees')
 		print('command: {}'.format(opensees_cmd))
 		print('args: {}'.format(temp_script_file_rel))
 		
@@ -221,11 +221,12 @@ class Tester1DMaterialConfinedSection(QObject):
 	# (or just one if the material does not depend on other materials)
 	# and a list of strains.
 	# in case of multiple materials the last one will be tested.
-	def __init__(self, materialTclString, time_history, strain_history, parent = None):
+	def __init__(self, materialTclString, lch, time_history, strain_history, parent = None):
 		# base class initialization
 		super(Tester1DMaterialConfinedSection, self).__init__(parent)
 		# self initialization
 		self.materialTclString = materialTclString
+		self.lch = lch
 		# copy the input strain vector in a private member. why? if the analysis does not finsh
 		# correctly, the stress will have less entries than the strain
 		self.__timeHistoryInput = time_history
@@ -291,10 +292,11 @@ class Tester1DMaterialConfinedSection(QObject):
 		# and write to file
 		fo.write(template.replace(
 			'__materials__', self.materialTclString).replace(
+			'__lch__', QLocale().toString(self.lch)).replace(
 			'__tag__', str(1)).replace(
 			'__time__', buffer_time.getvalue()).replace(
 			'__strain__', buffer_strain.getvalue()).replace(
-			'__out__', temp_output_file))
+			'__out__', os.path.relpath(temp_output_file, temp_dir)))
 		
 		# release temporary buffers
 		buffer_strain.close()
@@ -316,12 +318,18 @@ class Tester1DMaterialConfinedSection(QObject):
 		
 		# prepare test
 		(opensees_cmd, temp_dir, temp_script_file, temp_output_file) = self.__prepare_test()
-		print('Running OpenSEES')
+		
+		# bugfix 01/2024
+		# since the working dir may contain unicode characters that won't work fine in tcl
+		# we pass the relative path, since the process will run anyway in the working dir
+		temp_script_file_rel = os.path.relpath(temp_script_file, temp_dir)
+		
+		print('Running OpenSees')
 		print('command: {}'.format(opensees_cmd))
-		print('args: {}'.format(temp_script_file))
+		print('args: {}'.format(temp_script_file_rel))
 		
 		# launch opensees and communicate
-		for item in tu.executeAsync([opensees_cmd, temp_script_file], temp_dir):
+		for item in tu.executeAsync([opensees_cmd, temp_script_file_rel], temp_dir):
 			if item.startswith('__R__'):
 				# this linke contains precentage and strain/stress data
 				tokens = item[5:].split()
