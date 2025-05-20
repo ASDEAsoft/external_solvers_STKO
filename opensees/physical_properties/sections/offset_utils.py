@@ -69,3 +69,12 @@ def getOffsetData(xobj):
 		d.dim = 3
 	
 	return d
+
+def updateVisibility(is_3D : bool, xobj : MpcXObject):
+	'''
+	this function will update the visibility of the offset attributes.
+	useful when the optional dep_3d attribute is not used.
+	'''
+	at_z = xobj.getAttribute('Z/section_offset')
+	if at_z:
+		at_z.visible = is_3D

@@ -31,14 +31,6 @@ def makeXObjectMetaData():
 			html_end()
 			)
 		return at
-
-	# TODO: unify G/2D and G/3D
-
-	at_2D = mka(MpcAttributeType.Boolean, '2D', 'Section', 'Analysis 2D')
-	at_2D.editable = False
-	
-	at_3D = mka(MpcAttributeType.Boolean, '3D', 'Section', 'Analysis 3D')
-	at_3D.editable = False
 	
 	at_Dimension = mka(MpcAttributeType.String, 'Dimension', 'Section', 'Choose between 2D and 3D')
 	at_Dimension.sourceType = MpcAttributeSourceType.List
@@ -96,8 +88,6 @@ def makeXObjectMetaData():
 	xom = MpcXObjectMetaData()
 	xom.name = 'Elastic'
 	xom.addAttribute(at_Dimension)
-	xom.addAttribute(at_2D)
-	xom.addAttribute(at_3D)
 	xom.addAttribute(at_Section)
 	# options
 	xom.addAttribute(at_shear_def)
@@ -124,26 +114,18 @@ def makeXObjectMetaData():
 	# shear_def-dep
 	xom.setVisibilityDependency(at_shear_def, at_G_2D)
 	
-	# 2D-dep
-	xom.setVisibilityDependency(at_2D, at_G_2D)
-	# 3D-dep
-	xom.setVisibilityDependency(at_3D, at_G_3D)
-	xom.setVisibilityDependency(at_3D, at_Iyy_modifier)
-	# auto-exclusive dependencies
-	xom.setBooleanAutoExclusiveDependency(at_Dimension, at_2D)
-	xom.setBooleanAutoExclusiveDependency(at_Dimension, at_3D)
-	
 	# add offset
-	ofu.addOffsetMetaData(xom, dep_3d = at_3D)
+	ofu.addOffsetMetaData(xom)
 	
 	return xom
 
 def onEditBegin(editor, xobj):
+	# just call one attribute... we update all visibility here...
 	onAttributeChanged(editor, xobj, 'Use Uniaxial Materials')
 
 def onAttributeChanged(editor, xobj, attribute_name):
 	uni =_geta(xobj, 'Use Uniaxial Materials').boolean
-	d2 = _geta(xobj, '2D').boolean
+	d2 = _geta(xobj, 'Dimension').string == '2D'
 	shear_def = _geta(xobj, 'Shear Deformable').boolean
 	_geta(xobj, 'E').visible = not uni
 	_geta(xobj, 'G/2D').visible = (not uni) and (d2 and shear_def)
@@ -151,6 +133,8 @@ def onAttributeChanged(editor, xobj, attribute_name):
 	_geta(xobj, 'Em material').visible = uni
 	_geta(xobj, 'Eb material').visible = uni
 	_geta(xobj, 'G material').visible = uni and ((not d2) or (d2 and shear_def))
+	_geta(xobj, 'Iyy_modifier').visible = not d2
+	ofu.updateVisibility(not d2, xobj)
 
 def onConvertOldVersion(xobj, old_xobj):
 	'''
@@ -228,10 +212,8 @@ def writeTcl(pinfo):
 	tag = xobj.parent.componentId
 	
 	# dimension
-	b2D = _geta(xobj, '2D').boolean
-	b3D = _geta(xobj, '3D').boolean
-	if b2D == b3D:
-		raise Exception('Cannot set both 2D and 3D flags to the same value in Elastic section')
+	b2D = _geta(xobj, 'Dimension').string == '2D'
+	b3D = not b2D
 	
 	# section properties
 	Section = _geta(xobj, 'Section').customObject
