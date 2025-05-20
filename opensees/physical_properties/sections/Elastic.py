@@ -48,11 +48,8 @@ def makeXObjectMetaData():
 	at_E = mka(MpcAttributeType.QuantityScalar, 'E', 'Material properties', 'Young\'s Modulus')
 	at_E.dimension = u.F/u.L**2
 	
-	at_G_2D = mka(MpcAttributeType.QuantityScalar, 'G/2D', 'Material properties', 'Shear Modulus (optional for 2D analysis)')
-	at_G_2D.dimension = u.F/u.L**2
-	
-	at_G_3D = mka(MpcAttributeType.QuantityScalar, 'G/3D', 'Material properties', 'Shear Modulus')
-	at_G_3D.dimension = u.F/u.L**2
+	at_G = mka(MpcAttributeType.QuantityScalar, 'G', 'Material properties', 'Shear Modulus')
+	at_G.dimension = u.F/u.L**2
 	
 
 
@@ -110,8 +107,7 @@ def makeXObjectMetaData():
 	#material params
 	xom.addAttribute(at_use_uniaxial)
 	xom.addAttribute(at_E)
-	xom.addAttribute(at_G_2D)
-	xom.addAttribute(at_G_3D)
+	xom.addAttribute(at_G)
 	xom.addAttribute(at_material_Em)
 	xom.addAttribute(at_material_Eb)
 	xom.addAttribute(at_material_G)
@@ -130,9 +126,6 @@ def makeXObjectMetaData():
 	av.setDefault(_internals.version)
 	av.editable = False
 	xom.addAttribute(av)
-
-	# shear_def-dep
-	xom.setVisibilityDependency(at_shear_def, at_G_2D)
 	
 	# add offset
 	ofu.addOffsetMetaData(xom)
@@ -148,13 +141,13 @@ def onAttributeChanged(editor, xobj, attribute_name):
 	d2 = _geta(xobj, 'Dimension').string == '2D'
 	shear_def = _geta(xobj, 'Shear Deformable').boolean
 	_geta(xobj, 'E').visible = not uni
-	_geta(xobj, 'G/2D').visible = (not uni) and (d2 and shear_def)
-	_geta(xobj, 'G/3D').visible = (not uni) and (not d2)
+	_geta(xobj, 'G').visible = not uni and ((not d2) or (d2 and shear_def))
 	_geta(xobj, 'Em material').visible = uni
 	_geta(xobj, 'Eb material').visible = uni
 	_geta(xobj, 'G material').visible = uni and ((not d2) or (d2 and shear_def))
 	_geta(xobj, 'Iyy_modifier').visible = not d2
-	_geta(xobj, 'Asz_modifier').visible = not d2
+	_geta(xobj, 'Asz_modifier').visible = not d2 and shear_def
+	_geta(xobj, 'Asy_modifier').visible = shear_def
 	_geta(xobj, 'J_modifier').visible = not d2
 	ofu.updateVisibility(not d2, xobj)
 
@@ -180,7 +173,14 @@ def onConvertOldVersion(xobj, old_xobj):
 		# the old Optional attribute is now called Shear Deformable (from version 1 on)
 		old_shear_def = old_xobj.getAttribute('Optional').boolean
 		xobj.getAttribute('Shear Deformable').boolean = old_shear_def
-		print(f'Elastic section: converting Optional to Shear Deformable from version {version} to {_internals.version} (value = {old_shear_def})')
+		# G/2D and G/3D are now called G, get them based on the old dimension
+		old_dim = old_xobj.getAttribute('Dimension').string
+		if old_dim == '2D':
+			old_G = old_xobj.getAttribute('G/2D').quantityScalar.value
+			xobj.getAttribute('G').quantityScalar.value = old_G
+		else:
+			old_G = old_xobj.getAttribute('G/3D').quantityScalar.value
+			xobj.getAttribute('G').quantityScalar.value = old_G
 
 def makeExtrusionBeamDataCompoundInfo(xobj):
 	
