@@ -4,6 +4,12 @@ from mpc_utils_html import *
 import opensees.utils.tcl_input as tclin
 import opensees.physical_properties.sections.offset_utils as ofu
 
+'''
+Version 1:
+'''
+class _internals:
+	version = 1 # the current version
+
 def _geta(xobj, name):
 	x = xobj.getAttribute(name)
 	if x is None:
@@ -12,200 +18,79 @@ def _geta(xobj, name):
 
 def makeXObjectMetaData():
 	
-	#2D
-	at_2D = MpcAttributeMetaData()
-	at_2D.type = MpcAttributeType.Boolean
-	at_2D.name = '2D'
-	at_2D.group = 'Section'
-	at_2D.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('2D')+'<br/>') + 
-		html_par('Analysis 2D') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Section','Elastic Section')+'<br/>') +
-		html_end()
-		)
+	def mka(type:MpcAttributeType, name:str, group:str, desc:str):
+		at = MpcAttributeMetaData()
+		at.type = type
+		at.name = name
+		at.group = group
+		at.description = (
+			html_par(html_begin()) +
+			html_par(html_boldtext(name)+'<br/>') + 
+			html_par(desc) +
+			html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Section','Elastic Section')+'<br/>') +
+			html_end()
+			)
+		return at
+
+	# TODO: unify G/2D and G/3D
+
+	at_2D = mka(MpcAttributeType.Boolean, '2D', 'Section', 'Analysis 2D')
 	at_2D.editable = False
 	
-	#3D
-	at_3D = MpcAttributeMetaData()
-	at_3D.type = MpcAttributeType.Boolean
-	at_3D.name = '3D'
-	at_3D.group = 'Section'
-	at_3D.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('3D')+'<br/>') + 
-		html_par('Analysis 3D') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Section','Elastic Section')+'<br/>') +
-		html_end()
-		)
+	at_3D = mka(MpcAttributeType.Boolean, '3D', 'Section', 'Analysis 3D')
 	at_3D.editable = False
 	
-	# Dimension
-	at_Dimension = MpcAttributeMetaData()
-	at_Dimension.type = MpcAttributeType.String
-	at_Dimension.name = 'Dimension'
-	at_Dimension.group = 'Section'
-	at_Dimension.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('Dimension')+'<br/>') + 
-		html_par('Choose between 2D and 3D') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Section','Elastic Section')+'<br/>') +
-		html_end()
-		)
+	at_Dimension = mka(MpcAttributeType.String, 'Dimension', 'Section', 'Choose between 2D and 3D')
 	at_Dimension.sourceType = MpcAttributeSourceType.List
 	at_Dimension.setSourceList(['2D', '3D'])
 	at_Dimension.setDefault('3D')
 	
-	# Section
-	at_Section = MpcAttributeMetaData()
-	at_Section.type = MpcAttributeType.CustomAttributeObject
-	at_Section.name = 'Section'
-	at_Section.group = 'Section'
-	at_Section.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('Section')+'<br/>') + 
-		html_par('Press the edit button to edit the cross section') +
-		html_end()
-		)
+	at_Section = mka(MpcAttributeType.CustomAttributeObject, 'Section', 'Section', 'Press the edit button to edit the cross section')
 	at_Section.customObjectPrototype = MpcBeamSection()
 	
-	# E
-	at_E = MpcAttributeMetaData()
-	at_E.type = MpcAttributeType.QuantityScalar
-	at_E.name = 'E'
-	at_E.group = 'Material properties'
-	at_E.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('E')+'<br/>') + 
-		html_par('Young\'s Modulus') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Section','Elastic Section')+'<br/>') +
-		html_end()
-		)
+
+	at_shear_def = mka(MpcAttributeType.Boolean, 'Shear Deformable', 'Options', 
+				   'Tick this value to use make the section shear-deformable (uses <alphaY> for 2D or <alphaY, alphaZ> for 3D, from the section object)')
+
+
+	at_E = mka(MpcAttributeType.QuantityScalar, 'E', 'Material properties', 'Young\'s Modulus')
 	at_E.dimension = u.F/u.L**2
 	
-	# G_2D
-	at_G_2D = MpcAttributeMetaData()
-	at_G_2D.type = MpcAttributeType.QuantityScalar
-	at_G_2D.name = 'G/2D'
-	at_G_2D.group = 'Material properties'
-	at_G_2D.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('G')+'<br/>') + 
-		html_par('Shear Modulus (optional for 2D analysis)') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Section','Elastic Section')+'<br/>') +
-		html_end()
-		)
+	at_G_2D = mka(MpcAttributeType.QuantityScalar, 'G/2D', 'Material properties', 'Shear Modulus (optional for 2D analysis)')
 	at_G_2D.dimension = u.F/u.L**2
 	
-	# G_3D
-	at_G_3D = MpcAttributeMetaData()
-	at_G_3D.type = MpcAttributeType.QuantityScalar
-	at_G_3D.name = 'G/3D'
-	at_G_3D.group = 'Material properties'
-	at_G_3D.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('G')+'<br/>') + 
-		html_par('Shear Modulus') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Section','Elastic Section')+'<br/>') +
-		html_end()
-		)
+	at_G_3D = mka(MpcAttributeType.QuantityScalar, 'G/3D', 'Material properties', 'Shear Modulus')
 	at_G_3D.dimension = u.F/u.L**2
 	
-	# use_uniaxial
-	at_use_uniaxial = MpcAttributeMetaData()
-	at_use_uniaxial.type = MpcAttributeType.Boolean
-	at_use_uniaxial.name = 'Use Uniaxial Materials'
-	at_use_uniaxial.group = 'Material properties'
-	at_use_uniaxial.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('Use Uniaxial Materials')+'<br/>') + 
-		html_par('Tick this value to use custom uniaxial materials instead of elastic constants. This will turn the Elastic Section into a section aggregator') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Section','Elastic Section')+'<br/>') +
-		html_end()
-		)
+
+
+	at_use_uniaxial = mka(MpcAttributeType.Boolean, 'Use Uniaxial Materials', 'Material properties', 
+					   'Tick this value to use custom uniaxial materials instead of elastic constants. This will turn the Elastic Section into a section aggregator')
 	at_use_uniaxial.setDefault(False)
-	# material_Em
-	at_material_Em = MpcAttributeMetaData()
-	at_material_Em.type = MpcAttributeType.Index
-	at_material_Em.name = 'Em material'
-	at_material_Em.group = 'Material properties'
-	at_material_Em.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('Em material')+'<br/>') + 
-		html_par('tag of previously-defined UniaxialMaterial objects (stress-strain for axial behavior)') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Section','Elastic Section')+'<br/>') +
-		html_end()
-		)
+	
+	at_material_Em = mka(MpcAttributeType.Index, 'Em material', 'Material properties',
+		'tag of previously-defined UniaxialMaterial objects (stress-strain for axial behavior)')
 	at_material_Em.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
 	at_material_Em.indexSource.addAllowedNamespace('materials.uniaxial')
-	# material_Eb
-	at_material_Eb = MpcAttributeMetaData()
-	at_material_Eb.type = MpcAttributeType.Index
-	at_material_Eb.name = 'Eb material'
-	at_material_Eb.group = 'Material properties'
-	at_material_Eb.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('Em material')+'<br/>') + 
-		html_par('tag of previously-defined UniaxialMaterial objects (stress-strain for bending behavior)') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Section','Elastic Section')+'<br/>') +
-		html_end()
-		)
+
+	at_material_Eb = mka(MpcAttributeType.Index, 'Eb material', 'Material properties',
+		'tag of previously-defined UniaxialMaterial objects (stress-strain for bending behavior)')
 	at_material_Eb.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
 	at_material_Eb.indexSource.addAllowedNamespace('materials.uniaxial')
-	# material_G
-	at_material_G = MpcAttributeMetaData()
-	at_material_G.type = MpcAttributeType.Index
-	at_material_G.name = 'G material'
-	at_material_G.group = 'Material properties'
-	at_material_G.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('G material')+'<br/>') + 
-		html_par('tag of previously-defined UniaxialMaterial objects (stress-strain for shear/torsion behavior)') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Section','Elastic Section')+'<br/>') +
-		html_end()
-		)
+	
+	at_material_G = mka(MpcAttributeType.Index, 'G material', 'Material properties',
+		'tag of previously-defined UniaxialMaterial objects (stress-strain for shear/torsion behavior)')
 	at_material_G.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
 	at_material_G.indexSource.addAllowedNamespace('materials.uniaxial')
 	
-	# Optional
-	at_Optional = MpcAttributeMetaData()
-	at_Optional.type = MpcAttributeType.Boolean
-	at_Optional.name = 'Optional'
-	at_Optional.group = 'Options'
-	at_Optional.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('Optional')+'<br/>') + 
-		html_par('Tick this value to use optional parameters (&lt;alphaY&gt; for 2D or &lt;alphaY, alphaZ&gt; for 3D)') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Section','Elastic Section')+'<br/>') +
-		html_end()
-		)
 	
-	# Izz_modifier
-	at_Izz_modifier = MpcAttributeMetaData()
-	at_Izz_modifier.type = MpcAttributeType.Real
-	at_Izz_modifier.name = 'Izz_modifier'
-	at_Izz_modifier.group = 'Stiffness modifiers'
-	at_Izz_modifier.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('Izz_modifier')+'<br/>') + 
-		html_par('Scale factor for bending stiffness about Z local axis') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Section','Elastic Section')+'<br/>') +
-		html_end()
-		)
+	
+	at_Izz_modifier = mka(MpcAttributeType.Real, 'Izz_modifier', 'Stiffness modifiers',
+		'Scale factor for bending stiffness about Z local axis')
 	at_Izz_modifier.setDefault(1.0)
 	
-	# Iyy_modifier
-	at_Iyy_modifier = MpcAttributeMetaData()
-	at_Iyy_modifier.type = MpcAttributeType.Real
-	at_Iyy_modifier.name = 'Iyy_modifier'
-	at_Iyy_modifier.group = 'Stiffness modifiers'
-	at_Iyy_modifier.description = (
-		html_par(html_begin()) +
-		html_par(html_boldtext('Iyy_modifier')+'<br/>') + 
-		html_par('Scale factor for bending stiffness about Y local axis') +
-		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Elastic_Section','Elastic Section')+'<br/>') +
-		html_end()
-		)
+	at_Iyy_modifier = mka(MpcAttributeType.Real, 'Iyy_modifier', 'Stiffness modifiers',
+		'Scale factor for bending stiffness about Y local axis')
 	at_Iyy_modifier.setDefault(1.0)
 	
 	xom = MpcXObjectMetaData()
@@ -214,6 +99,8 @@ def makeXObjectMetaData():
 	xom.addAttribute(at_2D)
 	xom.addAttribute(at_3D)
 	xom.addAttribute(at_Section)
+	# options
+	xom.addAttribute(at_shear_def)
 	#material params
 	xom.addAttribute(at_use_uniaxial)
 	xom.addAttribute(at_E)
@@ -222,14 +109,20 @@ def makeXObjectMetaData():
 	xom.addAttribute(at_material_Em)
 	xom.addAttribute(at_material_Eb)
 	xom.addAttribute(at_material_G)
-	# options
-	xom.addAttribute(at_Optional)
 	# modifiers
 	xom.addAttribute(at_Izz_modifier)
 	xom.addAttribute(at_Iyy_modifier)
 	
-	# Optional-dep
-	xom.setVisibilityDependency(at_Optional, at_G_2D)
+	# add a last attribute for versioning
+	av = MpcAttributeMetaData()
+	av.type = MpcAttributeType.Integer
+	av.name = 'version'
+	av.setDefault(_internals.version)
+	av.editable = False
+	xom.addAttribute(av)
+
+	# shear_def-dep
+	xom.setVisibilityDependency(at_shear_def, at_G_2D)
 	
 	# 2D-dep
 	xom.setVisibilityDependency(at_2D, at_G_2D)
@@ -251,13 +144,37 @@ def onEditBegin(editor, xobj):
 def onAttributeChanged(editor, xobj, attribute_name):
 	uni =_geta(xobj, 'Use Uniaxial Materials').boolean
 	d2 = _geta(xobj, '2D').boolean
-	opt = _geta(xobj, 'Optional').boolean
+	shear_def = _geta(xobj, 'Shear Deformable').boolean
 	_geta(xobj, 'E').visible = not uni
-	_geta(xobj, 'G/2D').visible = (not uni) and (d2 and opt)
+	_geta(xobj, 'G/2D').visible = (not uni) and (d2 and shear_def)
 	_geta(xobj, 'G/3D').visible = (not uni) and (not d2)
 	_geta(xobj, 'Em material').visible = uni
 	_geta(xobj, 'Eb material').visible = uni
-	_geta(xobj, 'G material').visible = uni and ((not d2) or (d2 and opt))
+	_geta(xobj, 'G material').visible = uni and ((not d2) or (d2 and shear_def))
+
+def onConvertOldVersion(xobj, old_xobj):
+	'''
+	try to convert objects from old versions to the current one.
+	'''
+	
+	version = 0 # default one
+	av = old_xobj.getAttribute('version')
+	if av:
+		version = av.integer
+	
+	# just a safety check
+	cav = xobj.getAttribute('version')
+	if cav is None:
+		IO.write_cerr('Cannot find "version" attribute in AnalysesCommand\n')
+		return
+	cav.integer = _internals.version
+	
+	# check version
+	if version == 0:
+		# the old Optional attribute is now called Shear Deformable (from version 1 on)
+		old_shear_def = old_xobj.getAttribute('Optional').boolean
+		xobj.getAttribute('Shear Deformable').boolean = old_shear_def
+		print(f'Elastic section: converting Optional to Shear Deformable from version {version} to {_internals.version} (value = {old_shear_def})')
 
 def makeExtrusionBeamDataCompoundInfo(xobj):
 	
@@ -337,7 +254,7 @@ def writeTcl(pinfo):
 		G = _geta(xobj, 'G/3D').quantityScalar.value
 		
 	# shear deformability option
-	Optional = _geta(xobj, 'Optional').boolean
+	shear_def = _geta(xobj, 'Shear Deformable').boolean
 	
 	# custom uniaxial for conversion to aggregator
 	use_uniaxial = _geta(xobj, 'Use Uniaxial Materials').boolean
@@ -349,7 +266,7 @@ def writeTcl(pinfo):
 			raise Exception('Error in Elastic section: Missing uniaxial material for axial response "Em"')
 		if Eb == 0:
 			raise Exception('Error in Elastic section: Missing uniaxial material for bending response "Eb"')
-		if (b2D and Optional) or b3D:
+		if (b2D and shear_def) or b3D:
 			if GG == 0:
 				raise Exception('Error in Elastic section: Missing uniaxial material for shear/torsion response "G"')
 	
@@ -372,7 +289,7 @@ def writeTcl(pinfo):
 			Mz = next_id()
 			pinfo.out_file.write('{}uniaxialMaterial Parallel {} {} -factors {}\n'.format(pinfo.indent, Mz, Eb, Iz))
 			data = [P, 'P', Mz, 'Mz']
-			if Optional:
+			if shear_def:
 				Vy = next_id()
 				pinfo.out_file.write('{}uniaxialMaterial Parallel {} {} -factors {}\n'.format(pinfo.indent, Vy, GG, A*alphaY))
 				data.append(Vy)
@@ -382,7 +299,7 @@ def writeTcl(pinfo):
 		else:
 			# elastic section 2D
 			sopt = ''
-			if Optional:
+			if shear_def:
 				sopt = ' {} {}'.format(G, alphaY)
 			str_tcl = '\n{}section Elastic {} {} {} {}{}\n'.format(pinfo.indent, tag, E, A, Iz, sopt)
 	
@@ -398,7 +315,7 @@ def writeTcl(pinfo):
 			T = next_id()
 			pinfo.out_file.write('{}uniaxialMaterial Parallel {} {} -factors {}\n'.format(pinfo.indent, T, GG, J))
 			data = [P, 'P', Mz, 'Mz', My, 'My', T, 'T']
-			if Optional:
+			if shear_def:
 				Vy = next_id()
 				pinfo.out_file.write('{}uniaxialMaterial Parallel {} {} -factors {}\n'.format(pinfo.indent, Vy, GG, A*alphaY))
 				data.append(Vy)
@@ -412,7 +329,7 @@ def writeTcl(pinfo):
 		else:
 			# elastic section 3D
 			sopt = ''
-			if Optional:
+			if shear_def:
 				sopt = ' {} {}'.format(alphaY, alphaZ)
 			str_tcl = '\n{}section Elastic {} {} {} {} {} {} {}{}\n'.format(pinfo.indent, tag, E, A, Iz, Iy, G, J, sopt)
 	
