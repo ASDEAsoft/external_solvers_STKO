@@ -76,6 +76,17 @@ def makeXObjectMetaData():
 	at_material_G.indexSource.addAllowedNamespace('materials.uniaxial')
 	
 	
+	at_A_modifier = mka(MpcAttributeType.Real, 'A_modifier', 'Stiffness modifiers',
+		'Scale factor for axial stiffness')
+	at_A_modifier.setDefault(1.0)
+
+	at_Asy_modifier = mka(MpcAttributeType.Real, 'Asy_modifier', 'Stiffness modifiers',
+		'Scale factor for shear stiffness along Y local axis')
+	at_Asy_modifier.setDefault(1.0)
+
+	at_Asz_modifier = mka(MpcAttributeType.Real, 'Asz_modifier', 'Stiffness modifiers',
+		'Scale factor for shear stiffness along Z local axis')
+	at_Asz_modifier.setDefault(1.0)
 	
 	at_Izz_modifier = mka(MpcAttributeType.Real, 'Izz_modifier', 'Stiffness modifiers',
 		'Scale factor for bending stiffness about Z local axis')
@@ -84,7 +95,12 @@ def makeXObjectMetaData():
 	at_Iyy_modifier = mka(MpcAttributeType.Real, 'Iyy_modifier', 'Stiffness modifiers',
 		'Scale factor for bending stiffness about Y local axis')
 	at_Iyy_modifier.setDefault(1.0)
+
+	at_J_modifier = mka(MpcAttributeType.Real, 'J_modifier', 'Stiffness modifiers',
+		'Scale factor for torsional stiffness')
+	at_J_modifier.setDefault(1.0)
 	
+
 	xom = MpcXObjectMetaData()
 	xom.name = 'Elastic'
 	xom.addAttribute(at_Dimension)
@@ -100,8 +116,12 @@ def makeXObjectMetaData():
 	xom.addAttribute(at_material_Eb)
 	xom.addAttribute(at_material_G)
 	# modifiers
+	xom.addAttribute(at_A_modifier)
+	xom.addAttribute(at_Asy_modifier)
+	xom.addAttribute(at_Asz_modifier)
 	xom.addAttribute(at_Izz_modifier)
 	xom.addAttribute(at_Iyy_modifier)
+	xom.addAttribute(at_J_modifier)
 	
 	# add a last attribute for versioning
 	av = MpcAttributeMetaData()
@@ -134,6 +154,8 @@ def onAttributeChanged(editor, xobj, attribute_name):
 	_geta(xobj, 'Eb material').visible = uni
 	_geta(xobj, 'G material').visible = uni and ((not d2) or (d2 and shear_def))
 	_geta(xobj, 'Iyy_modifier').visible = not d2
+	_geta(xobj, 'Asz_modifier').visible = not d2
+	_geta(xobj, 'J_modifier').visible = not d2
 	ofu.updateVisibility(not d2, xobj)
 
 def onConvertOldVersion(xobj, old_xobj):
@@ -215,18 +237,33 @@ def writeTcl(pinfo):
 	b2D = _geta(xobj, 'Dimension').string == '2D'
 	b3D = not b2D
 	
-	# section properties
+	# get section
 	Section = _geta(xobj, 'Section').customObject
 	if Section is None:
 		raise Exception('Error in Elastic section: Section is not defined')
-	Izz_modifier = _geta(xobj, 'Izz_modifier').real
-	Iyy_modifier = _geta(xobj, 'Iyy_modifier').real
+	
+	# get section modifiers
+	def _get_mod(xobj, name):
+		try:
+			return _geta(xobj, name).real
+		except:
+			return 1.0
+	A_modifier = _get_mod(xobj, 'A_modifier')
+	Asy_modifier = _get_mod(xobj, 'Asy_modifier')
+	Asz_modifier = _get_mod(xobj, 'Asz_modifier')
+	Izz_modifier = _get_mod(xobj, 'Izz_modifier')
+	Iyy_modifier = _get_mod(xobj, 'Iyy_modifier')
+	J_modifier = _get_mod(xobj, 'J_modifier')
+
+	# get section properties
 	alphaZ = Section.properties.alphaZ
 	alphaY = Section.properties.alphaY
-	A = Section.properties.area
+	A = Section.properties.area * A_modifier
+	Asy = Section.properties.area * alphaY * Asy_modifier
+	Asz = Section.properties.area * alphaZ * Asz_modifier
 	Iz = Section.properties.Izz * Izz_modifier
 	Iy = Section.properties.Iyy * Iyy_modifier
-	J = Section.properties.J
+	J = Section.properties.J * J_modifier
 	
 	# material properties
 	E = _geta(xobj, 'E').quantityScalar.value
@@ -273,7 +310,7 @@ def writeTcl(pinfo):
 			data = [P, 'P', Mz, 'Mz']
 			if shear_def:
 				Vy = next_id()
-				pinfo.out_file.write('{}uniaxialMaterial Parallel {} {} -factors {}\n'.format(pinfo.indent, Vy, GG, A*alphaY))
+				pinfo.out_file.write('{}uniaxialMaterial Parallel {} {} -factors {}\n'.format(pinfo.indent, Vy, GG, Asy))
 				data.append(Vy)
 				data.append('Vy')
 			str_tcl = '{}section Aggregator {} {}\n'.format(pinfo.indent, tag, ' '.join(str(i) for i in data))
@@ -299,11 +336,11 @@ def writeTcl(pinfo):
 			data = [P, 'P', Mz, 'Mz', My, 'My', T, 'T']
 			if shear_def:
 				Vy = next_id()
-				pinfo.out_file.write('{}uniaxialMaterial Parallel {} {} -factors {}\n'.format(pinfo.indent, Vy, GG, A*alphaY))
+				pinfo.out_file.write('{}uniaxialMaterial Parallel {} {} -factors {}\n'.format(pinfo.indent, Vy, GG, Asy))
 				data.append(Vy)
 				data.append('Vy')
 				Vz = next_id()
-				pinfo.out_file.write('{}uniaxialMaterial Parallel {} {} -factors {}\n'.format(pinfo.indent, Vz, GG, A*alphaZ))
+				pinfo.out_file.write('{}uniaxialMaterial Parallel {} {} -factors {}\n'.format(pinfo.indent, Vz, GG, Asz))
 				data.append(Vz)
 				data.append('Vz')
 			str_tcl = '{}section Aggregator {} {}\n'.format(pinfo.indent, tag, ' '.join(str(i) for i in data))
