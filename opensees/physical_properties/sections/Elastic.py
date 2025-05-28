@@ -267,10 +267,7 @@ def writeTcl(pinfo):
 	
 	# material properties
 	E = _geta(xobj, 'E').quantityScalar.value
-	if b2D:
-		G = _geta(xobj, 'G/2D').quantityScalar.value
-	else:
-		G = _geta(xobj, 'G/3D').quantityScalar.value
+	G = _geta(xobj, 'G').quantityScalar.value
 		
 	# shear deformability option
 	shear_def = _geta(xobj, 'Shear Deformable').boolean
