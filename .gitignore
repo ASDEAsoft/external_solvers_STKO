@@ -42,6 +42,7 @@ __pycache__/
 
 # Other
 *.bak
+.vscode/
 
 # google search console
 googlef3e4c66d6907ff17.html
