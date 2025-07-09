@@ -5,7 +5,7 @@ from opensees.utils.parameter_utils import ParameterManager
 class _globals:
 	target_physical_properties = [
 		'DamageTC1D', 'DamageTC3D',
-		'ASDConcrete1D', 'ASDConcrete3D',
+		'ASDConcrete1D', 'ASDConcrete3D', 'ASDBondSlip','ASDSteel1D'
 	]
 
 def _find_phys_props(doc):
@@ -19,8 +19,12 @@ def _find_phys_props(doc):
 		xobj = prop.XObject
 		name = xobj.name
 		if name in _globals.target_physical_properties:
-			implex = xobj.getAttribute('integration').string == 'IMPL-EX'
-			viscosity = xobj.getAttribute('eta').real != 0.0
+			implex_at = xobj.getAttribute('integration')
+			if implex_at is None:
+				implex_at = xobj.getAttribute('Integration')
+			implex = implex_at is not None and implex_at.string == 'IMPL-EX'
+			eta_attr = xobj.getAttribute('eta')
+			viscosity = eta_attr is not None and eta_attr.real != 0.0
 			if implex or viscosity:
 				direct[prop.id] = prop
 	
