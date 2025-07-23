@@ -9,8 +9,18 @@ import opensees.utils.tcl_input as tclin
 import math
 import importlib
 
+# NOTE 1: Don't use implexCheckError... 
+# it seems there is a problem in OpenSeesMP when a material fails in computation
+
 def _err(msg):
 	return 'Error in ASDSteel1D: {}'.format(msg)
+	
+def _check_implex(xobj):
+	is_implex = xobj.getAttribute('Integration').string == 'IMPL-EX'
+	xobj.getAttribute('implexCheckError').visible = is_implex
+	do_check = xobj.getAttribute('implexCheckError').boolean
+	xobj.getAttribute('implexErrorTolerance').visible = is_implex and do_check
+	xobj.getAttribute('implexErrorTimeReductionLimit').visible = is_implex and do_check
 
 def _geta(xobj, name):
 	at = xobj.getAttribute(name)
@@ -22,20 +32,24 @@ _onEditBegin = get_function_from_module(__name__, 'onEditBegin')
 def onEditBegin(editor, xobj):
 	if _onEditBegin: _onEditBegin(editor, xobj)
 	onAttributeChanged(editor, xobj, 'Buckling')
+	_check_implex(xobj)
 
 def onAttributeChanged(editor, xobj, attribute_name):
-	if attribute_name in ['Buckling', 'Bond-Slip', 'Optional']:
+	if attribute_name in ['Buckling','Fracture', 'Bond-Slip', 'Advanced Settings']:
 		is_buck = _geta(xobj, 'Buckling').boolean
+		is_frac = _geta(xobj, 'Fracture').boolean
 		is_slip = _geta(xobj, 'Bond-Slip').boolean
 		_geta(xobj, 'Buckling Length').visible = is_buck
-		_geta(xobj, 'Anchorage Length').visible = is_slip
+		#_geta(xobj, 'Anchorage Length').visible = is_slip
 		_geta(xobj, 'Slip Material Tag').visible = is_slip
-		_geta(xobj, 'Radius').visible = is_buck or is_slip
-		is_optional = _geta(xobj, 'Optional').boolean
+		_geta(xobj, 'Radius').visible = is_buck or is_slip or is_frac
+		is_optional = _geta(xobj, 'Advanced Settings').boolean
 		_geta(xobj, 'K_alpha').visible = is_optional
 		_geta(xobj, 'max_iter').visible = is_optional
 		_geta(xobj, 'tolU').visible = is_optional
 		_geta(xobj, 'tolR').visible = is_optional
+	elif attribute_name == 'Integration' or attribute_name == 'implexCheckError':
+		_check_implex(xobj)
 	return None
 
 def makeXObjectMetaData():
@@ -74,10 +88,21 @@ def makeXObjectMetaData():
 		MpcAttributeType.String, dval='Implicit')
 	algo.sourceType = MpcAttributeSourceType.List
 	algo.setSourceList(['Implicit', 'IMPL-EX'])
+	implex_check = mka("implexCheckError", "Integration", "Check the IMPL-EX error making sure it is kept under a user-defined tolerance", MpcAttributeType.Boolean, dval=False)
+	implex_tol = mka("implexErrorTolerance", "Integration", "The maximum allowed relative IMPL-EX error", MpcAttributeType.Real, dval=0.05)
+	implex_red = mka("implexErrorTimeReductionLimit", "Integration", "The pseudo-time-step reduction limit under which the implex error check is not performed", MpcAttributeType.Real, dval=0.01)
 	
+		# Note 1
+	implex_check.editable = False
+	implex_tol.editable = False
+	implex_red.editable = False
+	
+	auto_regularization = mka("Auto Regularization", "Misc", 
+				"Auto Regularization", 
+				MpcAttributeType.Boolean, dval = True)
 	# let's write a better description for the following attributes
-	optional = mka("Optional", "Misc", 
-				"Optional", 
+	advanced_settings = mka("Advanced Settings", "Misc", 
+				"Advanced settings", 
 				MpcAttributeType.Boolean, dval = False)
 	K_alpha = mka("K_alpha", "Misc",
 				("It is a factor that combines the tangent stiffness matrix with the initial stiffness matrix, to avoid convergence issues. "
@@ -117,10 +142,10 @@ def makeXObjectMetaData():
 	s_tag.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
 	s_tag.indexSource.addAllowedNamespace('materials.uniaxial')
 	
-	lch_anc = mka('Anchorage Length', 'Reinforcing steel features',
-		'The anchorage length for slip',
-		MpcAttributeType.QuantityScalar,
-		dval = 0.0)
+	#lch_anc = mka('Anchorage Length', 'Reinforcing steel features',
+	#	'The anchorage length for slip',
+	#	MpcAttributeType.QuantityScalar,
+	#	dval = 0.0)
 	radius = mka('Radius', 'Reinforcing steel features',
 		'The rebar radius',
 		MpcAttributeType.QuantityScalar,
@@ -136,7 +161,11 @@ def makeXObjectMetaData():
 	xom.addAttribute(su)
 	xom.addAttribute(eu)
 	xom.addAttribute(algo)
-	xom.addAttribute(optional)
+	xom.addAttribute(implex_check)
+	xom.addAttribute(implex_tol)
+	xom.addAttribute(implex_red)
+	xom.addAttribute(auto_regularization)
+	xom.addAttribute(advanced_settings)
 	xom.addAttribute(K_alpha)
 	xom.addAttribute(max_iter)
 	xom.addAttribute(tolU)
@@ -145,7 +174,7 @@ def makeXObjectMetaData():
 	xom.addAttribute(buck)
 	xom.addAttribute(slip)
 	xom.addAttribute(b_lch)
-	xom.addAttribute(lch_anc)
+	#xom.addAttribute(lch_anc)
 	xom.addAttribute(s_tag)
 	xom.addAttribute(radius)
 
@@ -155,9 +184,9 @@ def writeTcl(pinfo):
 	
 	'''
 	uniaxialMaterial ASDSteel1D $tag $E $sy $su $eu  
-	<-implex>  
+	<-implex>  <-implexControl $implexErrorTolerance $implexTimeReductionLimit>
 	<-buckling  $lch < $r>> 
-	<-fracture> 
+	<-fracture <$r>> 
 	<-slip $matTag $lch_anc <$r>> 
 	<-K_alpha $K_alpha> <-max_iter $max_iter> <-tolU $tolU> <-tolR $tolR>
 	'''
@@ -181,9 +210,18 @@ def writeTcl(pinfo):
 	if eu < sy/E:
 		raise Exception(_err('ultimate strain must be greater than yield strain'))
 	implex = ' -implex' if _geta(xobj, 'Integration').string == 'IMPL-EX' else ''
+	#err = ''
+	#if _geta(xobj, 'Integration').string == 'IMPL-EX':
+	#	if _geta(xobj, 'implexCheckError').boolean:
+	#		implex_Err_tol = _geta(xobj, 'implexErrorTolerance').real
+	#		implex_Err_Time_Red = _geta(xobj, 'implexErrorTimeReductionLimit').real
+	#		err = ' -implexControl {} {}'.format(implex_Err_tol, implex_Err_Time_Red)
+			
+			
+	auto_regularization = ' -auto_regularization' if _geta(xobj, 'Auto Regularization').boolean else ''
 
 	opt = ''
-	if _geta(xobj, 'Optional').boolean:
+	if _geta(xobj, 'Advanced Settings').boolean:
 		K_alpha = _geta(xobj, 'K_alpha').quantityScalar.value
 		if K_alpha < 0.0 or K_alpha > 1.0:
 			raise Exception(_err('K_alpha must be in the range [0, 1]'))	
@@ -192,24 +230,44 @@ def writeTcl(pinfo):
 		tolR = _geta(xobj, 'tolR').quantityScalar.value
 		opt = ' -K_alpha {} -max_iter {} -tolU {} -tolR {}'.format(K_alpha, max_iter, tolU, tolR)
 
-	frac = ' -fracture' if _geta(xobj, 'Fracture').boolean else ''
+	# frac = ' -fracture' if _geta(xobj, 'Fracture').boolean else ''
 	
-	radius = _geta(xobj, 'Radius').quantityScalar.value
+	#radius = _geta(xobj, 'Radius').quantityScalar.value
 	
 	radius_written = False
 	buck = ''
-	if _geta(xobj, 'Buckling').boolean:
+	do_buck = _geta(xobj, 'Buckling').boolean
+	if do_buck:
 		b_lch = _geta(xobj, 'Buckling Length').quantityScalar.value
 		if b_lch <= 0.0:
 			raise Exception(_err('buckling length must be greater than zero'))
-		buck = ' -buckling {} {}'.format(b_lch, radius)
-		radius_written = True
+		buck = ' -buckling {}'.format(b_lch)
+		if not radius_written:
+			radius_written = True
+			radius = _geta(xobj, 'Radius').quantityScalar.value
+			if radius <= 0.0:
+				raise Exception(_err('radius must be greater than zero'))
+			buck += ' {}'.format(radius)
+		
+	frac = ''
+	if _geta(xobj, 'Fracture').boolean:
+		#r_frac = _geta(xobj, 'Fracture radius').quantityScalar.value
+		frac = ' -fracture '
+		if not radius_written:
+			radius_written = True
+			radius = _geta(xobj, 'Radius').quantityScalar.value
+			if radius <= 0.0:
+				raise Exception(_err('radius must be greater than zero'))
+			frac += '{}'.format(radius)
+			
 	slip = ''
 	if _geta(xobj, 'Bond-Slip').boolean:
 		slip_tag = _geta(xobj, 'Slip Material Tag').index
 		if slip_tag == 0:
 			raise Exception(_err('slip material tag is not defined'))
-		
+		#lch_anc = _geta(xobj, 'Anchorage Length').quantityScalar.value
+		#if lch_anc < 0.0:
+		#	raise Exception(_err('anchorage length must be greater than or equal to zero'))
 		# if the PhysicalProperty identfied by s_tag has an XObject of type 'ASDBondSlip1D'
 		# we can:
 		# - temporarily change the '-autoRegularization' attribute to True
@@ -221,15 +279,21 @@ def writeTcl(pinfo):
 		if s_xobj.name == 'ASDBondSlip':
 			# temporarily change the '-autoRegularization' attribute to True
 			reg_at = s_xobj.getAttribute('autoRegularization')
+			lch_slip_at = s_xobj.getAttribute('lch')
 			old_reg = reg_at.boolean
+			old_lch_slip = lch_slip_at.quantityScalar.value
 			old_slip_tag = slip_tag
 			try:
-				reg_at.boolean = True
-				# temporarily change its tag to the maximum tag + 1
+				if not auto_regularization:
+					reg_at.boolean = False
+				else:
+					reg_at.boolean = True
+				lch_slip_at.quantityScalar.value = 1.0
+		#		# temporarily change its tag to the maximum tag + 1
 				slip_tag = pinfo.next_physicalProperties_id
 				pinfo.next_physicalProperties_id += 1
 				s_xobj.parent.id = slip_tag
-				# write that XObject
+		#		# write that XObject
 				s_module_name = 'opensees.physical_properties.{}.{}'.format(s_xobj.Xnamespace, s_xobj.name)
 				s_module = importlib.import_module(s_module_name)
 				if hasattr(s_module, 'writeTcl'):
@@ -239,12 +303,9 @@ def writeTcl(pinfo):
 				# restore the original values
 				s_xobj.parent.id = old_slip_tag
 				reg_at.boolean = old_reg
+				lch_slip_at.quantityScalar.value = old_lch_slip
 				pinfo.phys_prop = current_prop
-
-		lch_anc = _geta(xobj, 'Anchorage Length').quantityScalar.value
-		if lch_anc < 0.0:
-			raise Exception(_err('anchorage length must be greater than or equal to zero'))
-		slip = ' -slip {} {}'.format(slip_tag, lch_anc)
+		slip = ' -slip {}'.format(slip_tag)
 		if not radius_written:
 			radius_written = True
 			radius = _geta(xobj, 'Radius').quantityScalar.value
@@ -257,7 +318,8 @@ def writeTcl(pinfo):
 			raise Exception(_err('radius must be greater than zero'))
 
 	# write the material command
-	pinfo.out_file.write('{}uniaxialMaterial ASDSteel1D {} {} {} {} {}{}{}{}{}{}\n'.format(
-		pinfo.indent, tag, E, sy, su, eu, implex, frac, buck, slip, opt))
-	
+	pinfo.out_file.write('{}uniaxialMaterial ASDSteel1D {} {} {} {} {}{}{}{}{}{}{}\n'.format(
+		pinfo.indent, tag, E, sy, su, eu, implex, auto_regularization, frac, buck, slip, opt))
+	print('{}uniaxialMaterial ASDSteel1D {} {} {} {} {}{}{}{}{}{}\n'.format(
+		pinfo.indent, tag, E, sy, su, eu, implex, auto_regularization, frac, buck, slip, opt))
 	

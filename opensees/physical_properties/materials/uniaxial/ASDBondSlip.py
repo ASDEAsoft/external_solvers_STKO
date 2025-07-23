@@ -279,6 +279,9 @@ def makeXObjectMetaData():
 		"If turn this flag Off, the input fracture energies will be used as they are."), 
 		MpcAttributeType.Boolean, dval=False)
 	reg.editable = False
+	lch = mka("lch", "Regularization", "The anchorage length", 
+		MpcAttributeType.QuantityScalar, dval=1.0)
+	lch.editable = False
 	
 	xom = MpcXObjectMetaData()
 	xom.name = 'ASDBondSlip'
@@ -295,6 +298,7 @@ def makeXObjectMetaData():
 	xom.addAttribute(algo)
 	xom.addAttribute(ctype)
 	xom.addAttribute(reg)
+	xom.addAttribute(lch)
 	
 	return xom
 
@@ -314,6 +318,7 @@ def writeTcl(pinfo):
 	tangent = _geta(xobj, 'Constitutive Tensor Type').string == 'Tangent'
 	implex = _geta(xobj, 'Integration').string == 'IMPL-EX'
 	reg = _geta(xobj, 'autoRegularization').boolean
+	lch = _geta(xobj, 'lch').quantityScalar.value
 	
 	# checks
 	if fc <= 0.0:
@@ -374,7 +379,7 @@ def writeTcl(pinfo):
 		to_tcl(X_null), to_tcl(Y_null), to_tcl(D_null),
 		' -tangent' if tangent else '',
 		' -implex' if implex else '',
-		' -autoRegularization 1.0' if reg else ''))
+		' -autoRegularization {}'.format(lch) if reg else ''))
 	# negative pinching material
 	pinfo.out_file.write(_globals.concrete_format.format(
 		pinfo.indent, id_neg, E1, eta, 
@@ -382,7 +387,7 @@ def writeTcl(pinfo):
 		to_tcl(X1), to_tcl(Y1), to_tcl(D1),
 		' -tangent' if tangent else '',
 		' -implex' if implex else '',
-		' -autoRegularization 1.0' if reg else ''))
+		' -autoRegularization {}'.format(lch) if reg else ''))
 	# frictional material
 	pinfo.out_file.write(_globals.concrete_format.format(
 		pinfo.indent, id_res, E2, eta, 
@@ -390,6 +395,6 @@ def writeTcl(pinfo):
 		to_tcl(X2), to_tcl(Y2), to_tcl(D2),
 		' -tangent' if tangent else '',
 		' -implex' if implex else '',
-		' -autoRegularization 1.0' if reg else ''))
+		' -autoRegularization {}'.format(lch) if reg else ''))
 	# combine
 	pinfo.out_file.write('{}uniaxialMaterial Parallel {}  {} {} {} -factors {} {} {}\n'.format(pinfo.indent, tag, id_pos, id_neg, id_res, factor, factor, 1.0-factor))
