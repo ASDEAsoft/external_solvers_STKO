@@ -53,6 +53,7 @@ def write_tcl_int(out_dir):
 	
 	# create process info
 	pinfo = tclin.process_info()
+	tclin.process_info.current_process_info = pinfo
 	pinfo.out_dir = out_dir
 	
 	# remove all residual data from a Monitor
@@ -480,6 +481,9 @@ def write_tcl(out_dir):
 		write_tcl_int(out_dir)
 	finally:
 		mp.end()
+		print('Done with writing input files.')
+		print('Resetting the current process info to None ...')
+		tclin.process_info.current_process_info = None
 	'''
 	Use this code block to profile the process of writing input files
 	to look for possible bottlenecks.

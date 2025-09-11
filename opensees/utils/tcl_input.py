@@ -120,6 +120,10 @@ class process_type:
 	writing_tcl_for_material_tester = 2
 
 class process_info:
+
+	# a static unique instance of this class
+	current_process_info = None
+
 	def __init__(self):
 		'''
 		the current output directory where the opensees input files are to be written
