@@ -151,7 +151,6 @@ def writeTcl(pinfo):
 	# Element MVLEM $eleTag $Dens $iNode $jNode $m $c -thick {Thicknesses} -width {Widths} -rho {Reinforcing_ratios} -matConcrete {Concrete_tags} -matSteel {Steel_tags} -matShear {Shear_tag}
 	
 	elem = pinfo.elem
-	phys_prop = pinfo.phys_prop
 	elem_prop = pinfo.elem_prop
 	
 	tag = elem.id
@@ -167,10 +166,6 @@ def writeTcl(pinfo):
 	if(Dens_at is None):
 		raise Exception('Error: cannot find "Dens" attribute')
 	Dens = Dens_at.quantityScalar.value
-	
-	namePh=phys_prop.XObject.Xnamespace
-	if (namePh!='materials.uniaxial'):
-		raise Exception('Error: material must be uniaxial')
 		
 	nstr = ''	#node string
 	node_vect = []
@@ -252,7 +247,7 @@ def writeTcl(pinfo):
 	
 	# Element MVLEM $eleTag $Dens $iNode $jNode $m $c -thick {Thicknesses} -width {Widths} -rho {Reinforcing_ratios} -matConcrete {Concrete_tags} -matSteel {Steel_tags} -matShear {Shear_tag}
 
-	str_tcl = '{}element MVLEM {} {}{} {} {} -thick{} -thick{} -rho{} -matConcrete{} -matSteel{} -matShear {}{}\n'.format(pinfo.indent, tag, Dens, nstr, m, c, Thicknesses_str, Widths_str, Reinforcing_ratios_str, Concrete_tags_str, Steel_tags_str, Shear_tag)
+	str_tcl = '{}element MVLEM {} {} {} {} {} -thick{} -width{} -rho{} -matConcrete{} -matSteel{} -matShear {}\n'.format(pinfo.indent, tag, Dens, nstr, m, c, Thicknesses_str, Widths_str, Reinforcing_ratios_str, Concrete_tags_str, Steel_tags_str, Shear_tag)
 	
 	# now write the string into the file
 	pinfo.out_file.write(str_tcl)

@@ -31,18 +31,12 @@ def makeXObjectMetaData():
 	dofl = mka(MpcAttributeType.Integer, 'dofl', 'Reference', 'Lateral degree of freedom (used to determine shear demand)')
 	dofv = mka(MpcAttributeType.Integer, 'dofv', 'Reference', 'Vertical degree of freedom (used to determine shear demand)')
 	
-	fpc = mka(MpcAttributeType.QuantityScalar, 'fpc', 'Material', 'Concrete compressive strength (ksi)')
-	fyt = mka(MpcAttributeType.QuantityScalar, 'fyt', 'Material', 'Transverse steel yield stress (ksi)')
-	Ag = mka(MpcAttributeType.QuantityScalar, 'Ag', 'Material', 'Gross area of concrete (in.2)')
-	rhot = mka(MpcAttributeType.Real, 'rhot', 'Material', 'Transverse steel reinforcement ratio')
 	thetay = mka(MpcAttributeType.Real, 'thetay', 'Material', 'Yield rotation of hinge (rad)')
-	VColOE = mka(MpcAttributeType.QuantityScalar, 'VColOE', 'Material', 'Shear capacity of column (k)')
-	Kunload = mka(MpcAttributeType.QuantityScalar, 'Kunload', 'Material', 'Unloading stiffness of hinge (k-in./rad; see note below)')
-	use_VyE = mka(MpcAttributeType.Boolean, '-VyE', 'Material', 'Use Plastic shear demand)')
-	VyE = mka(MpcAttributeType.QuantityScalar, 'VyE', 'Material', 'Plastic shear demand (k; if not used, shear demand is determined at each step instead)')
+	a = mka(MpcAttributeType.Real, 'a', 'Material', 'Rotation limit a')
+	b = mka(MpcAttributeType.Real, 'b', 'Material', 'Rotation limit b')
 	
 	xom = MpcXObjectMetaData()
-	xom.name = 'Rotation'
+	xom.name = 'RotationStatic'
 	
 	xom.addAttribute(eleTag)
 	xom.addAttribute(iNodeTag)
@@ -50,24 +44,15 @@ def makeXObjectMetaData():
 	xom.addAttribute(dofl)
 	xom.addAttribute(dofv)
 	
-	xom.addAttribute(fpc)
-	xom.addAttribute(fyt)
-	xom.addAttribute(Ag)
-	xom.addAttribute(rhot)
 	xom.addAttribute(thetay)
-	xom.addAttribute(VColOE)
-	xom.addAttribute(Kunload)
-	
-	xom.addAttribute(use_VyE)
-	xom.addAttribute(VyE)
-	
-	xom.setVisibilityDependency(use_VyE, VyE)
+	xom.addAttribute(a)
+	xom.addAttribute(b)
 	
 	return xom
 
 def writeTcl(pinfo):
 	
-	# limitCurve Rotation $curveTag $eleTag $dofl $dofv $iNodeTag $jNodeTag $fpc $fyt $Ag $rhot $thetay $VColOE $Kunload <-VyE $VyE>
+	# limitCurve RotationStatic $curveTag $eleTag $dofl $dofv $iNodeTag $jNodeTag $thetay $a $b
 	xobj = pinfo.definition.XObject
 	tag = xobj.parent.componentId
 	doc = App.caeDocument()
@@ -126,22 +111,14 @@ def writeTcl(pinfo):
 	jNodeTag = getnode(geta('jNodeTag').index, 'jNodeTag')
 	dofl = geta('dofl').integer
 	dofv = geta('dofv').integer
-	fpc = geta('fpc').quantityScalar.value
-	fyt = geta('fyt').quantityScalar.value
-	Ag = geta('Ag').quantityScalar.value
-	rhot = geta('rhot').real
 	thetay = geta('thetay').real
-	VColOE = geta('VColOE').quantityScalar.value
-	Kunload = geta('Kunload').quantityScalar.value
-	if geta('-VyE').boolean:
-		opt = ' -VyE {}'.format(geta('VyE').quantityScalar.value)
-	else:
-		opt = ''
+	a = geta('a').real
+	b = geta('b').real
 	
 	# now write the string into the file
 	pinfo.out_file.write(
-		'{}limitCurve Rotation {} {} {} {} {} {} {} {} {} {} {} {} {}{}\n'.format(
+		'{}limitCurve RotationStatic {} {} {} {} {} {} {} {} {}\n'.format(
 			pinfo.indent, tag, eleTag, dofl, dofv, iNodeTag, jNodeTag,
-			fpc, fyt, Ag, rhot, thetay, VColOE, Kunload, opt
+			thetay, a, b
 			)
 	)

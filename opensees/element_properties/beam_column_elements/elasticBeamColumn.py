@@ -326,16 +326,8 @@ def writeTcl(pinfo):
 	
 	d = __control(xobj)
 	
-	at_Dimension = xobj.getAttribute('Dimension')
-	if(at_Dimension is None):
-		raise Exception('Error: cannot find "Dimension" attribute')
-	Dimension = at_Dimension.string
-	
-	at_Dimension_Section = phys_prop.XObject.getAttribute('Dimension')
-	if(at_Dimension_Section is None):
-		raise Exception('Error: cannot find "Dimension" attribute')
-	Dimension_Section = at_Dimension_Section.string
-	
+	Dimension = _geta(xobj, 'Dimension').string
+	Dimension_Section = _geta(phys_prop.XObject, 'Dimension').string
 	if(Dimension != Dimension_Section):
 		raise Exception('Error: different dimension between physical property and "Element Property"')
 	
@@ -351,26 +343,20 @@ def writeTcl(pinfo):
 	
 	
 	# mandatory parameters
-	at_Section = phys_prop.XObject.getAttribute('Section')
-	if(at_Section is None):
-		raise Exception('Error: cannot find "Section" attribute')
-	Section = at_Section.customObject
+	Section = _geta(phys_prop.XObject, 'Section').customObject
 	if Section is None:
 		raise Exception('Error: Section is None')
 	
-	at_Izz_modifier = phys_prop.XObject.getAttribute('Izz_modifier')
-	if(at_Izz_modifier is None):
-		raise Exception('Error: cannot find "Izz_modifier" attribute')
-	Izz_modifier = at_Izz_modifier.real
-	
-	at_Iyy_modifier = phys_prop.XObject.getAttribute('Iyy_modifier')
-	if(at_Iyy_modifier is None):
-		raise Exception('Error: cannot find "Iyy_modifier" attribute')
-	Iyy_modifier = at_Iyy_modifier.real
+	A_modifier = _geta(phys_prop.XObject, 'A_modifier').real
+	Asy_modifier = _geta(phys_prop.XObject, 'Asy_modifier').real
+	Asz_modifier = _geta(phys_prop.XObject, 'Asz_modifier').real
+	Izz_modifier = _geta(phys_prop.XObject, 'Izz_modifier').real
+	Iyy_modifier = _geta(phys_prop.XObject, 'Iyy_modifier').real
+	J_modifier = _geta(phys_prop.XObject, 'J_modifier').real
 	
 	param = ''
 	
-	A = Section.properties.area
+	A = Section.properties.area * A_modifier
 	
 	at_E = phys_prop.XObject.getAttribute('E')
 	if(at_E is None):
@@ -381,12 +367,12 @@ def writeTcl(pinfo):
 	
 	if d.Dimension3:
 		
-		at_G = phys_prop.XObject.getAttribute('G/3D')
+		at_G = phys_prop.XObject.getAttribute('G')
 		if(at_G is None):
 			raise Exception('Error: cannot find "G" attribute')
 		G = at_G.quantityScalar.value
 		
-		J = Section.properties.J
+		J = Section.properties.J * J_modifier
 		Iy = Section.properties.Iyy * Iyy_modifier
 		
 		param += ' {} {} {}'.format(G, J, Iy)

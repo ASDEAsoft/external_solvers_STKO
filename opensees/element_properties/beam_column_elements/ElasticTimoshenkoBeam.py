@@ -122,14 +122,18 @@ def writeTcl(pinfo):
 	Section = geta(phys_prop.XObject, 'Section').customObject
 	if Section is None:
 		raise Exception('Error: No Elastic Section provided')
+	A_modifier = geta(phys_prop.XObject, 'A_modifier').real
+	Asy_modifier = geta(phys_prop.XObject, 'Asy_modifier').real
+	Asz_modifier = geta(phys_prop.XObject, 'Asz_modifier').real
 	Izz_modifier = geta(phys_prop.XObject, 'Izz_modifier').real
 	Iyy_modifier = geta(phys_prop.XObject, 'Iyy_modifier').real
-	A = Section.properties.area
+	J_modifier = geta(phys_prop.XObject, 'J_modifier').real
+	A = Section.properties.area * A_modifier
 	E = geta(phys_prop.XObject, 'E').quantityScalar.value
-	G = geta(phys_prop.XObject, 'G/2D' if is_2d else 'G/3D').quantityScalar.value
-	J = Section.properties.J
-	Avy = Section.properties.alphaY*A
-	Avz = Section.properties.alphaZ*A
+	G = geta(phys_prop.XObject, 'G').quantityScalar.value
+	J = Section.properties.J * J_modifier
+	Avy = Section.properties.alphaY * Section.properties.area * Asy_modifier
+	Avz = Section.properties.alphaZ * Section.properties.area * Asz_modifier
 	Iy = Section.properties.Iyy * Iyy_modifier
 	Iz = Section.properties.Izz * Izz_modifier
 	if geta(xobj, '-mass').boolean:

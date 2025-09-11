@@ -348,7 +348,7 @@ def writeTcl(pinfo):
 	
 	
 	str_tcl = '{}element TripleFrictionPendulum {}{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}\n'.format(
-			pinfo.indent, tag, nstr, frnTag1, frnTag2, frnTag3, vertMatTag, rotXMatTag, rotXMatTag, rotYMatTag, L1,
+			pinfo.indent, tag, nstr, frnTag1, frnTag2, frnTag3, vertMatTag, rotZMatTag, rotXMatTag, rotYMatTag, L1,
 			L2, L3, d1, d2, d3, W, uy, kvt, minFv, tol)
 	
 	# now write the string into the file
