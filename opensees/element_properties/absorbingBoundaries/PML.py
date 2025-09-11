@@ -6,8 +6,6 @@ import math
 import os
 from typing import List, Tuple
 
-# TODO: use a "once" initialization in the getNodalSpatialDim function instead of preprocessing elements!
-
 def _err(msg):
 	return 'Error in "PML" :\n{}'.format(msg)
 
