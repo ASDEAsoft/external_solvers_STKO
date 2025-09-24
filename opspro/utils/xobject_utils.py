@@ -26,9 +26,9 @@ def _get_module_name(xobj):
 	if not xobj.name:
 		raise Exception('XObject has no name')
 	if xobj.Xnamespace:
-		return f'opensees.{module_from_index_source_type(xobj.parent.indexSourceType)}.{xobj.Xnamespace}.{xobj.name}'
+		return f'opspro.{module_from_index_source_type(xobj.parent.indexSourceType)}.{xobj.Xnamespace}.{xobj.name}'
 	else:
-		return f'opensees.{module_from_index_source_type(xobj.parent.indexSourceType)}.{xobj.name}'
+		return f'opspro.{module_from_index_source_type(xobj.parent.indexSourceType)}.{xobj.name}'
 
 def on_edit_begin(editor, xobj):
 	module = importlib.import_module(_get_module_name(xobj))
