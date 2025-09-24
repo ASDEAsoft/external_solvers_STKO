@@ -3,6 +3,7 @@ import PyMpc.Utils
 import importlib
 import os
 import pkgutil
+from opspro.parameters.ParameterManager import ParameterManager
 
 def __load_module_internal(namespace, the_register_func):
 	"""
@@ -65,3 +66,7 @@ def initialize():
 	
 	# register all metadata of analysis steps
 	# ...
+
+	# Reset the parameter manager as it is a document-wise singleton
+	# TODO: do the same for other singletons to be added in the future
+	ParameterManager.reset()
