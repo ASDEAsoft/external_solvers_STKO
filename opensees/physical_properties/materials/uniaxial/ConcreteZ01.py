@@ -1,4 +1,4 @@
-﻿# enable default uniaxial tester for this module
+# enable default uniaxial tester for this module
 from opensees.physical_properties.utils.tester.EnableTester1D import *
 
 import PyMpc.Units as u

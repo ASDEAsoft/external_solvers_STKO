@@ -1,4 +1,4 @@
-﻿import PyMpc.Units as u
+import PyMpc.Units as u
 from PyMpc import *
 from mpc_utils_html import *
 
