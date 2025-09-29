@@ -33,7 +33,7 @@ def makeXObjectMetaData():
 		html_end()
 		)
 	at_solver.sourceType = MpcAttributeSourceType.List
-	at_solver.setSourceList(['-frequency', '-standard', '-findLargest', '-genBandArpack', '-symmBandLapack', '-fullGenLapack'])
+	at_solver.setSourceList(['-frequency', '-standard', '-findLargest', '-genBandArpack', '-symmBandLapack', '-fullGenLapack', '-symmGenLapack'])
 	at_solver.setDefault('-genBandArpack')
 	
 	# numEigenvalues
