@@ -29,10 +29,41 @@ class _expression_gui_utils:
         "</tr>"
         "</table>"
     )
+    tooltip_format_ext = (
+        "<table style='border-collapse: collapse;'>"
+        "<tr>"
+        "<td style='text-align: right; font-weight: bold; width: 150px; padding: 4px 8px;'>Input:</td>"
+        "<td style='padding: 4px 8px;'>{:.4g~P}</td>"
+        "</tr>"
+        "<tr>"
+        "<td style='text-align: right; font-weight: bold; padding: 4px 8px;'>Value (Base units):</td>"
+        "<td style='padding: 4px 8px;'>{:.4g~P}</td>"
+        "</tr>"
+        "<tr>"
+        "<td style='text-align: right; font-weight: bold; padding: 4px 8px;'>Dimensionality:</td>"
+        "<td style='padding: 4px 8px;'>{:P}</td>"
+        "</tr>"
+        "<tr>"
+        "<td style='text-align: right; font-weight: bold; padding: 4px 8px;'>Quantity:</td>"
+        "<td style='padding: 4px 8px;'>{}</td>"
+        "</tr>"
+        "</table>"
+    )
     @staticmethod
     def make_tooltip(value: pint.Quantity) -> str:
         bval = value.to_base_units()
-        return _expression_gui_utils.tooltip_format.format(value, bval, bval.units.dimensionality)
+        qstring = ParameterManager.unit_common_quantity_map.get(str(bval.units.dimensionality), None)
+        if qstring is not None:
+            return _expression_gui_utils.tooltip_format_ext.format(
+                value, 
+                bval, 
+                bval.units.dimensionality,
+                qstring)
+        else:
+            return _expression_gui_utils.tooltip_format.format(
+                value, 
+                bval, 
+                bval.units.dimensionality)
     @staticmethod
     def make_error_tooltip(msg: str) -> str:
         return f"<span style='color: red; font-weight: bold;'>{msg}</span>"
@@ -49,6 +80,7 @@ class ExpressionHighlighter(QSyntaxHighlighter):
         self._default_format.setForeground(QColor("black"))
         self._unit_format = QTextCharFormat()
         self._unit_format.setForeground(QColor(50, 100, 200))
+        self._unit_format.setFontWeight(QFont.Bold)
         self._symbol_format = QTextCharFormat()
         self._symbol_format.setForeground(QColor(200, 0, 200))
         self._symbol_format.setFontWeight(QFont.Bold)
@@ -59,14 +91,14 @@ class ExpressionHighlighter(QSyntaxHighlighter):
         # Regex rules
         self._rules = []
 
-        # Units inside [ ... ]
-        self._rules.append((QRegExp(r"\[[^\]]+\]"), self._unit_format))
-
         # Symbols from list
         self._symbols = symbols or []
         if self._symbols:
             pattern = r"\b(" + "|".join(map(QRegExp.escape, self._symbols)) + r")\b"
             self._rules.append((QRegExp(pattern), self._symbol_format))
+
+        # Units inside [ ... ]
+        self._rules.append((QRegExp(r"\[[^\]]+\]"), self._unit_format))
 
     def highlightBlock(self, text: str):
 
@@ -85,7 +117,6 @@ class ExpressionHighlighter(QSyntaxHighlighter):
                 length = regex.matchedLength()
                 self.setFormat(i, length, fmt)
                 i = regex.indexIn(text, i + length)
-
 
 class ExpressionLineEdit(QPlainTextEdit):
     def __init__(self, parent=None):
@@ -172,13 +203,26 @@ class ExpressionLineEdit(QPlainTextEdit):
         if event.key() in (Qt.Key_Return, Qt.Key_Enter):
             event.ignore()
             return
+        elif event.key() == Qt.Key_Tab and self._completer and self._completer.popup() and self._completer.popup().isVisible():
+            # If completer is visible, let it handle Tab
+            popup = self._completer.popup()
+            index = popup.currentIndex()
+            if not index.isValid() and self._completer.completionCount() > 0:
+                # Select first item in the popup
+                first_index = self._completer.completionModel().index(0, 0)
+                popup.setCurrentIndex(first_index)
+            self._completer.popup().hide()
+            self._completer.activated.emit(self._completer.currentCompletion())
+            event.ignore()
+            return
 
         # Default behavior
         super().keyPressEvent(event)
-
+        
         # Completer trigger
         if not self._completer or not self._completer.model():
             return
+        
         cursor = self.textCursor()
         cursor.select(cursor.WordUnderCursor)
         prefix = cursor.selectedText()
@@ -197,3 +241,4 @@ app = QApplication(sys.argv)
 w = ExpressionLineEdit()
 w.show()
 sys.exit(app.exec_())
+
