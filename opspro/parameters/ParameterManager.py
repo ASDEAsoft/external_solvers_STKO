@@ -35,8 +35,14 @@ def _make_protected_dict() -> dict:
     # done
     return safe_dict
 
+def once_call():
+    print('ParameterManager initializing...')
+    return True
+
 # a global singleton to manage parameters
 class ParameterManager:
+
+    _initialized = once_call()
 
     # the unit registry
     ureg = pint.UnitRegistry(autoconvert_offset_to_baseunit=True)
@@ -57,6 +63,7 @@ class ParameterManager:
     @staticmethod
     def getAllSymbols() -> List[str]:
         # return a sorted list of parameter names (TODO), symbols in the safe_dict, and units
+        # TODO: store this sorted list and update it only when needed
         return sorted(itertools.chain(
             ParameterManager.safe_dict.keys(), 
             ParameterManager.unit_common_symbols
