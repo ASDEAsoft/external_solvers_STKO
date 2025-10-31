@@ -151,7 +151,7 @@ class ExpressionLineEdit(QLineEdit):
 
         # Make it look like a QLineEdit
         self.setPlaceholderText("Enter expression, e.g. 5[m]")
-        self.setClearButtonEnabled(True)
+        #self.setClearButtonEnabled(True)
         
         # Attach syntax highlighter
         symbols = ParameterManager.getAllSymbols()
@@ -173,10 +173,6 @@ class ExpressionLineEdit(QLineEdit):
         self._cursor_visible = True
         self._cursor_timer = QTimer(self)
         self._cursor_timer.setInterval(QApplication.cursorFlashTime() // 2)
-
-        # Handle scrolling past
-        self._x_offset = 0  # horizontal scroll offset in pixels
-        self._scroll_margin = 8  # minimum padding between cursor and widget edges
 
         # Connections
         self._completer.activated.connect(self._insert_completion)
@@ -335,14 +331,37 @@ class ExpressionLineEdit(QLineEdit):
             rect = self.style().subElementRect(self.style().SE_LineEditContents, opt, self)
             painter.setClipRect(rect)
 
+            # Text and font metrics
             text = self.text()
             fm = QFontMetrics(self.font())
-            x = rect.x() + 2
+
+
+
+            _scroll_margin = 2  # minimum padding between cursor and widget edges
+            _x_offset = 0  # horizontal scroll offset
+            cursor_x = fm.width(text[:self.cursorPosition()])
+            visible_width = rect.width() - 2 * _scroll_margin
+
+            # Shift left if cursor is too far right
+            if cursor_x - _x_offset > visible_width - _scroll_margin:
+                _x_offset = cursor_x - visible_width + _scroll_margin
+            # Shift right if cursor is too far left
+            elif cursor_x - self._x_offset < _scroll_margin:
+                self._x_offset = max(0, cursor_x - _scroll_margin)
+        
+            print(rect, self._x_offset)
+
+
+
+
+
+            
+            x = rect.x() + 2 - self._x_offset  # apply scroll offset
             baseline = rect.y() + (rect.height() + fm.ascent() - fm.descent()) // 2 + 1
 
             # Draw cursor
             if self.hasFocus() and self._cursor_visible:
-                cursor_x = rect.x() + fm.width(text[:self.cursorPosition()]) + 1
+                cursor_x = rect.x() + fm.width(text[:self.cursorPosition()]) - self._x_offset + 1
                 painter.setPen(Qt.black)
                 painter.drawLine(cursor_x, rect.y() + 3, cursor_x, rect.bottom() - 3)
 
