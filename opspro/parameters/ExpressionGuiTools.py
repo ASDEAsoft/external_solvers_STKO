@@ -153,6 +153,10 @@ class ExpressionLineEdit(QLineEdit):
         self.setPlaceholderText("Enter expression, e.g. 5[m]")
         #self.setClearButtonEnabled(True)
         
+        # to handle the cursor offset for horizontal scrolling
+        self._x_offset = 0
+        self._scroll_margin = 8  # minimum padding between cursor and widget edges
+
         # Attach syntax highlighter
         symbols = ParameterManager.getAllSymbols()
 
@@ -178,6 +182,7 @@ class ExpressionLineEdit(QLineEdit):
         self._completer.activated.connect(self._insert_completion)
         self._cursor_timer.timeout.connect(self._on_cursor_blink)
         self.textChanged.connect(self._evaluate_expression)
+        self.textChanged.connect(self._ensure_cursor_visible)
 
     @property
     def value(self) -> pint.Quantity:
@@ -241,6 +246,24 @@ class ExpressionLineEdit(QLineEdit):
                 self._cursor_visible = False
                 self.update()
 
+    def _ensure_cursor_visible(self):
+        """Adjust _x_offset so the cursor stays inside the visible rect."""
+        text = self.text()
+        fm = QFontMetrics(self.font())
+        rect = self.style().subElementRect(self.style().SE_LineEditContents, QStyleOptionFrame(), self)
+
+        cursor_x = fm.width(text[:self.cursorPosition()])
+        visible_width = rect.width() - 2 * self._scroll_margin
+
+        # Shift left if cursor is too far right
+        if cursor_x - self._x_offset > visible_width - self._scroll_margin:
+            self._x_offset = cursor_x - visible_width + self._scroll_margin
+        # Shift right if cursor is too far left
+        elif cursor_x - self._x_offset < self._scroll_margin:
+            self._x_offset = max(0, cursor_x - self._scroll_margin)
+
+        self.update()
+
     def event(self, e):
         # Intercept Tab key before default focus handling
         try:
@@ -286,6 +309,9 @@ class ExpressionLineEdit(QLineEdit):
 
             # Default QLineEdit behavior
             super().keyPressEvent(event)
+
+            # Ensure cursor visibility after key press
+            self._ensure_cursor_visible()
             
             # Completer trigger
             if not self._completer or not self._completer.model():
@@ -335,27 +361,6 @@ class ExpressionLineEdit(QLineEdit):
             text = self.text()
             fm = QFontMetrics(self.font())
 
-
-
-            _scroll_margin = 2  # minimum padding between cursor and widget edges
-            _x_offset = 0  # horizontal scroll offset
-            cursor_x = fm.width(text[:self.cursorPosition()])
-            visible_width = rect.width() - 2 * _scroll_margin
-
-            # Shift left if cursor is too far right
-            if cursor_x - _x_offset > visible_width - _scroll_margin:
-                _x_offset = cursor_x - visible_width + _scroll_margin
-            # Shift right if cursor is too far left
-            elif cursor_x - self._x_offset < _scroll_margin:
-                self._x_offset = max(0, cursor_x - _scroll_margin)
-        
-            print(rect, self._x_offset)
-
-
-
-
-
-            
             x = rect.x() + 2 - self._x_offset  # apply scroll offset
             baseline = rect.y() + (rect.height() + fm.ascent() - fm.descent()) // 2 + 1
 
