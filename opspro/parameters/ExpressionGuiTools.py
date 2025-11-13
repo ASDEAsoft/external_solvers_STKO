@@ -2,15 +2,15 @@ import pint
 
 from PySide2.QtWidgets import (
     QApplication, QLineEdit, QCompleter,
-    QStyleOptionFrame, QStyle
+    QStyleOptionFrame
 )
 from PySide2.QtGui import (
     QStandardItemModel, QStandardItem,
     QColor, QFontMetrics,
-    QPainter
+    QPainter, QPalette
 )
 from PySide2.QtCore import (
-    Qt, QRegExp, QEvent
+    Qt, QRegExp, QEvent, QRect
 )
 
 from opspro.parameters.ParameterManager import ParameterManager
@@ -266,13 +266,24 @@ class ExpressionLineEdit(QLineEdit):
             print(f"Error in keyPressEvent: {e}")
 
     def paintEvent(self, event):
-        # Step 1: Let QLineEdit draw normally
+        # Let QLineEdit draw normally
         super().paintEvent(event)
-        painter = QPainter(self)
 
         try:
+            # Custom painting for syntax highlighting
+            painter = QPainter(self)
+            painter.setRenderHint(QPainter.TextAntialiasing, True)
+            painter.setRenderHint(QPainter.Antialiasing, True)
+            painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
+
+            # init style option
             opt = QStyleOptionFrame()
             self.initStyleOption(opt)
+
+            # before loop: get a reliable background brush
+            bg_brush = self.palette().brush(QPalette.Base)
+                
+            # clip to text area
             contents_rect = self.style().subElementRect(self.style().SE_LineEditContents, opt, self)
             painter.setClipRect(contents_rect)
 
@@ -280,7 +291,7 @@ class ExpressionLineEdit(QLineEdit):
             fm = QFontMetrics(self.font())
             x = contents_rect.left() + 2
             y = contents_rect.bottom() - fm.descent() - 1
-
+            
             # get text
             text = self.text()
             if not text:
@@ -300,19 +311,25 @@ class ExpressionLineEdit(QLineEdit):
                 token_end = token_start + token_len
                 # If no selection or token fully outside selection
                 if sel_len == 0 or token_end <= sel_start or token_start >= sel_end:
+                    hadv = fm.horizontalAdvance(token)
                     if color != QColor("black"):
+                        current_rect = QRect(int(x), int(y - fm.ascent()), int(hadv), int(fm.height()))
+                        painter.fillRect(current_rect, bg_brush)
                         painter.setPen(color)
                         painter.drawText(x, y, token)
-                    x += fm.width(token)
+                    x += hadv
                 else:
                     # There is an overlap — split the token visually
                     for i, ch in enumerate(token):
                         idx = token_start + i
                         in_selection = sel_start <= idx < sel_end
+                        hadv = fm.horizontalAdvance(ch)
                         if not in_selection and color != QColor("black"):
+                            current_rect = QRect(int(x), int(y - fm.ascent()), int(hadv), int(fm.height()))
+                            painter.fillRect(current_rect, bg_brush)
                             painter.setPen(color)
                             painter.drawText(x, y, ch)
-                        x += fm.width(ch)
+                        x += hadv
                 text_index += token_len
             
         except Exception as e:
