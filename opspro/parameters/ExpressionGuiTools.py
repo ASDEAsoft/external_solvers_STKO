@@ -2,7 +2,7 @@ import pint
 
 from PySide2.QtWidgets import (
     QApplication, QLineEdit, QCompleter,
-    QStyleOptionFrame
+    QStyleOptionFrame, QStyle
 )
 from PySide2.QtGui import (
     QStandardItemModel, QStandardItem,
@@ -10,7 +10,7 @@ from PySide2.QtGui import (
     QPainter
 )
 from PySide2.QtCore import (
-    Qt, QRegExp, QEvent, QRect, QTimer
+    Qt, QRegExp, QEvent
 )
 
 from opspro.parameters.ParameterManager import ParameterManager
@@ -151,11 +151,7 @@ class ExpressionLineEdit(QLineEdit):
 
         # Make it look like a QLineEdit
         self.setPlaceholderText("Enter expression, e.g. 5[m]")
-        #self.setClearButtonEnabled(True)
-        
-        # to handle the cursor offset for horizontal scrolling
-        self._x_offset = 0
-        self._scroll_margin = 8  # minimum padding between cursor and widget edges
+        self.setClearButtonEnabled(True)
 
         # Attach syntax highlighter
         symbols = ParameterManager.getAllSymbols()
@@ -173,16 +169,9 @@ class ExpressionLineEdit(QLineEdit):
         # Syntax highlighter helper
         self._highlighter = ExpressionHighlighter(symbols)
 
-        # Cursor blinking timer
-        self._cursor_visible = True
-        self._cursor_timer = QTimer(self)
-        self._cursor_timer.setInterval(QApplication.cursorFlashTime() // 2)
-
         # Connections
         self._completer.activated.connect(self._insert_completion)
-        self._cursor_timer.timeout.connect(self._on_cursor_blink)
         self.textChanged.connect(self._evaluate_expression)
-        self.textChanged.connect(self._ensure_cursor_visible)
 
     @property
     def value(self) -> pint.Quantity:
@@ -236,70 +225,6 @@ class ExpressionLineEdit(QLineEdit):
         # Move cursor to the end of inserted completion
         self.setCursorPosition(start + len(completion))
 
-    def _on_cursor_blink(self):
-        if self.hasFocus():
-            self._cursor_visible = not self._cursor_visible
-            self.update()  # trigger repaint
-        else:
-            # When losing focus, keep cursor hidden and stop blinking
-            if self._cursor_visible:
-                self._cursor_visible = False
-                self.update()
-
-    def _ensure_cursor_visible(self):
-        """Adjust _x_offset so the cursor stays inside the visible rect."""
-        text = self.text()
-        fm = QFontMetrics(self.font())
-        rect = self.style().subElementRect(self.style().SE_LineEditContents, QStyleOptionFrame(), self)
-
-        cursor_x = fm.width(text[:self.cursorPosition()])
-        visible_width = rect.width() - 2 * self._scroll_margin
-
-        # Shift left if cursor is too far right
-        if cursor_x - self._x_offset > visible_width - self._scroll_margin:
-            self._x_offset = cursor_x - visible_width + self._scroll_margin
-        # Shift right if cursor is too far left
-        elif cursor_x - self._x_offset < self._scroll_margin:
-            self._x_offset = max(0, cursor_x - self._scroll_margin)
-
-        self.update()
-
-    def event(self, e):
-        # Intercept Tab key before default focus handling
-        try:
-            if (
-                e.type() == QEvent.KeyPress
-                and e.key() == Qt.Key_Tab
-                and self._completer
-                and self._completer.popup()
-                and self._completer.popup().isVisible()
-            ):
-                popup = self._completer.popup()
-                index = popup.currentIndex()
-                if not index.isValid() and self._completer.completionCount() > 0:
-                    # Select first item in the popup
-                    first_index = self._completer.completionModel().index(0, 0)
-                    popup.setCurrentIndex(first_index)
-                self._completer.popup().hide()
-                self._completer.activated.emit(self._completer.currentCompletion())
-                return True  # mark event as handled
-        except Exception as e:
-            print(f"Error in event handling: {e}")
-        # default behavior
-        return super().event(e)
-
-    def focusInEvent(self, event):
-        super().focusInEvent(event)
-        self._cursor_visible = True
-        self._cursor_timer.start()
-        self.update()
-
-    def focusOutEvent(self, event):
-        super().focusOutEvent(event)
-        self._cursor_timer.stop()
-        self._cursor_visible = False
-        self.update()
-
     def keyPressEvent(self, event):
         try:
             # Force single-line behavior
@@ -309,9 +234,6 @@ class ExpressionLineEdit(QLineEdit):
 
             # Default QLineEdit behavior
             super().keyPressEvent(event)
-
-            # Ensure cursor visibility after key press
-            self._ensure_cursor_visible()
             
             # Completer trigger
             if not self._completer or not self._completer.model():
@@ -342,100 +264,88 @@ class ExpressionLineEdit(QLineEdit):
 
         except Exception as e:
             print(f"Error in keyPressEvent: {e}")
-    
-    def paintEvent(self, event):
-        try:
-            painter = QPainter(self)
-            painter.setRenderHint(QPainter.TextAntialiasing)
 
-            # Draw background & frame
+    def paintEvent(self, event):
+        # Step 1: Let QLineEdit draw normally
+        super().paintEvent(event)
+        painter = QPainter(self)
+
+        try:
             opt = QStyleOptionFrame()
             self.initStyleOption(opt)
-            self.style().drawPrimitive(self.style().PE_PanelLineEdit, opt, painter, self)
+            contents_rect = self.style().subElementRect(self.style().SE_LineEditContents, opt, self)
+            painter.setClipRect(contents_rect)
 
-            # Content area
-            rect = self.style().subElementRect(self.style().SE_LineEditContents, opt, self)
-            painter.setClipRect(rect)
-
-            # Text and font metrics
-            text = self.text()
+            # text position
             fm = QFontMetrics(self.font())
+            x = contents_rect.left() + 2
+            y = contents_rect.bottom() - fm.descent() - 1
 
-            x = rect.x() + 2 - self._x_offset  # apply scroll offset
-            baseline = rect.y() + (rect.height() + fm.ascent() - fm.descent()) // 2 + 1
-
-            # Draw cursor
-            if self.hasFocus() and self._cursor_visible:
-                cursor_x = rect.x() + fm.width(text[:self.cursorPosition()]) - self._x_offset + 1
-                painter.setPen(Qt.black)
-                painter.drawLine(cursor_x, rect.y() + 3, cursor_x, rect.bottom() - 3)
-
-            # Placeholder
-            if not text and self.placeholderText():
-                painter.setPen(Qt.gray)
-                painter.drawText(x, baseline, self.placeholderText())
+            # get text
+            text = self.text()
+            if not text:
                 return
 
-            # Get selection range
+            # Selection info
             sel_start = self.selectionStart()
-            sel_length = self.selectionLength()
-            sel_end = sel_start + sel_length
-            has_selection = sel_length > 0
+            sel_len = len(self.selectedText())
+            sel_end = sel_start + sel_len if sel_len > 0 else -1
 
-            # Text highlight segments
+            # highlight
             segments = self._highlighter.highlight(text, has_error=bool(self._error))
-
-            # Track the running character position
-            current_pos = 0
+            text_index = 0
             for token, color in segments:
-                token_start = current_pos
-                token_end = current_pos + len(token)
-                token_width = fm.width(token)
-
-                # Handle selection painting
-                if has_selection and token_end > sel_start and token_start < sel_end:
-                    # compute overlapping portion
-                    overlap_start = max(sel_start, token_start)
-                    overlap_end = min(sel_end, token_end)
-
-                    # Split token into [before, selected, after]
-                    before = text[token_start:overlap_start]
-                    selected = text[overlap_start:overlap_end]
-                    after = text[overlap_end:token_end]
-
-                    # Draw "before" (normal)
-                    if before:
+                token_len = len(token)
+                token_start = text_index
+                token_end = token_start + token_len
+                # If no selection or token fully outside selection
+                if sel_len == 0 or token_end <= sel_start or token_start >= sel_end:
+                    if color != QColor("black"):
                         painter.setPen(color)
-                        painter.drawText(x, baseline, before)
-                        x += fm.width(before)
-
-                    # Draw "selected" background + text
-                    if selected:
-                        sel_w = fm.width(selected)
-                        sel_rect = QRect(x, rect.y(), sel_w, rect.height())
-                        painter.fillRect(sel_rect, self.palette().highlight())
-                        painter.setPen(self.palette().highlightedText().color())
-                        painter.drawText(x, baseline, selected)
-                        x += sel_w
-
-                    # Draw "after" (normal)
-                    if after:
-                        painter.setPen(color)
-                        painter.drawText(x, baseline, after)
-                        x += fm.width(after)
-
+                        painter.drawText(x, y, token)
+                    x += fm.width(token)
                 else:
-                    # no overlap with selection
-                    painter.setPen(color)
-                    painter.drawText(x, baseline, token)
-                    x += token_width
-
-                current_pos = token_end
-
+                    # There is an overlap — split the token visually
+                    for i, ch in enumerate(token):
+                        idx = token_start + i
+                        in_selection = sel_start <= idx < sel_end
+                        if not in_selection and color != QColor("black"):
+                            painter.setPen(color)
+                            painter.drawText(x, y, ch)
+                        x += fm.width(ch)
+                text_index += token_len
+            
         except Exception as e:
             print(f"Error in paintEvent: {e}")
-            # default painting in case of error
-            super().paintEvent(event)
+        
+        finally:
+            painter.end()
+
+    def event(self, e):
+        # Intercept Tab key before default focus handling
+        try:
+            if (
+                e.type() == QEvent.KeyPress
+                and e.key() == Qt.Key_Tab
+                and self._completer
+                and self._completer.popup()
+                and self._completer.popup().isVisible()
+            ):
+                popup = self._completer.popup()
+                index = popup.currentIndex()
+                if not index.isValid() and self._completer.completionCount() > 0:
+                    # Select first item in the popup
+                    first_index = self._completer.completionModel().index(0, 0)
+                    popup.setCurrentIndex(first_index)
+                self._completer.popup().hide()
+                self._completer.activated.emit(self._completer.currentCompletion())
+                return True  # mark event as handled
+        except Exception as e:
+            print(f"Error in event handling: {e}")
+        # default behavior
+        return super().event(e)
+
+
 
 def example_expression_line_edit():
     # get current application
