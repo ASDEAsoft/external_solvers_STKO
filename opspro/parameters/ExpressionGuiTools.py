@@ -170,18 +170,14 @@ class ExpressionLineEdit(QLineEdit):
         # Syntax highlighter helper
         self._highlighter = ExpressionHighlighter(symbols)
 
-        # blinking cursor support
-        self._cursor_visible = False
-        self._blink_timer = QTimer(self)
-        self._blink_timer.setInterval(QApplication.cursorFlashTime() // 2)
+        # Make text transparent to avoid default painting
+        palette = self.palette()
+        palette.setColor(QPalette.Text, QColor(0, 0, 0, 0))
+        self.setPalette(palette)
 
         # Connections
         self._completer.activated.connect(self._insert_completion)
         self.textChanged.connect(self._evaluate_expression)
-        self._blink_timer.timeout.connect(self._toggle_cursor_visible)
-        self.textEdited.connect(self._cursor_blink_restart)
-        self.cursorPositionChanged.connect(self._cursor_blink_restart)
-        self.selectionChanged.connect(self._cursor_blink_restart)
 
     @property
     def value(self) -> pint.Quantity:
@@ -235,36 +231,6 @@ class ExpressionLineEdit(QLineEdit):
         # Move cursor to the end of inserted completion
         self.setCursorPosition(start + len(completion))
 
-    def _toggle_cursor_visible(self):
-        if self.hasFocus():
-            self._cursor_visible = not self._cursor_visible
-            self.update(self.cursorRect())
-        else:
-            self._cursor_visible = True  # reset when not focused
-    
-    def _cursor_blink_stop(self):
-        if self._blink_timer.isActive():
-            self._blink_timer.stop()
-            self._cursor_visible = False
-    
-    def _cursor_blink_start(self):
-        if not self._blink_timer.isActive():
-            self._blink_timer.start()
-            self._cursor_visible = True
-    
-    def _cursor_blink_restart(self):
-        self._cursor_blink_stop()
-        self._cursor_blink_start()
-
-    def focusInEvent(self, event):
-        super().focusInEvent(event)
-        self._cursor_blink_start()
-
-    def focusOutEvent(self, event):
-        super().focusOutEvent(event)
-        self._cursor_blink_stop()
-        self.update()
-
     def keyPressEvent(self, event):
         try:
 
@@ -306,15 +272,6 @@ class ExpressionLineEdit(QLineEdit):
         except Exception as e:
             print(f"Error in keyPressEvent: {e}")
 
-    def _paint_cursor(self, painter: QPainter):
-        if self.hasFocus():
-            cursor_rect = self.cursorRect()
-            painter.setRenderHint(QPainter.Antialiasing, False)
-            painter.setCompositionMode(QPainter.CompositionMode_Multiply)
-            painter.setPen(self.palette().color(QPalette.Text if self._cursor_visible else QPalette.Base))
-            cx = cursor_rect.center().x() + 1
-            painter.drawLine(cx, cursor_rect.top(), cx, cursor_rect.bottom() - 1)
-
     def _paint_highlighted_text(self, painter: QPainter):
         # get text
         text = self.text()
@@ -329,9 +286,6 @@ class ExpressionLineEdit(QLineEdit):
         # init style option
         opt = QStyleOptionFrame()
         self.initStyleOption(opt)
-
-        # before loop: get a reliable background brush
-        bg_brush = self.palette().brush(QPalette.Base)
             
         # clip to text area
         contents_rect = self.style().subElementRect(self.style().SE_LineEditContents, opt, self)
@@ -357,11 +311,8 @@ class ExpressionLineEdit(QLineEdit):
             # If no selection or token fully outside selection
             if sel_len == 0 or token_end <= sel_start or token_start >= sel_end:
                 hadv = fm.horizontalAdvance(token)
-                if color != QColor("black"):
-                    current_rect = QRect(int(x), int(y - fm.ascent()), int(hadv), int(fm.height()))
-                    painter.fillRect(current_rect, bg_brush)
-                    painter.setPen(color)
-                    painter.drawText(x, y, token)
+                painter.setPen(color)
+                painter.drawText(x, y, token)
                 x += hadv
             else:
                 # There is an overlap — split the token visually
@@ -369,9 +320,7 @@ class ExpressionLineEdit(QLineEdit):
                     idx = token_start + i
                     in_selection = sel_start <= idx < sel_end
                     hadv = fm.horizontalAdvance(ch)
-                    if not in_selection and color != QColor("black"):
-                        current_rect = QRect(int(x), int(y - fm.ascent()), int(hadv), int(fm.height()))
-                        painter.fillRect(current_rect, bg_brush)
+                    if not in_selection:
                         painter.setPen(color)
                         painter.drawText(x, y, ch)
                     x += hadv
@@ -382,7 +331,6 @@ class ExpressionLineEdit(QLineEdit):
         painter = QPainter(self)
         try:
             self._paint_highlighted_text(painter)
-            #self._paint_cursor(painter)
         except Exception as e:
             print(f"Error in paintEvent: {e}")
         finally:
