@@ -10,7 +10,8 @@ from PySide2.QtGui import (
     QPainter, QPalette
 )
 from PySide2.QtCore import (
-    Qt, QRegExp, QEvent, QRect
+    Qt, QRegExp, QEvent, QRect,
+    QTimer
 )
 
 from opspro.parameters.ParameterManager import ParameterManager
@@ -149,7 +150,7 @@ class ExpressionLineEdit(QLineEdit):
         self._value: pint.Quantity = pint.Quantity(0)
         self._error: str = ""
 
-        # Make it look like a QLineEdit
+        # initial setup
         self.setPlaceholderText("Enter expression, e.g. 5[m]")
         self.setClearButtonEnabled(True)
 
@@ -169,9 +170,18 @@ class ExpressionLineEdit(QLineEdit):
         # Syntax highlighter helper
         self._highlighter = ExpressionHighlighter(symbols)
 
+        # blinking cursor support
+        self._cursor_visible = False
+        self._blink_timer = QTimer(self)
+        self._blink_timer.setInterval(QApplication.cursorFlashTime() // 2)
+
         # Connections
         self._completer.activated.connect(self._insert_completion)
         self.textChanged.connect(self._evaluate_expression)
+        self._blink_timer.timeout.connect(self._toggle_cursor_visible)
+        self.textEdited.connect(self._cursor_blink_restart)
+        self.cursorPositionChanged.connect(self._cursor_blink_restart)
+        self.selectionChanged.connect(self._cursor_blink_restart)
 
     @property
     def value(self) -> pint.Quantity:
@@ -225,8 +235,39 @@ class ExpressionLineEdit(QLineEdit):
         # Move cursor to the end of inserted completion
         self.setCursorPosition(start + len(completion))
 
+    def _toggle_cursor_visible(self):
+        if self.hasFocus():
+            self._cursor_visible = not self._cursor_visible
+            self.update(self.cursorRect())
+        else:
+            self._cursor_visible = True  # reset when not focused
+    
+    def _cursor_blink_stop(self):
+        if self._blink_timer.isActive():
+            self._blink_timer.stop()
+            self._cursor_visible = False
+    
+    def _cursor_blink_start(self):
+        if not self._blink_timer.isActive():
+            self._blink_timer.start()
+            self._cursor_visible = True
+    
+    def _cursor_blink_restart(self):
+        self._cursor_blink_stop()
+        self._cursor_blink_start()
+
+    def focusInEvent(self, event):
+        super().focusInEvent(event)
+        self._cursor_blink_start()
+
+    def focusOutEvent(self, event):
+        super().focusOutEvent(event)
+        self._cursor_blink_stop()
+        self.update()
+
     def keyPressEvent(self, event):
         try:
+
             # Force single-line behavior
             if event.key() in (Qt.Key_Return, Qt.Key_Enter):
                 event.ignore()
@@ -265,76 +306,85 @@ class ExpressionLineEdit(QLineEdit):
         except Exception as e:
             print(f"Error in keyPressEvent: {e}")
 
-    def paintEvent(self, event):
-        # Let QLineEdit draw normally
-        super().paintEvent(event)
+    def _paint_cursor(self, painter: QPainter):
+        if self.hasFocus():
+            cursor_rect = self.cursorRect()
+            painter.setRenderHint(QPainter.Antialiasing, False)
+            painter.setCompositionMode(QPainter.CompositionMode_Multiply)
+            painter.setPen(self.palette().color(QPalette.Text if self._cursor_visible else QPalette.Base))
+            cx = cursor_rect.center().x() + 1
+            painter.drawLine(cx, cursor_rect.top(), cx, cursor_rect.bottom() - 1)
 
-        try:
-            # Custom painting for syntax highlighting
-            painter = QPainter(self)
-            painter.setRenderHint(QPainter.TextAntialiasing, True)
-            painter.setRenderHint(QPainter.Antialiasing, True)
-            painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
+    def _paint_highlighted_text(self, painter: QPainter):
+        # get text
+        text = self.text()
+        if not text:
+            return
+        
+        # setup painter
+        painter.setRenderHint(QPainter.TextAntialiasing, True)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
 
-            # init style option
-            opt = QStyleOptionFrame()
-            self.initStyleOption(opt)
+        # init style option
+        opt = QStyleOptionFrame()
+        self.initStyleOption(opt)
 
-            # before loop: get a reliable background brush
-            bg_brush = self.palette().brush(QPalette.Base)
-                
-            # clip to text area
-            contents_rect = self.style().subElementRect(self.style().SE_LineEditContents, opt, self)
-            painter.setClipRect(contents_rect)
-
-            # text position
-            fm = QFontMetrics(self.font())
-            x = contents_rect.left() + 2
-            y = contents_rect.bottom() - fm.descent() - 1
+        # before loop: get a reliable background brush
+        bg_brush = self.palette().brush(QPalette.Base)
             
-            # get text
-            text = self.text()
-            if not text:
-                return
+        # clip to text area
+        contents_rect = self.style().subElementRect(self.style().SE_LineEditContents, opt, self)
+        painter.setClipRect(contents_rect)
 
-            # Selection info
-            sel_start = self.selectionStart()
-            sel_len = len(self.selectedText())
-            sel_end = sel_start + sel_len if sel_len > 0 else -1
+        # text position
+        fm = QFontMetrics(self.font())
+        x = contents_rect.left() + 2
+        y = contents_rect.bottom() - fm.descent() - 1
 
-            # highlight
-            segments = self._highlighter.highlight(text, has_error=bool(self._error))
-            text_index = 0
-            for token, color in segments:
-                token_len = len(token)
-                token_start = text_index
-                token_end = token_start + token_len
-                # If no selection or token fully outside selection
-                if sel_len == 0 or token_end <= sel_start or token_start >= sel_end:
-                    hadv = fm.horizontalAdvance(token)
-                    if color != QColor("black"):
+        # Selection info
+        sel_start = self.selectionStart()
+        sel_len = len(self.selectedText())
+        sel_end = sel_start + sel_len if sel_len > 0 else -1
+
+        # highlight
+        segments = self._highlighter.highlight(text, has_error=bool(self._error))
+        text_index = 0
+        for token, color in segments:
+            token_len = len(token)
+            token_start = text_index
+            token_end = token_start + token_len
+            # If no selection or token fully outside selection
+            if sel_len == 0 or token_end <= sel_start or token_start >= sel_end:
+                hadv = fm.horizontalAdvance(token)
+                if color != QColor("black"):
+                    current_rect = QRect(int(x), int(y - fm.ascent()), int(hadv), int(fm.height()))
+                    painter.fillRect(current_rect, bg_brush)
+                    painter.setPen(color)
+                    painter.drawText(x, y, token)
+                x += hadv
+            else:
+                # There is an overlap — split the token visually
+                for i, ch in enumerate(token):
+                    idx = token_start + i
+                    in_selection = sel_start <= idx < sel_end
+                    hadv = fm.horizontalAdvance(ch)
+                    if not in_selection and color != QColor("black"):
                         current_rect = QRect(int(x), int(y - fm.ascent()), int(hadv), int(fm.height()))
                         painter.fillRect(current_rect, bg_brush)
                         painter.setPen(color)
-                        painter.drawText(x, y, token)
+                        painter.drawText(x, y, ch)
                     x += hadv
-                else:
-                    # There is an overlap — split the token visually
-                    for i, ch in enumerate(token):
-                        idx = token_start + i
-                        in_selection = sel_start <= idx < sel_end
-                        hadv = fm.horizontalAdvance(ch)
-                        if not in_selection and color != QColor("black"):
-                            current_rect = QRect(int(x), int(y - fm.ascent()), int(hadv), int(fm.height()))
-                            painter.fillRect(current_rect, bg_brush)
-                            painter.setPen(color)
-                            painter.drawText(x, y, ch)
-                        x += hadv
-                text_index += token_len
-            
+            text_index += token_len
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QPainter(self)
+        try:
+            self._paint_highlighted_text(painter)
+            #self._paint_cursor(painter)
         except Exception as e:
             print(f"Error in paintEvent: {e}")
-        
         finally:
             painter.end()
 
@@ -372,7 +422,12 @@ def example_expression_line_edit():
     dialog = QDialog()
     dialog.setWindowTitle(app.applicationName())
     dialog.setLayout(QVBoxLayout())
-    dialog.layout().addWidget(ExpressionLineEdit())
+    w = ExpressionLineEdit()
+    # add a 20 point font to the widget
+    #font = w.font()
+    #font.setPointSize(20)
+    #w.setFont(font)
+    dialog.layout().addWidget(w)
     dialog.layout().addWidget(QLineEdit())
     # add a spacer
     from PySide2.QtWidgets import QSpacerItem, QSizePolicy
