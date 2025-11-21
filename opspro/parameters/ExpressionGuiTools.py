@@ -10,8 +10,7 @@ from PySide2.QtGui import (
     QPainter, QPalette
 )
 from PySide2.QtCore import (
-    Qt, QRegExp, QEvent, QRect,
-    QTimer
+    Qt, QRegExp, QEvent
 )
 
 from opspro.parameters.ParameterManager import ParameterManager
@@ -371,10 +370,6 @@ def example_expression_line_edit():
     dialog.setWindowTitle(app.applicationName())
     dialog.setLayout(QVBoxLayout())
     w = ExpressionLineEdit()
-    # add a 20 point font to the widget
-    #font = w.font()
-    #font.setPointSize(20)
-    #w.setFont(font)
     dialog.layout().addWidget(w)
     dialog.layout().addWidget(QLineEdit())
     # add a spacer
