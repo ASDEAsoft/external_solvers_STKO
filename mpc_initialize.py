@@ -88,9 +88,10 @@ def initialize_on_new_document():
 		# initialize it. (a consistency check will be performed)
 		ext_solvers = _get_external_solvers_names()
 		if len(ext_solvers) > 0 :
-			if not active_solver_name in ext_solvers:
+			try:
+				active_ext_solver_module = importlib.import_module(active_solver_name + '.mpc_solver_initialize')
+			except ModuleNotFoundError:
 				raise Exception(f'Cannot find the specified external solver "{active_solver_name}" among the available ones: {ext_solvers}')
-			active_ext_solver_module = importlib.import_module(active_solver_name + '.mpc_solver_initialize')
 			active_ext_solver_module.initialize()
 		else:
 			print('Warning: no external solver available')
