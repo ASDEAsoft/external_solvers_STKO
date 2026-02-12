@@ -16,16 +16,8 @@ class PMLInfo:
         self.dimension : int = 0 # 2 or 3
         self.elements : List[MpcElement] = []
         self.bbox : FxBndBox = FxBndBox()
-        self.properties : List[int] = []
+        self.ele_map : Dict[int, int] = {} # map element id to PML ele type
         self._process()
-        
-    def _find_properties(self):
-        print('PML: Finding element properties ...')
-        doc = App.caeDocument()
-        for _, prop in doc.elementProperties.items():
-            if prop.XObject.name == 'PML':
-                self.properties.append(prop.id)
-        print('PML: Found {} element properties.'.format(len(self.properties)))
 
     def _find_elements(self):
         print('PML: Finding elements ...')
@@ -95,7 +87,6 @@ class PMLInfo:
         print('PML: Found {} elements in {}D.'.format(len(self.elements), self.dimension))
         
     def _process(self):
-        self._find_properties()
         self._find_elements()
     
 
@@ -200,3 +191,4 @@ def makeXObjectMetaData():
     
 def writeTcl(pinfo):
     _setup_once()
+     
