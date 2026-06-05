@@ -66,7 +66,7 @@ def write_tcl_int(out_dir):
 	monitor_runner = '{}/LaunchSTKOMonitor'.format(pinfo.out_dir)
 	if sys.platform == 'win32':
 		monitor_runner += '.bat'
-	elif sys.platform == 'linux':
+	elif sys.platform == 'linux' or sys.platform == 'darwin':
 		monitor_runner += '.sh'
 	if os.path.exists(monitor_runner) and os.path.isfile(monitor_runner):
 		os.remove(monitor_runner)

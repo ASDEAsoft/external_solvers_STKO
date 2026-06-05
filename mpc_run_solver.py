@@ -55,6 +55,27 @@ def run(wdir, command, script, np, do_pause):
 		finally:
 			os.chdir(current_wdir)
 	
+	elif platform.system() == 'Darwin':
+		# macOS: same idea as Linux, but there is no xterm by default. Launch a
+		# ".command" runner in Terminal.app (the macOS equivalent of the visible
+		# solver-progress window). The runner cd's into wdir first so the (relative)
+		# script path and the monitor launcher resolve, then invokes the solver.
+		runner_name = '{}.command'.format(runner_base_name)
+		fname = os.path.join(wdir, runner_name)
+		with open(fname, 'w+') as f:
+			f.write('#!/bin/sh\n')
+			f.write('cd "{}"\n'.format(wdir))
+			f.write('"{}" "{}" {}\n'.format(command, script, np))
+			if do_pause:
+				f.write('read -p "Press [Enter] key to continue..." dummy\n')
+		os.chmod(fname, 0o777)
+		# `open -a Terminal <file>` opens a new Terminal window running the .command.
+		subprocess.Popen(['open', '-a', 'Terminal', fname])
+		# launch monitor (its own Qt window; no terminal needed) — same as Linux
+		monitor_name = '{}.sh'.format(monitor_base_name)
+		if monitor_name in getfiles(wdir):
+			subprocess.Popen(['sh', './{}'.format(monitor_name)], cwd=wdir)
+
 	else:
 		# todo: implement for other platforms
 		error()
