@@ -1,6 +1,6 @@
-## @package TesterND
-# The TesterND packages contains the tester and widget classes that are used
-# to run a test of a ND material
+## @package TesterGeotechnical
+# The TesterGeotechnical packages contains the tester and widget classes that are used
+# to run a test of a Geotechnical material
 
 import subprocess
 import os
@@ -59,24 +59,20 @@ from PySide2.QtWidgets import (
 	)
 import shiboken2
 
-class NDTraits:
+class GeotechnicalTraits:
 	# types
 	D3 = 0
 	D2_PSTRESS = 1
 	D2_PSTRAIN = 2
 	# attributes
-	TEMPLATE = ["template_3d.tcl", "template_2d.tcl", "template_2d.tcl"]
-	TYPE = ["", "PlaneStress2D", "PlaneStrain2D"]
+	TEMPLATE = ["template_geotechnical_drained.tcl"]
+	TEST_TYPES = ["Drained Triaxial"]
 	STRAIN_SIZE = [6, 3, 3]
 	STRESS_COMPONENTS = ([
 		['\u03C3\u2081\u2081', '\u03C3\u2082\u2082', '\u03C3\u2083\u2083', '\u03C3\u2081\u2082', '\u03C3\u2082\u2083', '\u03C3\u2081\u2083'],
-		['\u03C3\u2081\u2081', '\u03C3\u2082\u2082', '\u03C3\u2081\u2082'],
-		['\u03C3\u2081\u2081', '\u03C3\u2082\u2082', '\u03C3\u2081\u2082']
 		])
 	STRAIN_COMPONENTS = ([
 		['\u03B5\u2081\u2081', '\u03B5\u2082\u2082', '\u03B5\u2083\u2083', '\u03B3\u2081\u2082', '\u03B3\u2082\u2083', '\u03B3\u2081\u2083'],
-		['\u03B5\u2081\u2081', '\u03B5\u2082\u2082', '\u03B3\u2081\u2082'],
-		['\u03B5\u2081\u2081', '\u03B5\u2082\u2082', '\u03B3\u2081\u2082']
 		])
 	# get 2D or 3D tensor components from output tokens
 	def getTensorFromTokens(ssize, tokens):
@@ -98,25 +94,25 @@ class NDTraits:
 		else:
 			raise Exception('Wrong number of strain size ({})'.format(ssize))
 
-## The TesterND class class perform an async call to a new process
+## The TesterGeotechnical class class perform an async call to a new process
 # that runs opensees and communicate with it in real time. we don't want the gui to freeze,
 # so we do this operation in a worker thread
-class TesterND(QObject):
+class TesterGeotechnical(QObject):
 	
 	# a signal to notify that we have
 	# the new components of strain and stress
 	testProcessUpdated = Signal(float, object, object)
 	
-	# create a new TesterND passing as arguments 
+	# create a new TesterGeotechnical passing as arguments 
 	# a map (MpcPropertyCollection) of physical properties
 	# (or just one if the material does not depend on other materials), the component data,
 	# and a list of strains.
 	# in case of multiple materials the last one will be tested.
 	def __init__(self, type, materials, lch, cdata, time_history, strain_history, parent = None):
 		# base class initialization
-		super(TesterND, self).__init__(parent)
+		super(TesterGeotechnical, self).__init__(parent)
 		# self initialization
-		self.type = type # NDTraits types (0, 1, 3)
+		self.type = type # GeotechnicalTraits types (0, 1, 3)
 		self.materials = materials
 		self.lch = lch
 		self.cdata = cdata
@@ -143,7 +139,7 @@ class TesterND(QObject):
 			raise Exception("No external solver kit provided")
 		
 		# temporary directory
-		temp_dir = '{}{}TesterND'.format(MpcStandardPaths.getStandardPathDataLocation(), os.sep)
+		temp_dir = '{}{}TesterGeotechnical'.format(MpcStandardPaths.getStandardPathDataLocation(), os.sep)
 		temp_dir = temp_dir.replace('\\','/')
 		if not os.path.exists(temp_dir):
 			os.makedirs(temp_dir)
@@ -167,7 +163,7 @@ class TesterND(QObject):
 		pinfo.next_physicalProperties_id = App.caeDocument().physicalProperties.getlastkey(0)+1
 		
 		# get template
-		template_filename = '{}/{}'.format(os.path.dirname(__file__), NDTraits.TEMPLATE[self.type])
+		template_filename = '{}/{}'.format(os.path.dirname(__file__), GeotechnicalTraits.TEMPLATE[self.type])
 		template_file = open(template_filename, 'r')
 		template = template_file.read()
 		template_file.close()
@@ -191,7 +187,7 @@ class TesterND(QObject):
 		buffer_flags1 = StringIO()
 		buffer_flags2 = StringIO()
 		buffer_imps = StringIO()
-		for i in range(NDTraits.STRAIN_SIZE[self.type]):
+		for i in range(GeotechnicalTraits.STRAIN_SIZE[self.type]):
 			ic = self.cdata[i]
 			buffer_flags1.write('{} '.format(ic.control))
 			buffer_flags2.write('{} '.format(ic.type))
@@ -206,7 +202,7 @@ class TesterND(QObject):
 			'__materials__', buffer_materials.getvalue()).replace(
 			'__lch__', QLocale().toString(self.lch)).replace(
 			'__tag__', str(test_prop_id)).replace(
-			'__2Dtype__', NDTraits.TYPE[self.type]).replace( 
+			'__2Dtype__', GeotechnicalTraits.TYPE[self.type]).replace( 
 			'__time__', buffer_time.getvalue()).replace(
 			'__strain__', buffer_strain.getvalue()).replace(
 			'__flags1__', buffer_flags1.getvalue()).replace(
@@ -249,7 +245,7 @@ class TesterND(QObject):
 		print('args: {}'.format(temp_script_file_rel))
 		
 		# strain size
-		ssize = NDTraits.STRAIN_SIZE[self.type]
+		ssize = GeotechnicalTraits.STRAIN_SIZE[self.type]
 		
 		# launch opensees and communicate
 		for item in tu.executeAsync([opensees_cmd, temp_script_file_rel], temp_dir):
@@ -260,8 +256,8 @@ class TesterND(QObject):
 				# get tokens for strain and stress
 				tokens_strain = tokens[1].split()
 				tokens_stress = tokens[2].split()
-				istrain = NDTraits.getTensorFromTokens(ssize, tokens_strain)
-				istress = NDTraits.getTensorFromTokens(ssize, tokens_stress)
+				istrain = GeotechnicalTraits.getTensorFromTokens(ssize, tokens_strain)
+				istress = GeotechnicalTraits.getTensorFromTokens(ssize, tokens_stress)
 				self.strain.append(istrain)
 				self.stress.append(istress)
 				# notify that tester data has been updated: emit signal
@@ -273,7 +269,7 @@ class TesterND(QObject):
 		os.remove(temp_script_file)
 		os.remove(temp_output_file)
 
-## The TesterNDWidget class is a widget used to run material simulation for uniaxialMaterial models.
+## The TesterGeotechnicalWidget class is a widget used to run material simulation for uniaxialMaterial models.
 # 
 # This custom widget will be added in the right side of the STKO XObject Editor, next to the standard
 # XObject Attribute Tree Editor. It consists of:
@@ -287,7 +283,7 @@ class TesterND(QObject):
 # @note Some widgets used here comes from STKO Python API, they are C++ classes exposed to Python via Boost.Python
 # while all other widgets are part of PySide2 and thus exposed via Shiboken2. Since they are incompatible, we use
 # the shiboken2.wrapInstance method on the raw C++ pointer.
-class TesterNDWidget(QWidget):
+class TesterGeotechnicalWidget(QWidget):
 	
 	## a custom radio button with an int data (0 to 5)
 	class IndexedRadioButton(QRadioButton):
@@ -298,13 +294,14 @@ class TesterNDWidget(QWidget):
 	## constructor
 	def __init__(self, type, editor, xobj, parent = None, embed : bool = True):
 		# base class initialization
-		super(TesterNDWidget, self).__init__(parent)
+		super(TesterGeotechnicalWidget, self).__init__(parent)
 		
 		# nD type
 		self.type = type
-		ssize = NDTraits.STRAIN_SIZE[self.type]
-		STRAIN_COMPONENTS = NDTraits.STRAIN_COMPONENTS[self.type]
-		STRESS_COMPONENTS = NDTraits.STRESS_COMPONENTS[self.type]
+		ssize = GeotechnicalTraits.STRAIN_SIZE[self.type]
+		TEST_TYPES = GeotechnicalTraits.TEST_TYPES
+		STRAIN_COMPONENTS = GeotechnicalTraits.STRAIN_COMPONENTS[self.type]
+		STRESS_COMPONENTS = GeotechnicalTraits.STRESS_COMPONENTS[self.type]
 		
 		# layout
 		self.setLayout(QVBoxLayout())
@@ -314,7 +311,7 @@ class TesterNDWidget(QWidget):
 		locale = QLocale()
 		
 		# description label
-		self.descr_label = gu.makeTesterLabel()
+		self.descr_label = gu.makeGeotechTesterLabel()
 		self.layout().addWidget(self.descr_label)
 		
 		# separator
@@ -332,7 +329,7 @@ class TesterNDWidget(QWidget):
 		self.strain_hist_label_num_cyc = QLabel("Cycles")
 		self.strain_hist_label_div = QLabel("Divisions")
 		self.strain_hist_label_target_strain = QLabel("Target strain")
-		self.strain_hist_label_component = QLabel("Tested component")
+		self.strain_hist_label_component = QLabel("Test type")
 		self.strain_hist_label_scale_positive = QLabel("Pos scale")
 		self.strain_hist_label_scale_negative = QLabel("Neg scale")
 		self.strain_hist_layout.addWidget(self.strain_hist_label_type, 0, 0, 1, 1)
@@ -360,10 +357,10 @@ class TesterNDWidget(QWidget):
 		self.strain_hist_target_strain.setValidator(QDoubleValidator())
 		self.strain_hist_layout.addWidget(self.strain_hist_target_strain, 3, 1, 1, 1)
 		# strain history controlled component combobox
-		self.strain_hist_component_cbox = QComboBox()
-		for item in STRAIN_COMPONENTS:
-			self.strain_hist_component_cbox.addItem(item)
-		self.strain_hist_layout.addWidget(self.strain_hist_component_cbox, 4, 1, 1, 1)
+		self.test_type_component_cbox = QComboBox()
+		for item in TEST_TYPES:
+			self.test_type_component_cbox.addItem(item)
+		self.strain_hist_layout.addWidget(self.test_type_component_cbox, 4, 1, 1, 1)
 		# strain history positive scale double spin box
 		self.strain_hist_scale_positive_spinbox = QDoubleSpinBox()
 		self.strain_hist_scale_positive_spinbox.setRange(-1000, 1000)
@@ -428,8 +425,8 @@ class TesterNDWidget(QWidget):
 		self.components_values = []
 		self.components_test = []
 		for i in range(ssize):
-			ice = TesterNDWidget.IndexedRadioButton(STRAIN_COMPONENTS[i], i)
-			ics = TesterNDWidget.IndexedRadioButton(STRESS_COMPONENTS[i], i)
+			ice = TesterGeotechnicalWidget.IndexedRadioButton(STRAIN_COMPONENTS[i], i)
+			ics = TesterGeotechnicalWidget.IndexedRadioButton(STRESS_COMPONENTS[i], i)
 			ics.setChecked(True)
 			icv = QLineEdit()
 			icv.setValidator(QDoubleValidator())
@@ -549,7 +546,7 @@ class TesterNDWidget(QWidget):
 		ds = a.string
 		try:
 			jds = json.loads(ds)
-			jds = jds['TesterND']
+			jds = jds['TesterGeotechnical']
 			class_name = jds['name']
 			self.strain_hist_cbox.setCurrentText(class_name)
 			# call this to set up default values (no connections here)
@@ -561,7 +558,7 @@ class TesterNDWidget(QWidget):
 			target_strain = jds.get('target_strain', QLocale().toDouble(self.strain_hist_target_strain.text())[0])
 			self.strain_hist_target_strain.setText(QLocale().toString(target_strain))
 			tested_comp = jds.get('tested_comp', 0) 
-			self.strain_hist_component_cbox.setCurrentIndex(tested_comp)
+			self.test_type_component_cbox.setCurrentIndex(tested_comp)
 			scale_pos = jds.get('scale_positive',self.strain_hist_scale_positive_spinbox.value())
 			self.strain_hist_scale_positive_spinbox.setValue(scale_pos)
 			scale_neg = jds.get('scale_negative',self.strain_hist_scale_negative_spinbox.value())
@@ -594,7 +591,7 @@ class TesterNDWidget(QWidget):
 		self.strain_hist_scale_negative_spinbox.valueChanged.connect(self.onStrainHistoryParamChanged)
 		self.run_button.clicked.connect(self.onTestClicked)
 		self.data_button.clicked.connect(self.onDataClicked)
-		self.strain_hist_component_cbox.currentIndexChanged.connect(self.onComponentsUpdated)
+		self.test_type_component_cbox.currentIndexChanged.connect(self.onComponentsUpdated)
 	
 	def onEditFinished(self):
 		#################################################### $JSON
@@ -613,13 +610,13 @@ class TesterNDWidget(QWidget):
 		num_cycles = self.strain_hist_num_cyc_spinbox.value()
 		num_divisions = self.strain_hist_divisions_spinbox.value()
 		target_strain = locale.toDouble(self.strain_hist_target_strain.text())[0]
-		tested_comp = self.strain_hist_component_cbox.currentIndex()
+		tested_comp = self.test_type_component_cbox.currentIndex()
 		scale_pos = self.strain_hist_scale_positive_spinbox.value()
 		scale_neg = self.strain_hist_scale_negative_spinbox.value()
 		ctypes = [ i.isChecked() for i in self.components_strain ]
 		cvalues = [ locale.toDouble(i.text())[0] for i in self.components_values ]
 		lch = locale.toDouble(self.lch_value.text())[0]
-		jds['TesterND'] = {
+		jds['TesterGeotechnical'] = {
 			'name': class_name,
 			'num_cycl': num_cycles,
 			'num_div': num_divisions,
@@ -636,9 +633,9 @@ class TesterNDWidget(QWidget):
 	
 	def onComponentsUpdated(self):
 		# the tested component id (0 to 5)
-		tested_id = self.strain_hist_component_cbox.currentIndex()
+		tested_id = 10 #self.test_type_component_cbox.currentIndex()
 		# switch tested labels on/off
-		for i in range(NDTraits.STRAIN_SIZE[self.type]):
+		for i in range(GeotechnicalTraits.STRAIN_SIZE[self.type]):
 			if i == tested_id:
 				self.components_test[i].setVisible(True)
 				self.components_groups[i].setEnabled(False)
@@ -706,7 +703,7 @@ class TesterNDWidget(QWidget):
 	@Slot(float, float, float)
 	def onTestProcessUpdated(self, iperc, istrain, istress):
 		# strain size
-		ssize = NDTraits.STRAIN_SIZE[self.type]
+		ssize = GeotechnicalTraits.STRAIN_SIZE[self.type]
 		# update strain/stress data
 		for i in range(ssize):
 			self.chart_data[i].x.append(istrain[i])
@@ -731,7 +728,7 @@ class TesterNDWidget(QWidget):
 	def onTestClicked(self):
 		
 		# strain size
-		ssize = NDTraits.STRAIN_SIZE[self.type]
+		ssize = GeotechnicalTraits.STRAIN_SIZE[self.type]
 		
 		# reset chart data
 		for i in range(ssize):
@@ -795,13 +792,13 @@ class TesterNDWidget(QWidget):
 				tdata = tu.TensorComponentData()
 				if not self.components_strain[i].isChecked():
 					tdata.control = tu.TensorComponentData.STRESS #default = STRAIN
-				if i == self.strain_hist_component_cbox.currentIndex():
+				if i == self.test_type_component_cbox.currentIndex():
 					tdata.type = tu.TensorComponentData.TESTED #default = FIXED
 				tdata.value = locale.toDouble(self.components_values[i].text())[0]
 				cdata.append(tdata)
 			
 			# now we can run the tester
-			self.tester = TesterND(self.type, materials, locale.toDouble(self.lch_value.text())[0], cdata, self.strain_hist_time, self.strain_hist.strain)
+			self.tester = TesterGeotechnical(self.type, materials, locale.toDouble(self.lch_value.text())[0], cdata, self.strain_hist_time, self.strain_hist.strain)
 			self.tester.testProcessUpdated.connect(self.onTestProcessUpdated)
 			parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
 			parent_dialog.setEnabled(False)
@@ -820,7 +817,7 @@ class TesterNDWidget(QWidget):
 	
 	def onDataClicked(self):
 		try:
-			ssize = NDTraits.STRAIN_SIZE[self.type]
+			ssize = GeotechnicalTraits.STRAIN_SIZE[self.type]
 			n = len(self.chart_data[0].x)
 			dialog = QDialog()
 			dialog.setLayout(QVBoxLayout())
