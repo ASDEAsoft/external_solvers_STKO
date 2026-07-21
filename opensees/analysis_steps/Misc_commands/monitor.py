@@ -601,7 +601,7 @@ def initializeMonitor(pinfo):
 	if os.path.exists(dest_dir):
 		shutil.rmtree(dest_dir)
 	shutil.copytree(source_dir, dest_dir)
-	if sys.platform == 'linux':
+	if sys.platform == 'linux' or sys.platform == 'darwin':
 		os.chmod(dest_dir + os.sep + 'STKOMonitor.sh', 0o777)
 	
 	# outout file
@@ -611,7 +611,7 @@ def initializeMonitor(pinfo):
 	if sys.platform == 'win32':
 		with open('{}/LaunchSTKOMonitor.bat'.format(pinfo.out_dir), 'w+', encoding='utf-8') as fmon:
 			fmon.write('.\\STKOMonitor\\STKOMonitor.bat')
-	elif sys.platform == 'linux':
+	elif sys.platform == 'linux' or sys.platform == 'darwin':
 		launcher_name = '{}/LaunchSTKOMonitor.sh'.format(pinfo.out_dir)
 		with open(launcher_name, 'w+', encoding='utf-8') as fmon:
 			fmon.write('./STKOMonitor/STKOMonitor.sh')
