@@ -144,6 +144,30 @@ def _make_hl_concrete_base(xobj, E, ft, fc, fc0, fcr, ec, Gt, Gc, auto_reg, lch_
 	# Done
 	return (Te, Ts, Td, Ce, Cs, Cd, auto_reg, lch_ref)
 
+def _make_hl_masonry_base(xobj, E, ft, fc, fc0, fcr, ec, Gt, Gc, auto_reg, lch_ref, pscalet, pscalec):
+	Te, Ts, Td, Ce, Cs, Cd, auto_reg, lch_ref = _make_hl_concrete_base(xobj, E, ft, fc, fc0, fcr, ec, Gt, Gc, auto_reg, lch_ref, pscalet, pscalec)
+	# modify tensile law for masonry
+	for i in range(1, len(Ts)):
+		total_strain = Te[i]
+		stress = Ts[i]
+		elastic_strain = stress/E
+		plastic_strain = total_strain - elastic_strain
+		mod_plastic_strain = plastic_strain*pscalet
+		effective_stress = (total_strain-mod_plastic_strain)*E
+		Td[i] = 1.0-stress/effective_stress # compute damage
+	# modify compressive law for masonry
+	for i in range(1, len(Cs)):
+		total_strain = Ce[i]
+		stress = Cs[i]
+		elastic_strain = stress/E
+		plastic_strain = total_strain - elastic_strain
+		mod_plastic_strain = plastic_strain*pscalec
+		effective_stress = (total_strain-mod_plastic_strain)*E
+		Cd[i] = 1.0-stress/effective_stress # compute damage
+	# done
+	return (Te, Ts, Td, Ce, Cs, Cd, auto_reg, lch_ref)
+
+
 def _make_hl_concrete_1p(xobj):
 	# minimal parameters
 	E = _geta(xobj, 'E').quantityScalar.value
@@ -244,6 +268,30 @@ def _make_hl_user(xobj):
 		_geta(xobj, 'autoRegularization').boolean,
 		_geta(xobj, 'LchRef').quantityScalar.value)
 
+def _make_hl_masonry_6p(xobj):
+	# minimal parameters
+	E = _geta(xobj, 'E').quantityScalar.value
+	fc = _geta(xobj, 'fcp').quantityScalar.value
+	# other compressive parameters
+	fc0 = fc/2.0
+	fcr = fc/10.0
+	ec = 2.0*fc/E
+	# tensile strength
+	ft = _geta(xobj, 'ft').quantityScalar.value
+	# fracture energies
+	Gt = _geta(xobj, 'Gt').quantityScalar.value
+	Gc = _geta(xobj, 'Gc').quantityScalar.value
+	# characteristic length
+	auto_reg = True
+	lch_ref = _get_lch_ref(E,ft,Gt,fc,ec,Gc)
+	gt = Gt/lch_ref
+	gc = Gc/lch_ref
+	# pscale factors
+	pscalet = _geta(xobj, 'PScale Tension').real
+	pscalec = _geta(xobj, 'PScale Compression').real
+	# base concrete
+	return _make_hl_masonry_base(xobj, E, ft, fc, fc0, fcr, ec, gt, gc, auto_reg, lch_ref, pscalet, pscalec)
+
 def _check_hl_concrete_1p(xobj):
 	for i in _globals.hl_t_targets:
 		xobj.getAttribute(i).visible = False
@@ -297,6 +345,9 @@ def _check_hl_user(xobj):
 	xobj.getAttribute('PScale Tension').visible = False
 	xobj.getAttribute('PScale Compression').visible = False
 
+def _check_hl_masonry_6p(xobj):
+	_check_hl_concrete_6p(xobj)
+
 class _globals:
 	hl_t_targets = ('Te','Ts','Td')
 	hl_c_targets = ('Ce','Cs','Cd')
@@ -305,6 +356,7 @@ class _globals:
 		"Concrete (4P)" : (_make_hl_concrete_4p, _check_hl_concrete_4p),
 		"Concrete (6P)" : (_make_hl_concrete_6p, _check_hl_concrete_6p),
 		"Concrete (9P)" : (_make_hl_concrete_9p, _check_hl_concrete_9p),
+		"Masonry (6P)" : (_make_hl_masonry_6p, _check_hl_masonry_6p),
 		"User-Defined"  : (_make_hl_user, _check_hl_user),
 		}
 	L_units = {
