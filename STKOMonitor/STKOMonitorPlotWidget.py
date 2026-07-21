@@ -30,10 +30,29 @@ params = {
 	'ytick.labelsize':'x-small'
 	}
 
+def plotDisplayName(fname):
+	'''
+	the name shown in the combo box / tree for the plot file fname.
+	plot files are searched RECURSIVELY, so the monitored folder may hold one
+	sub-folder per run (e.g. the runs of an NLTH ground motion suite, all
+	plotted by a single monitor). Every run writes the same monitor names, so
+	the base name alone would label them all identically: qualify it with the
+	sub-folder it comes from. Plots in the monitored folder itself (the usual
+	single-run case) keep their plain base name.
+	'''
+	name = os.path.splitext(os.path.basename(fname))[0]
+	try:
+		sub = os.path.dirname(os.path.relpath(fname, os.getcwd()))
+	except ValueError:
+		sub = '' # not on the same drive (windows): cannot relate them
+	if sub and not sub.startswith('..'):
+		name = '{}/{}'.format(sub.replace(os.sep, '/'), name)
+	return name
+
 class STKOPlotDataItem:
 	def __init__(self, fname):
 		self.file_name = fname
-		self.display_name = os.path.splitext(os.path.basename(fname))[0]
+		self.display_name = plotDisplayName(fname)
 		self.x = []
 		self.y = []
 		self.xmax = 0.0
@@ -42,7 +61,7 @@ class STKOPlotDataItem:
 		self.ymin = 0.0
 		self.xLabel = ''
 		self.yLabel = ''
-		
+
 	def load(self):
 		'''
 		loads the contents of file self.file_name.

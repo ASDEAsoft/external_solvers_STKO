@@ -36,10 +36,28 @@ class TableWidget(QTableWidget):
 			exdata = traceback.format_exc().splitlines()
 
 
+def plotDisplayName(fname):
+	'''
+	the name shown in the combo box for the plot file fname.
+	same as STKOMonitorPlotWidget.plotDisplayName (this module keeps its own
+	copy of STKOPlotDataItem too): plot files are searched RECURSIVELY, so the
+	monitored folder may hold one sub-folder per run - qualify the base name
+	with the sub-folder, or every run would be labelled identically.
+	'''
+	name = os.path.splitext(os.path.basename(fname))[0]
+	try:
+		sub = os.path.dirname(os.path.relpath(fname, os.getcwd()))
+	except ValueError:
+		sub = '' # not on the same drive (windows): cannot relate them
+	if sub and not sub.startswith('..'):
+		name = '{}/{}'.format(sub.replace(os.sep, '/'), name)
+	return name
+
+
 class STKOPlotDataItem:
 	def __init__(self, fname):
 		self.file_name = fname
-		self.display_name = os.path.splitext(os.path.basename(fname))[0]
+		self.display_name = plotDisplayName(fname)
 		self.x = []
 		self.y = []
 		self.xmax = 0.0

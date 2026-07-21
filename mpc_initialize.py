@@ -96,6 +96,24 @@ def initialize_on_new_document():
 		else:
 			print('Warning: no external solver available')
 
+def create_cae_component(group_id, class_name):
+	"""Reconstruction factory for plugin CAE components, called by the C++
+	document serializer (MpcCaeDocumentSerializerPluginCaeComponent::materialize)
+	while opening a document.
+
+	The concrete component classes live in the active external solver, so this
+	dispatches to the solver's mpc_solver_initialize.create_cae_component,
+	mirroring how initialize_on_new_document reaches the solver. Returns a fresh
+	MpcPluginCaeComponent instance of the requested class; the C++ caller sets
+	its id/name and restores the saved state onto it.
+	"""
+	doc = PyMpc.App.caeDocument()
+	active_solver_name = doc.solverName
+	if active_solver_name == '':
+		raise Exception('create_cae_component: no active external solver for this document')
+	active_ext_solver_module = importlib.import_module(active_solver_name + '.mpc_solver_initialize')
+	return active_ext_solver_module.create_cae_component(group_id, class_name)
+
 def initialize_on_set_external_solver(new_active_solver):
 	"""Function called by the application to initialize the document-wise
 	 python interface when the active external solver changes.
