@@ -1,8 +1,11 @@
-# SYNC NOTE: the aggregation code below is duplicated at
-#   <opspro>/Analysis/nlth_edp_aggregate.py
-# (the canonical copy, used by the batch AggregateNlthSuite command inside the
-# encrypted opspro package). This copy ships on disk so the PyMpc-free viewer
-# bundle can import it flatly. Keep the code identical in both — edit both, or none.
+# SYNC: duplicated file — the two copies must stay byte-identical.
+#   canonical : <opspro>/Analysis/nlth_edp_aggregate.py
+#               (encrypted into opspro.bin; used by the batch AggregateNlthSuite command)
+#   generated : <STKO>/external_solvers/STKOEdpMonitor/nlth_edp_aggregate.py
+#               (on disk; imported flatly by the PyMpc-free EDP-monitor viewer,
+#                which cannot read the encrypted copy)
+# Edit ONLY the canonical file, then run STKO/build_utils/install_opspro.py to
+# regenerate the on-disk copy. Do not hand-edit the generated copy.
 """
 nlth_edp_aggregate.py
 ---------------------
