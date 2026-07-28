@@ -1,0 +1,352 @@
+/* ============================================================================
+   STKO light theme  —  shared Qt Style Sheet for the standalone STKO apps
+   (EDP Monitor, and any future one).
+
+   Self-contained ON PURPOSE: no url(:/...) Qt-resource references, so it works
+   in a plain QApplication OUTSIDE the STKO C++ process (which is where the
+   global ':/Style/stko_style_default' stylesheet lives and cannot reach us).
+   It is meant to be applied on top of the Fusion base style (see stko_theme.py)
+   so combo arrows, checkbox ticks and dock buttons are drawn from the palette
+   without shipping any PNG.
+
+   Palette  (source: STKO/StkoStyle.cpp COL_* + Resources/stko_style_default.css)
+   ---------------------------------------------------------------------------
+     accent            #1883D7   COL_HIGHLIGHT  — selection / focus / checked
+     accent-light      #54C9FF   scrollbar handle (enabled)
+     accent-pressed    #0F6BB5   darker shade, pressed
+     text-on-accent    #FFFFFF
+     bg                #FFFFFF   COL_MID        — main background
+     bg-panel          #F5F5F5   soft panel / header / status bar
+     bg-hover          #F0F0F0   COL_TB_HIGHLIGHT
+     bg-checked        #DCDCDC   COL_TB_ON
+     border            #DCDCDC   COL_BORDERS
+     border-strong     #C8C8C8   hover / focus border
+     grid              #E4E4E4   table grid lines
+     text              #1E1E1E   COL_TEXT (near-black)
+     text-disabled     #A0A0A0
+   ---------------------------------------------------------------------------
+   To extend: add a new "----- Widget -----" section below, reusing the hexes
+   above so the whole app stays one coherent light system.
+   ============================================================================ */
+
+/* ----- Base ---------------------------------------------------------------- */
+QWidget {
+    background-color: #FFFFFF;
+    color: #1E1E1E;
+    selection-background-color: #1883D7;
+    selection-color: #FFFFFF;
+}
+QWidget:disabled {
+    color: #A0A0A0;
+}
+QToolTip {
+    background-color: #F5F5F5;
+    color: #1E1E1E;
+    border: 1px solid #C8C8C8;
+    padding: 3px 5px;
+}
+
+/* ----- Main window / dock splitters ---------------------------------------- */
+QMainWindow::separator {
+    background-color: #FFFFFF;
+    width: 3px;
+    height: 3px;
+    margin: 1px;
+}
+QMainWindow::separator:hover {
+    background-color: #54C9FF;
+}
+
+/* ----- Dock widgets (the panels the monitor is built from) ----------------- */
+/* STKO "Work Tree" look: ONE light frame around the whole dock, with a title
+   that blends into the body (same background, no separator line under it).
+   Rather than QDockWidget{border} (unreliable while docked), the frame is drawn
+   as two halves that meet seamlessly: the title borders top/left/right, the body
+   (the content widget, objectName "stkoDockBody") borders left/right/bottom. */
+QDockWidget {
+    titlebar-close-icon: none;      /* keep Fusion's default vector buttons  */
+    titlebar-normal-icon: none;     /* (no :/... resources in this process)  */
+    font-weight: bold;
+}
+QDockWidget::title {
+    background-color: #FFFFFF;      /* == body: no header/body contrast      */
+    color: #1E1E1E;
+    padding: 5px 8px;
+    border: 1px solid #DCDCDC;      /* frame: top + sides of the dock        */
+    border-bottom: none;            /* ...open at the title/body junction    */
+    text-align: left;
+}
+QWidget#stkoDockBody {              /* the dock content holder (see .py)      */
+    background-color: #FFFFFF;
+    border: 1px solid #DCDCDC;      /* frame: sides + bottom of the dock     */
+    border-top: none;               /* ...open at the title/body junction    */
+}
+QDockWidget::close-button,
+QDockWidget::float-button {
+    background: transparent;
+    border: none;
+    padding: 1px;
+}
+QDockWidget::close-button:hover,
+QDockWidget::float-button:hover {
+    background-color: #F0F0F0;
+    border-radius: 2px;
+}
+
+/* ----- Toolbars (control bar + matplotlib navigation) ---------------------- */
+QToolBar {
+    background-color: #FFFFFF;
+    border: none;
+    spacing: 2px;
+    padding: 1px;
+}
+QToolBar::separator {
+    background-color: #DCDCDC;
+    width: 0px;
+    border-left: 1px solid #DCDCDC;
+    margin: 1px 2px;
+}
+QToolButton {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    padding: 2px;
+}
+QToolButton:hover {
+    background-color: #F0F0F0;
+    border-color: #DCDCDC;
+}
+QToolButton:pressed,
+QToolButton:checked {
+    background-color: #DCDCDC;
+    border-color: #C8C8C8;
+}
+
+/* ----- Labels -------------------------------------------------------------- */
+QLabel {
+    background: transparent;
+    color: #1E1E1E;
+}
+
+/* ----- Push buttons -------------------------------------------------------- */
+QPushButton {
+    background-color: #F5F5F5;
+    color: #1E1E1E;
+    border: 1px solid #DCDCDC;
+    border-radius: 3px;
+    padding: 4px 12px;
+    min-height: 18px;
+}
+QPushButton:hover {
+    background-color: #F0F0F0;
+    border-color: #C8C8C8;
+}
+QPushButton:pressed {
+    background-color: #DCDCDC;
+}
+QPushButton:focus,
+QPushButton:default {
+    border-color: #1883D7;
+}
+QPushButton:disabled {
+    color: #A0A0A0;
+    background-color: #F5F5F5;
+    border-color: #E4E4E4;
+}
+
+/* ----- Line edits ---------------------------------------------------------- */
+QLineEdit {
+    background-color: #FFFFFF;
+    color: #1E1E1E;
+    border: 1px solid #DCDCDC;
+    border-radius: 3px;
+    padding: 3px 5px;
+    selection-background-color: #1883D7;
+    selection-color: #FFFFFF;
+}
+QLineEdit:hover {
+    border-color: #C8C8C8;
+}
+QLineEdit:focus {
+    border-color: #1883D7;
+}
+QLineEdit:disabled {
+    background-color: #F5F5F5;
+    color: #A0A0A0;
+}
+
+/* ----- Combo boxes --------------------------------------------------------- */
+/* Only the frame is styled. Styling ::drop-down / ::down-arrow makes Qt stop
+   drawing Fusion's vector arrow (we ship no PNG) and leaves the button blank,
+   so those sub-controls are deliberately left to Fusion. No min-height either:
+   it forced the combo 2px taller than the sibling QLineEdit — the natural
+   padded height (24px) already matches it. The popup is forced to drop BELOW
+   the combo by _ComboPopupBelowStyle in stko_theme.py (Fusion otherwise pops
+   it centred over the widget, overlapping it). */
+QComboBox {
+    background-color: #FFFFFF;
+    color: #1E1E1E;
+    border: 1px solid #DCDCDC;
+    border-radius: 3px;
+    padding: 3px 5px;
+}
+QComboBox:hover {
+    border-color: #C8C8C8;
+}
+QComboBox:focus,
+QComboBox:on {
+    border-color: #1883D7;
+}
+QComboBox QAbstractItemView {   /* the popup list */
+    background-color: #FFFFFF;
+    color: #1E1E1E;
+    border: 1px solid #C8C8C8;
+    selection-background-color: #1883D7;
+    selection-color: #FFFFFF;
+    outline: none;
+}
+
+/* ----- Check boxes (tick drawn by Fusion from the palette) ----------------- */
+QCheckBox {
+    background: transparent;
+    color: #1E1E1E;
+    spacing: 6px;
+}
+QCheckBox::indicator {
+    width: 13px;
+    height: 13px;
+    border: 1px solid #C8C8C8;
+    background-color: #FFFFFF;
+    border-radius: 2px;
+}
+QCheckBox::indicator:hover {
+    border-color: #1883D7;
+}
+QCheckBox::indicator:checked {
+    background-color: #54C9FF;
+    border-color: #1883D7;
+}
+QCheckBox::indicator:checked:hover {
+    background-color: #1883D7;
+    border-color: #0F6BB5;
+}
+QCheckBox:disabled {
+    color: #A0A0A0;
+}
+
+/* ----- Tables (the levels panel) ------------------------------------------- */
+QTableWidget,
+QTableView {
+    background-color: #FFFFFF;
+    alternate-background-color: #F5F5F5;
+    color: #1E1E1E;
+    gridline-color: #E4E4E4;
+    border: 1px solid #DCDCDC;
+    selection-background-color: #1883D7;
+    selection-color: #FFFFFF;
+    outline: none;
+}
+QHeaderView::section {
+    background-color: #F5F5F5;
+    color: #1E1E1E;
+    padding: 4px 6px;
+    border: none;
+    border-right: 1px solid #DCDCDC;
+    border-bottom: 1px solid #DCDCDC;
+    font-weight: bold;
+}
+QHeaderView::section:last {
+    border-right: none;
+}
+QTableCornerButton::section {
+    background-color: #F5F5F5;
+    border: none;
+    border-bottom: 1px solid #DCDCDC;
+    border-right: 1px solid #DCDCDC;
+}
+
+/* ----- Progress bar (suite progress in the status bar) --------------------- */
+QProgressBar {
+    background-color: #F5F5F5;
+    color: #1E1E1E;
+    border: 1px solid #DCDCDC;
+    border-radius: 3px;
+    text-align: center;
+}
+QProgressBar::chunk {
+    background-color: #54C9FF;
+    border-radius: 2px;
+}
+
+/* ----- Status bar ---------------------------------------------------------- */
+QStatusBar {
+    background-color: #FFFFFF;
+    color: #1E1E1E;
+    border-top: none;
+}
+QStatusBar QWidget {
+    background-color: #FFFFFF;
+}
+QStatusBar::item {
+    background-color: #FFFFFF;
+    border: none;
+}
+QStatusBar QLabel {
+    background: transparent;
+}
+
+/* ----- Menus (context menus, e.g. matplotlib canvas) ----------------------- */
+QMenu {
+    background-color: #FFFFFF;
+    color: #1E1E1E;
+    border: 1px solid #C8C8C8;
+}
+QMenu::item {
+    padding: 4px 22px 4px 20px;
+    background: transparent;
+}
+QMenu::item:selected {
+    background-color: #1883D7;
+    color: #FFFFFF;
+}
+QMenu::separator {
+    height: 1px;
+    background-color: #DCDCDC;
+    margin: 4px 6px;
+}
+
+/* ----- Scroll bars (thin, accent handle — mirrors stko_style_default.css) --- */
+QScrollBar:vertical {
+    background: transparent;
+    width: 10px;
+    margin: 0px;
+}
+QScrollBar:horizontal {
+    background: transparent;
+    height: 10px;
+    margin: 0px;
+}
+QScrollBar::handle:vertical {
+    background-color: #54C9FF;
+    min-height: 24px;
+    border-radius: 4px;
+    margin: 2px;
+}
+QScrollBar::handle:horizontal {
+    background-color: #54C9FF;
+    min-width: 24px;
+    border-radius: 4px;
+    margin: 2px;
+}
+QScrollBar::handle:hover {
+    background-color: #1883D7;
+}
+QScrollBar::add-line, QScrollBar::sub-line {
+    border: none;
+    background: none;
+    width: 0px;
+    height: 0px;
+}
+QScrollBar::add-page, QScrollBar::sub-page {
+    background: transparent;
+}
