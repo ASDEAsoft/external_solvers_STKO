@@ -4,7 +4,6 @@ from mpc_utils_html import *
 import opensees.utils.tcl_input as tclin
 from opensees.conditions.Constraints.mp.ASDEmbeddedNodeElementUtils import ASDEmbeddedNodeElementUtils as ebu
 import numpy as np
-import math
 
 def _geta(xobj, name):
 	a = xobj.getAttribute(name)
@@ -120,8 +119,16 @@ def getNodalSpatialDim(xobj, xobj_phys_prop):
 	return [(ndm,ndf) for i in range(10)]
 
 class _globals:
-	Tedges = ((0,1), (1,2), (2,1))
+	# the 3 edges of the retained triangle.
+	# Note: this used to be ((0,1), (1,2), (2,1)): the third entry was the
+	# REVERSE of the second (same segment, so the same point-line distance),
+	# hence edge 2-0 was never a candidate in _get_contact_vec_2d and a slave
+	# node closest to it got the normal of another edge.
+	Tedges = ((0,1), (1,2), (2,0))
 	Vz = Math.vec3(0.0, 0.0, 1.0)
+	# above this BARYCENTRIC error (dimensionless, see lct3) the slave node
+	# does not project inside its master element and no contact is written
+	BaryTol = 1.0e-3
 def _get_contact_vec_2d(Cnode, retained_nodes):
 	dmin = 1.0e20
 	j = -1
@@ -238,12 +245,17 @@ def writeTcl(pinfo):
 				'The source element (master geometry) of the Link element {} '
 				'has a wrong family type ({})'.format(elem.id, family)
 				))
-		# skip slave nodes not in contact
-		source_area = source_elem.area()
-		if family == MpcElementGeometryFamilyType.Triangle:
-			source_area *= 2.0
-		lch = math.sqrt(source_area)
-		if contact_distance > 1.0e-3*lch:
+		# skip slave nodes not in contact.
+		# contact_distance is the barycentric error returned by lct3 (the
+		# largest negative shape function of the retained simplex, 0 when the
+		# point is inside): a DIMENSIONLESS measure, exactly what the
+		# 'tolerance' of ASDEmbeddedNodeElement compares. It used to be
+		# compared against 1.0e-3*sqrt(source_area), i.e. against a LENGTH, so
+		# the effective tolerance scaled with the element size: ~1e-5 on a fine
+		# mesh (nodes barely outside, or on the boundary between the 2
+		# sub-triangles of a quad, were dropped) and >1 on very large elements
+		# (nothing was ever dropped).
+		if contact_distance > _globals.BaryTol:
 			return
 		# we need to create an auxiliary node for the embed constraint.
 		if d2:
