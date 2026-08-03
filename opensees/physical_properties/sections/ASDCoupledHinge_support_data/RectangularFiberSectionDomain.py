@@ -1051,7 +1051,7 @@ class ContainerDomainGraphs(QWidget):
 			# self.canvas3d.ax.plot(np.append(domain[:,i,0],domain[0,i,0]),np.append(domain[:,i,1],domain[0,i,1]),np.append(domain[:,i,2],domain[0,i,2]),'-r',linewidth=0.5)
 			self.canvas3d.ax.plot(domain[:,i,0],domain[:,i,1],domain[:,i,2],'-k',linewidth=0.5)
 		for i in range(np.size(domain,0)):
-			self.canvas3d.ax.plot(np.append(domain[i,:,0],domain[i,0,0]),np.append(domain[i,:,1],domain[i,0,1]),np.append(domain[i,:,2],domain[i,0,2]),'-ok',linewidth=0.5,markerSize=0.5)
+			self.canvas3d.ax.plot(np.append(domain[i,:,0],domain[i,0,0]),np.append(domain[i,:,1],domain[i,0,1]),np.append(domain[i,:,2],domain[i,0,2]),'-ok',linewidth=0.5,markersize=0.5)
 		
 		# N-My plot
 		for i in range(np.size(domain,1)):
@@ -1201,11 +1201,11 @@ class ContainerDomainGraphs(QWidget):
 				# if _verbose: print('Found point: ',Px,Py)
 				if dmin <= tol**2:
 					if _verbose: print('Taken')
-					hl_detail = self.canvasMyMz.ax.plot(Px,Py,'or',markerSize=4)
+					hl_detail = self.canvasMyMz.ax.plot(Px,Py,'or',markersize=4)
 					self.canvasMyMz.draw()
 				else:
 					# if _verbose: print('Discarded')
-					# self.canvasMyMz.ax.plot(Px,Py,'oy',markerSize=4)
+					# self.canvasMyMz.ax.plot(Px,Py,'oy',markersize=4)
 					# self.canvasMyMz.draw()
 					Px, Py = None, None
 				if Px is not None and Py is not None:
