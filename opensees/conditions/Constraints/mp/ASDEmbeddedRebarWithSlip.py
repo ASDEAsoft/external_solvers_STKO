@@ -8,7 +8,103 @@ from opensees.conditions.Constraints.mp.ASDEmbeddedNodeElementUtils import ASDEm
 import os
 
 def _err(id, msg):
+	# `id` is normally pinfo.condition.id. Pass the CONDITION ITSELF to get its
+	# name in as well ("Condition 'Bond A' [12]"): the name is what the user
+	# reads in the tree, the id is what the rest of the log uses.
+	if not isinstance(id, (int, float, str)):
+		name = getattr(id, 'name', '') or ''
+		cid = getattr(id, 'id', '?')
+		id = "'{}' [{}]".format(name, cid) if name else cid
 	return 'Error in "ASDEmbeddedRebarWithSlip" at "Condition {}":\n{}'.format(id, msg)
+# The slip axis of a node is the SUM of the unit tangents of the segments
+# meeting there, so two segments pointing opposite ways add up to nothing.
+# Refuse below this fraction of the number of segments: for two of them
+# |sum| = 2*cos(theta/2), so 1e-3 means "opposite to within 0.11 degrees". No
+# real bend is that sharp; two SUPERIMPOSED edges always are.
+_AXIS_MIN = 1.0e-3
+
+# Twin of opspro's Solver/ir/slip.py (_geom_of / _vertex_of_node / _node_where
+# / _segments_of / _axis_problem). The two generators cannot share code -- this
+# one is an external_solvers plugin -- so the wording is kept identical on
+# purpose: it is the same problem in the same model.
+def _geom_of(geom_id, geom_name):
+	return ("geometry {} '{}'".format(geom_id, geom_name) if geom_name
+		else "geometry {}".format(geom_id))
+
+def _vertex_of_node(doc, geom_ids, node_id):
+	# MpcMeshOfGeometry.vertices is a list of NODES, one per geometry vertex and
+	# in the same order, so this is an exact lookup and not a proximity guess.
+	# Only ever called to build a diagnosis.
+	for gid in geom_ids:
+		try:
+			verts = doc.mesh.getMeshedGeometry(gid).vertices
+		except Exception:
+			continue
+		try:
+			for vid, node in enumerate(verts):
+				if int(node.id) == node_id:
+					return (gid, vid)
+		except Exception:
+			continue
+	return None
+
+def _node_where(doc, node_id, srcs):
+	# the mesh id for the log, the VERTEX for the user, who cannot select a node
+	# in the pre-processor but can select the vertex it came from
+	names = {}
+	for gid, gname, sid, eid in srcs:
+		if gid not in names:
+			names[gid] = gname
+	hit = _vertex_of_node(doc, list(names.keys()), node_id)
+	if hit is not None:
+		return 'mesh node {} (vertex {} of {})'.format(
+			node_id, hit[1], _geom_of(hit[0], names.get(hit[0], '')))
+	if srcs:
+		return 'mesh node {} (an interior node of edge {} of {})'.format(
+			node_id, srcs[0][2], _geom_of(srcs[0][0], srcs[0][1]))
+	return 'mesh node {}'.format(node_id)
+
+def _segments_of(srcs):
+	parts = ['edge {} of {} (element {})'.format(sid, _geom_of(gid, gname), eid)
+		for gid, gname, sid, eid in srcs]
+	if len(parts) > 1:
+		return ', '.join(parts[:-1]) + ' and ' + parts[-1]
+	return parts[0] if parts else '?'
+
+def _axis_problem(doc, inter, node_id, slave_data):
+	srcs = slave_data[5]
+	if slave_data[4] < 2:
+		# nothing to cancel against: the ONE tangent is itself unusable, which
+		# means a degenerate (zero-length) edge element -- there the jacobian has
+		# no direction and MpcLocalAxesTools hands back a FIXED matrix whose first
+		# column has nothing to do with the bar.
+		return ('Interaction "{}" [{}]: no slip axis at {} - its only rebar '
+			'segment ({}) has no usable direction, which means a zero-length or '
+			'otherwise degenerate edge element. Re-mesh the bar.'.format(
+				inter.name, inter.id, _node_where(doc, node_id, srcs),
+				_segments_of(srcs)))
+	if len(set((s[0], s[2]) for s in srcs)) == 1:
+		cause = ('That edge FOLDS BACK on itself there: split the bar at the '
+			'fold, or draw the bend with a radius.')
+	else:
+		cause = ('Two SUPERIMPOSED edges cover the same span (one bar drawn '
+			'twice, or a lap): head-to-tail they read as a chain, so their '
+			'tangents are ADDED and annihilate.\nDelete the duplicate, or leave '
+			'only one of the two among the interaction slaves.')
+	return ('Interaction "{}" [{}]: no slip axis at {} - its {} rebar segments '
+		'have OPPOSITE tangents and cancel out ({}).\n{}'.format(
+			inter.name, inter.id, _node_where(doc, node_id, srcs),
+			slave_data[4], _segments_of(srcs), cause))
+
+def _branching_problem(doc, inter, node_id, slave_data):
+	return ('Interaction "{}" [{}]: no slip axis at {} - it is shared by {} '
+		'rebar segments ({}), and a branching wire cannot be oriented.\nThis '
+		'condition cannot be applied on complex wires (a wire where a vertex is '
+		'shared by more than 2 edges): do not share the vertex where two bars '
+		'cross.'.format(inter.name, inter.id,
+			_node_where(doc, node_id, slave_data[5]), slave_data[4],
+			_segments_of(slave_data[5])))
+
 def _geta(xobj, name):
 	a = xobj.getAttribute(name)
 	if a is None:
@@ -182,12 +278,18 @@ def writeTcl_mpConstraints(pinfo):
 			# make sure the slave geometry is an edge
 			if slave_item.subshapeType != MpcSubshapeType.Edge:
 				raise Exception(_err(pinfo.condition.id, 
-					'Slave geometries in Interaction "{}" [{}] should be only edges.\nFound Invalid slave: Geometry: {} - Subshape: {} {}'.format(
+					'Slave geometries in Interaction "{}" [{}] ({}) should be only edges.\nFound Invalid slave: Geometry: {} - Subshape: {} {}'.format(
 						inter.name, inter.id, inter.type, slave_item.geometry.id, slave_item.subshapeId, slave_item.subshapeType)
 						))
 			# get meshed geometry and domain
 			mog = doc.mesh.getMeshedGeometry(slave_item.geometry.id)
 			domain = mog.edges[slave_item.subshapeId]
+			# the sub-shape these segments came from, kept ONLY so that a refusal
+			# can name it: a node knows its elements, but nothing walks back from
+			# an element to the edge of the geometry the user drew
+			geom_id = slave_item.geometry.id
+			geom_name = getattr(slave_item.geometry, 'name', '') or ''
+			sub_id = slave_item.subshapeId
 			for elem in domain.elements:
 				orientation = elem.orientation.computeOrientation()
 				Vx = Math.vec3(orientation[0,0], orientation[1,0], orientation[2,0])
@@ -196,8 +298,8 @@ def writeTcl_mpConstraints(pinfo):
 				for node, length in zip(elem.nodes, lump_factors):
 					slave_data = slave_node_map.get(node.id, None)
 					if slave_data is None:
-						#             Vx                      Vy                      L    local_id (1 for first ele-node, 2 for second), counter (< 2!)
-						slave_data = [Math.vec3(0.0,0.0,0.0), Math.vec3(0.0,0.0,0.0), 0.0, 0, 0]
+						#             Vx                      Vy                      L    local_id (1 for first ele-node, 2 for second), counter (< 2!), srcs (up to 3 (geom id, geom name, subshape id, element id): only to NAME a refusal)
+						slave_data = [Math.vec3(0.0,0.0,0.0), Math.vec3(0.0,0.0,0.0), 0.0, 0, 0, []]
 						slave_node_map[node.id] = slave_data
 					if slave_data[3] == local_id:
 						slave_data[0] -= Vx
@@ -206,15 +308,23 @@ def writeTcl_mpConstraints(pinfo):
 					slave_data[2] += length
 					slave_data[3] = local_id
 					slave_data[4] += 1 # increase counter
+					if len(slave_data[5]) < 3: # enough to NAME the problem, no more
+						slave_data[5].append((geom_id, geom_name, sub_id, elem.id))
 					if slave_data[4] > 2:
-						raise Exception(_err(pinfo.condition.id, 'This condition cannot be applied on complex wires (i.e. a wire where a vertex is shared by more than 2 edges)'))
+						raise Exception(_err(pinfo.condition, _branching_problem(doc, inter, node.id, slave_data)))
 					local_id += 1
 		# normalize tangent vectors and compute Vy vectors
 		for slave_id, slave_data in slave_node_map.items():
 			Vx = slave_data[0]
+			# Measure BEFORE normalizing, and against a TOLERANCE. Both matter:
+			# Math.vec3.normalize() is Eigen's, so on a null vector it divides by
+			# zero and hands back NaN, and `NaN == 0.0` is False -- the check below
+			# used to be unreachable and the NaN went into the .tcl instead. And a
+			# near-null sum normalizes into a perfectly plausible unit vector, so
+			# an arbitrary slip axis would pass in silence.
+			if Vx.norm() <= _AXIS_MIN * max(slave_data[4], 1):
+				raise Exception(_err(pinfo.condition, _axis_problem(doc, inter, slave_id, slave_data)))
 			Vx.normalize()
-			if Vx.norm() == 0.0:
-				raise Exception(_err(pinfo.condition.id, 'Found misaligned edges (this should never happen). Please contact STKO team.'))
 			if abs(Vx[2]) > 0.99:
 				temp = Math.vec3(1.0, 0.0, 0.0)
 			else:
