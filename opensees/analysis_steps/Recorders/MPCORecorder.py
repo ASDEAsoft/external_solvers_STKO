@@ -48,6 +48,9 @@ def makeXObjectMetaData():
 	at_unbalancedForceIncludingInertia = mka_nr('unbalancedForceIncludingInertia')
 	at_unbalancedMomentIncludingInertia = mka_nr('unbalancedMomentIncludingInertia')
 	at_pressure = mka_nr('pressure')
+	at_bondSlip = mka(MpcAttributeType.Boolean, 'bondSlip', 'Nodal results', 'The bond slip [L] of the embedded rebars, on the rebar node. Written only where an embedded element carries a bond-slip law, and not written at all if the model has none.')
+	at_bondStress = mka(MpcAttributeType.Boolean, 'bondStress', 'Nodal results', 'The bond stress [F/L^2] of the embedded rebars (the raw tau of the law), on the rebar node. Written only where an embedded element carries a bond-slip law, and not written at all if the model has none.')
+	at_bondForce = mka(MpcAttributeType.Boolean, 'bondForce', 'Nodal results', 'The bond force [F] of the embedded rebars (tau times the bond area), on the rebar node. Written only where an embedded element carries a bond-slip law, and not written at all if the model has none.')
 	at_modesOfVibration = mka_nr('modesOfVibration')
 	at_modesOfVibrationRotational = mka_nr('modesOfVibrationRotational')
 	
@@ -136,6 +139,9 @@ def makeXObjectMetaData():
 	xom.addAttribute(at_unbalancedForceIncludingInertia)
 	xom.addAttribute(at_unbalancedMomentIncludingInertia)
 	xom.addAttribute(at_pressure)
+	xom.addAttribute(at_bondSlip)
+	xom.addAttribute(at_bondStress)
+	xom.addAttribute(at_bondForce)
 	xom.addAttribute(at_modesOfVibration)
 	xom.addAttribute(at_modesOfVibrationRotational)
 	
@@ -278,6 +284,12 @@ def writeTcl(pinfo):
 		sopt += ' "unbalancedMomentIncludingInertia"'
 	if geta('pressure').boolean:
 		sopt += ' "pressure"'
+	if geta('bondSlip').boolean:
+		sopt += ' "bondSlip"'
+	if geta('bondStress').boolean:
+		sopt += ' "bondStress"'
+	if geta('bondForce').boolean:
+		sopt += ' "bondForce"'
 	if geta('modesOfVibration').boolean:
 		sopt += ' "modesOfVibration"'
 	if geta('modesOfVibrationRotational').boolean:
