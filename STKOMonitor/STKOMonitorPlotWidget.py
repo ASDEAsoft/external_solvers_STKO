@@ -10,6 +10,7 @@ from PySide2 import QtGui
 import os
 from STKODoubleItemDelegate import *
 
+from stko_theme import apply_mpl_theme, curve_lightness, plot_colors
 import matplotlib
 # Make sure that we are using QT5
 matplotlib.use('Qt5Agg')
@@ -369,7 +370,7 @@ class MyMplCanvas(FigureCanvas):
 		plt.rcParams.update(params)
 		# we want just 1 subplot
 		self.subplot = fig.add_subplot(111)
-		self.subplot.grid(linestyle=':')
+		self._apply_theme()
 		self.subplot.plot()
 		# data (map plot names to plots)
 		self.keymap = {}
@@ -379,23 +380,33 @@ class MyMplCanvas(FigureCanvas):
 		self.setParent(parent)
 		FigureCanvas.updateGeometry(self)
 	
+	def _apply_theme(self):
+		"""Paint the canvas in the active theme. Called on build and after
+		every clear(), which resets the axes' own colours with its contents.
+		"""
+		self.subplot.grid(linestyle=':', color=plot_colors()['grid'])
+		apply_mpl_theme(self.figure, self.subplot)
+
 	def prepare(self, keys, force=False):
 		import random
 		import colorsys
 		if list(self.keymap.keys()) != keys or force:
 			self.subplot.clear()
-			self.subplot.grid(linestyle=':')
+			self._apply_theme()
 			self.keymap.clear()
 			random.seed(self.seed)
 			for key in keys:
 				# random colors from 0 to 1
 				h = random.gauss(0.653, 0.25)
-				c1 = colorsys.hls_to_rgb(h, 0.45, 0.6)
-				c2 = colorsys.hls_to_rgb(h, 0.65, 0.5)
+				# lightness from the theme: a hue tuned for white is unreadable
+				# on the dark canvas, and its muted companion has to move
+				# towards the canvas rather than always lighter.
+				c1 = colorsys.hls_to_rgb(h, curve_lightness(), 0.6)
+				c2 = colorsys.hls_to_rgb(h, curve_lightness(muted=True), 0.5)
 				# 1 plot and 1 background for each key
 				bg_plot = self.subplot.plot([],[], color=c2, linestyle='--', linewidth=1.0)[0]
 				plot = self.subplot.plot([],[], color=c1, linestyle='-', linewidth=1.5)[0]
-				tip = self.subplot.plot([],[], 'o', markersize=6, markerfacecolor=(1,0,0,0.8), markeredgewidth=1, markeredgecolor=c1)[0]
+				tip = self.subplot.plot([],[], 'o', markersize=6, markerfacecolor=plot_colors()['accent'], markeredgewidth=1, markeredgecolor=c1)[0]
 				# map it
 				self.keymap[key] = (plot, bg_plot, tip)
 			self.subplot.plot()

@@ -5,8 +5,13 @@ def run():
 	from PySide2.QtCore import QLocale
 	from PySide2.QtWidgets import QApplication
 	from STKOMonitorWindow import STKOMonitorWindow
+	from stko_theme import apply_theme
 	# Create the Qt Application
 	app = QApplication(sys.argv)
+	# Light or dark, from the STKO_THEME variable STKO sets before
+	# launching us. This window runs in its own process, so it has to
+	# theme itself -- nothing of STKO's own styling can reach it.
+	apply_theme(app)
 	# Create the english QLocale
 	def_locale = QLocale(QLocale.English, QLocale.AnyCountry)
 	def_locale.setNumberOptions(QLocale.OmitGroupSeparator | QLocale.RejectGroupSeparator)

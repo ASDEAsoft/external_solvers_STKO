@@ -18,7 +18,7 @@ def run():
     from STKOEdpMonitorWindow import STKOEdpMonitorWindow
     from stko_theme import apply_theme
     app = QApplication(sys.argv)
-    apply_theme(app)                     # STKO light theme (stko_light.css)
+    apply_theme(app)                     # light or dark, from STKO_THEME
     def_locale = QLocale(QLocale.English, QLocale.AnyCountry)
     def_locale.setNumberOptions(
         QLocale.OmitGroupSeparator | QLocale.RejectGroupSeparator)

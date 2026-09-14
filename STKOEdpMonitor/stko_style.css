@@ -1,60 +1,64 @@
 /* ============================================================================
-   STKO light theme  —  shared Qt Style Sheet for the standalone STKO apps
-   (EDP Monitor, and any future one).
+   STKO theme  --  shared Qt Style Sheet for the standalone STKO apps
+   (STKOMonitor, STKO EDP Monitor, and any future one).
 
-   Self-contained ON PURPOSE: no url(:/...) Qt-resource references, so it works
-   in a plain QApplication OUTSIDE the STKO C++ process (which is where the
-   global ':/Style/stko_style_default' stylesheet lives and cannot reach us).
-   It is meant to be applied on top of the Fusion base style (see stko_theme.py)
-   so combo arrows, checkbox ticks and dock buttons are drawn from the palette
-   without shipping any PNG.
+   ONE sheet, both themes. It states no colour of its own: every colour is an
+   @token, replaced with the active theme's value by stko_theme.py before the
+   sheet is applied. The token values come from stko_theme_tokens.json, which is
+   generated from the application's own AsTheme (As/AsWidgets/AsTheme.cpp) by
+   STKO/build_utils/export_theme_tokens.py -- so these windows and STKO itself
+   cannot drift apart, which is what a second, hand-kept palette would do.
 
-   Palette  (source: STKO/StkoStyle.cpp COL_* + Resources/stko_style_default.css)
-   ---------------------------------------------------------------------------
-     accent            #1883D7   COL_HIGHLIGHT  — selection / focus / checked
-     accent-light      #54C9FF   scrollbar handle (enabled)
-     accent-pressed    #0F6BB5   darker shade, pressed
-     text-on-accent    #FFFFFF
-     bg                #FFFFFF   COL_MID        — main background
-     bg-panel          #F5F5F5   soft panel / header / status bar
-     bg-hover          #F0F0F0   COL_TB_HIGHLIGHT
-     bg-checked        #DCDCDC   COL_TB_ON
-     border            #DCDCDC   COL_BORDERS
-     border-strong     #C8C8C8   hover / focus border
-     grid              #E4E4E4   table grid lines
-     text              #1E1E1E   COL_TEXT (near-black)
-     text-disabled     #A0A0A0
-   ---------------------------------------------------------------------------
-   To extend: add a new "----- Widget -----" section below, reusing the hexes
-   above so the whole app stays one coherent light system.
+   Which theme is active arrives in the STKO_THEME environment variable, set by
+   StkoApplication and inherited through the launcher .bat/.sh.
+
+   Self-contained ON PURPOSE: no url(:/...) Qt-resource references, because a
+   resource compiled into the STKO executable does not exist in this process.
+   It is applied on top of the Fusion base style (see stko_theme.py) so combo
+   arrows, checkbox ticks and dock buttons are drawn from the palette without
+   shipping any PNG.
+
+   THIS IS THE MASTER COPY, in external_solvers/_theme/. The per-app copies are
+   written by export_theme_tokens.py -- edit this one, then re-run it.
+
+   The tokens, by role:
+     @highlight @highlightLight @highlightPressed  the accent, idle, pressed
+     @windowBg          window body, dock title, toolbar, status bar
+     @baseBg            editable / list / popup surfaces
+     @altBaseBg         alternating rows, soft panels
+     @selectedText      text drawn ON the accent
+     @textColor @disabledText @hintText @errorText @warningText
+     @borders @bordersStrong   surface edge / interactive control outline
+     @tbHover @tbOn     hover and checked states
+     @chartBg @chartAxis @chartGrid   plot surfaces (matplotlib reads these too)
    ============================================================================ */
 
 /* ----- Base ---------------------------------------------------------------- */
 QWidget {
-    background-color: #FFFFFF;
-    color: #1E1E1E;
-    selection-background-color: #1883D7;
-    selection-color: #FFFFFF;
+    background-color: @windowBg;
+    color: @textColor;
+    selection-background-color: @highlight;
+    selection-color: @selectedText;
 }
 QWidget:disabled {
-    color: #A0A0A0;
+    color: @disabledText;
 }
 QToolTip {
-    background-color: #F5F5F5;
-    color: #1E1E1E;
-    border: 1px solid #C8C8C8;
+    background-color: @altBaseBg;
+    color: @textColor;
+    border: 1px solid @bordersStrong;
     padding: 3px 5px;
 }
 
 /* ----- Main window / dock splitters ---------------------------------------- */
 QMainWindow::separator {
-    background-color: #FFFFFF;
+    background-color: @windowBg;
     width: 3px;
     height: 3px;
     margin: 1px;
 }
 QMainWindow::separator:hover {
-    background-color: #54C9FF;
+    background-color: @highlightLight;
 }
 
 /* ----- Dock widgets (the panels the monitor is built from) ----------------- */
@@ -69,16 +73,16 @@ QDockWidget {
     font-weight: bold;
 }
 QDockWidget::title {
-    background-color: #FFFFFF;      /* == body: no header/body contrast      */
-    color: #1E1E1E;
+    background-color: @windowBg;      /* == body: no header/body contrast      */
+    color: @textColor;
     padding: 5px 8px;
-    border: 1px solid #DCDCDC;      /* frame: top + sides of the dock        */
+    border: 1px solid @borders;      /* frame: top + sides of the dock        */
     border-bottom: none;            /* ...open at the title/body junction    */
     text-align: left;
 }
 QWidget#stkoDockBody {              /* the dock content holder (see .py)      */
-    background-color: #FFFFFF;
-    border: 1px solid #DCDCDC;      /* frame: sides + bottom of the dock     */
+    background-color: @windowBg;
+    border: 1px solid @borders;      /* frame: sides + bottom of the dock     */
     border-top: none;               /* ...open at the title/body junction    */
 }
 QDockWidget::close-button,
@@ -89,21 +93,21 @@ QDockWidget::float-button {
 }
 QDockWidget::close-button:hover,
 QDockWidget::float-button:hover {
-    background-color: #F0F0F0;
+    background-color: @tbHover;
     border-radius: 2px;
 }
 
 /* ----- Toolbars (control bar + matplotlib navigation) ---------------------- */
 QToolBar {
-    background-color: #FFFFFF;
+    background-color: @windowBg;
     border: none;
     spacing: 2px;
     padding: 1px;
 }
 QToolBar::separator {
-    background-color: #DCDCDC;
+    background-color: @borders;
     width: 0px;
-    border-left: 1px solid #DCDCDC;
+    border-left: 1px solid @borders;
     margin: 1px 2px;
 }
 QToolButton {
@@ -113,66 +117,66 @@ QToolButton {
     padding: 2px;
 }
 QToolButton:hover {
-    background-color: #F0F0F0;
-    border-color: #DCDCDC;
+    background-color: @tbHover;
+    border-color: @borders;
 }
 QToolButton:pressed,
 QToolButton:checked {
-    background-color: #DCDCDC;
-    border-color: #C8C8C8;
+    background-color: @borders;
+    border-color: @bordersStrong;
 }
 
 /* ----- Labels -------------------------------------------------------------- */
 QLabel {
     background: transparent;
-    color: #1E1E1E;
+    color: @textColor;
 }
 
 /* ----- Push buttons -------------------------------------------------------- */
 QPushButton {
-    background-color: #F5F5F5;
-    color: #1E1E1E;
-    border: 1px solid #DCDCDC;
+    background-color: @altBaseBg;
+    color: @textColor;
+    border: 1px solid @borders;
     border-radius: 3px;
     padding: 4px 12px;
     min-height: 18px;
 }
 QPushButton:hover {
-    background-color: #F0F0F0;
-    border-color: #C8C8C8;
+    background-color: @tbHover;
+    border-color: @bordersStrong;
 }
 QPushButton:pressed {
-    background-color: #DCDCDC;
+    background-color: @borders;
 }
 QPushButton:focus,
 QPushButton:default {
-    border-color: #1883D7;
+    border-color: @highlight;
 }
 QPushButton:disabled {
-    color: #A0A0A0;
-    background-color: #F5F5F5;
-    border-color: #E4E4E4;
+    color: @disabledText;
+    background-color: @altBaseBg;
+    border-color: @borders;
 }
 
 /* ----- Line edits ---------------------------------------------------------- */
 QLineEdit {
-    background-color: #FFFFFF;
-    color: #1E1E1E;
-    border: 1px solid #DCDCDC;
+    background-color: @baseBg;
+    color: @textColor;
+    border: 1px solid @borders;
     border-radius: 3px;
     padding: 3px 5px;
-    selection-background-color: #1883D7;
-    selection-color: #FFFFFF;
+    selection-background-color: @highlight;
+    selection-color: @selectedText;
 }
 QLineEdit:hover {
-    border-color: #C8C8C8;
+    border-color: @bordersStrong;
 }
 QLineEdit:focus {
-    border-color: #1883D7;
+    border-color: @highlight;
 }
 QLineEdit:disabled {
-    background-color: #F5F5F5;
-    color: #A0A0A0;
+    background-color: @altBaseBg;
+    color: @disabledText;
 }
 
 /* ----- Combo boxes --------------------------------------------------------- */
@@ -184,111 +188,111 @@ QLineEdit:disabled {
    the combo by _ComboPopupBelowStyle in stko_theme.py (Fusion otherwise pops
    it centred over the widget, overlapping it). */
 QComboBox {
-    background-color: #FFFFFF;
-    color: #1E1E1E;
-    border: 1px solid #DCDCDC;
+    background-color: @baseBg;
+    color: @textColor;
+    border: 1px solid @borders;
     border-radius: 3px;
     padding: 3px 5px;
 }
 QComboBox:hover {
-    border-color: #C8C8C8;
+    border-color: @bordersStrong;
 }
 QComboBox:focus,
 QComboBox:on {
-    border-color: #1883D7;
+    border-color: @highlight;
 }
 QComboBox QAbstractItemView {   /* the popup list */
-    background-color: #FFFFFF;
-    color: #1E1E1E;
-    border: 1px solid #C8C8C8;
-    selection-background-color: #1883D7;
-    selection-color: #FFFFFF;
+    background-color: @baseBg;
+    color: @textColor;
+    border: 1px solid @bordersStrong;
+    selection-background-color: @highlight;
+    selection-color: @selectedText;
     outline: none;
 }
 
 /* ----- Check boxes (tick drawn by Fusion from the palette) ----------------- */
 QCheckBox {
     background: transparent;
-    color: #1E1E1E;
+    color: @textColor;
     spacing: 6px;
 }
 QCheckBox::indicator {
     width: 13px;
     height: 13px;
-    border: 1px solid #C8C8C8;
-    background-color: #FFFFFF;
+    border: 1px solid @bordersStrong;
+    background-color: @baseBg;
     border-radius: 2px;
 }
 QCheckBox::indicator:hover {
-    border-color: #1883D7;
+    border-color: @highlight;
 }
 QCheckBox::indicator:checked {
-    background-color: #54C9FF;
-    border-color: #1883D7;
+    background-color: @highlightLight;
+    border-color: @highlight;
 }
 QCheckBox::indicator:checked:hover {
-    background-color: #1883D7;
-    border-color: #0F6BB5;
+    background-color: @highlight;
+    border-color: @highlightPressed;
 }
 QCheckBox:disabled {
-    color: #A0A0A0;
+    color: @disabledText;
 }
 
 /* ----- Tables (the levels panel) ------------------------------------------- */
 QTableWidget,
 QTableView {
-    background-color: #FFFFFF;
-    alternate-background-color: #F5F5F5;
-    color: #1E1E1E;
-    gridline-color: #E4E4E4;
-    border: 1px solid #DCDCDC;
-    selection-background-color: #1883D7;
-    selection-color: #FFFFFF;
+    background-color: @baseBg;
+    alternate-background-color: @altBaseBg;
+    color: @textColor;
+    gridline-color: @borders;
+    border: 1px solid @borders;
+    selection-background-color: @highlight;
+    selection-color: @selectedText;
     outline: none;
 }
 QHeaderView::section {
-    background-color: #F5F5F5;
-    color: #1E1E1E;
+    background-color: @altBaseBg;
+    color: @textColor;
     padding: 4px 6px;
     border: none;
-    border-right: 1px solid #DCDCDC;
-    border-bottom: 1px solid #DCDCDC;
+    border-right: 1px solid @borders;
+    border-bottom: 1px solid @borders;
     font-weight: bold;
 }
 QHeaderView::section:last {
     border-right: none;
 }
 QTableCornerButton::section {
-    background-color: #F5F5F5;
+    background-color: @altBaseBg;
     border: none;
-    border-bottom: 1px solid #DCDCDC;
-    border-right: 1px solid #DCDCDC;
+    border-bottom: 1px solid @borders;
+    border-right: 1px solid @borders;
 }
 
 /* ----- Progress bar (suite progress in the status bar) --------------------- */
 QProgressBar {
-    background-color: #F5F5F5;
-    color: #1E1E1E;
-    border: 1px solid #DCDCDC;
+    background-color: @altBaseBg;
+    color: @textColor;
+    border: 1px solid @borders;
     border-radius: 3px;
     text-align: center;
 }
 QProgressBar::chunk {
-    background-color: #54C9FF;
+    background-color: @highlightLight;
     border-radius: 2px;
 }
 
 /* ----- Status bar ---------------------------------------------------------- */
 QStatusBar {
-    background-color: #FFFFFF;
-    color: #1E1E1E;
+    background-color: @windowBg;
+    color: @textColor;
     border-top: none;
 }
 QStatusBar QWidget {
-    background-color: #FFFFFF;
+    background-color: @windowBg;
 }
 QStatusBar::item {
-    background-color: #FFFFFF;
+    background-color: @windowBg;
     border: none;
 }
 QStatusBar QLabel {
@@ -297,21 +301,21 @@ QStatusBar QLabel {
 
 /* ----- Menus (context menus, e.g. matplotlib canvas) ----------------------- */
 QMenu {
-    background-color: #FFFFFF;
-    color: #1E1E1E;
-    border: 1px solid #C8C8C8;
+    background-color: @baseBg;
+    color: @textColor;
+    border: 1px solid @bordersStrong;
 }
 QMenu::item {
     padding: 4px 22px 4px 20px;
     background: transparent;
 }
 QMenu::item:selected {
-    background-color: #1883D7;
-    color: #FFFFFF;
+    background-color: @highlight;
+    color: @selectedText;
 }
 QMenu::separator {
     height: 1px;
-    background-color: #DCDCDC;
+    background-color: @borders;
     margin: 4px 6px;
 }
 
@@ -327,19 +331,19 @@ QScrollBar:horizontal {
     margin: 0px;
 }
 QScrollBar::handle:vertical {
-    background-color: #54C9FF;
+    background-color: @highlightLight;
     min-height: 24px;
     border-radius: 4px;
     margin: 2px;
 }
 QScrollBar::handle:horizontal {
-    background-color: #54C9FF;
+    background-color: @highlightLight;
     min-width: 24px;
     border-radius: 4px;
     margin: 2px;
 }
 QScrollBar::handle:hover {
-    background-color: #1883D7;
+    background-color: @highlight;
 }
 QScrollBar::add-line, QScrollBar::sub-line {
     border: none;

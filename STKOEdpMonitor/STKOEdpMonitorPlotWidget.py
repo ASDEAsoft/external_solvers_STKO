@@ -36,6 +36,7 @@ import matplotlib.pyplot as plt
 
 from nlth_edp_aggregate import aggregate, read_edp_records, load_manifest
 from edp_realtime import RealtimeState
+from stko_theme import apply_mpl_theme, curve_lightness, plot_colors
 
 _PARAMS = {
     "legend.fontsize": "x-small",
@@ -46,9 +47,11 @@ _PARAMS = {
 }
 
 # stable-ish colors keyed by record id, so a record keeps its color as it grows.
-def _record_color(rid, lightness=0.45, sat=0.65):
+def _record_color(rid, lightness=None, sat=0.65):
     if rid is None:
         rid = -1
+    if lightness is None:
+        lightness = curve_lightness()
     h = (0.61 + 0.23 * ((int(rid) * 2654435761) % 997) / 997.0) % 1.0
     return colorsys.hls_to_rgb(h, lightness, sat)
 
@@ -65,11 +68,17 @@ class _Canvas(FigureCanvas):
         plt.rcParams.update(_PARAMS)
         self.figure = fig
         self.ax = fig.add_subplot(111)
-        self.ax.grid(linestyle=":")
+        self._theme()
 
     def clear(self):
         self.ax.clear()
-        self.ax.grid(linestyle=":")
+        self._theme()
+
+    def _theme(self):
+        # Re-applied after every clear(): ax.clear() resets the axes' own
+        # colours along with its contents.
+        self.ax.grid(linestyle=":", color=plot_colors()["grid"])
+        apply_mpl_theme(self.figure, self.ax)
 
 
 class STKOEdpMonitorPlotWidget(QMainWindow):
@@ -306,6 +315,8 @@ class STKOEdpMonitorPlotWidget(QMainWindow):
     # curves
     # ------------------------------------------------------------------ #
     def _draw_curves(self, agg, snap, edp, method):
+        # data colours for the active theme (see stko_theme.plot_colors)
+        _C = plot_colors()
         cv = self.curve_canvas
         cv.clear()
         ax = cv.ax
@@ -330,7 +341,7 @@ class STKOEdpMonitorPlotWidget(QMainWindow):
                                 alpha=0.7)
                     if cur["collapse_im"] is not None and xs:
                         ax.plot([xs[-1]], [cur["collapse_im"]], "x",
-                                color="crimson", ms=8, mew=1.5)
+                                color=_C["accent"], ms=8, mew=1.5)
             self._plot_fractiles(ax, agg, edp)
             if show_live:
                 self._plot_live(ax, snap, edp)
@@ -346,12 +357,12 @@ class STKOEdpMonitorPlotWidget(QMainWindow):
                     # individual finished runs of this stripe
                     xs = [r["edps"][edp] for r in self._runs_at(snap, im)
                           if edp in r["edps"]]
-                    ax.plot(xs, [im] * len(xs), "o", color="0.6", ms=3,
+                    ax.plot(xs, [im] * len(xs), "o", color=_C["muted"], ms=3,
                             alpha=0.6, zorder=1)
                 if st:
                     ax.plot([st["p16"], st["p84"]], [im, im], "-",
-                            color="steelblue", lw=1.5, zorder=2)
-                    ax.plot([st["p50"]], [im], "D", color="navy", ms=5, zorder=3)
+                            color=_C["secondary"], lw=1.5, zorder=2)
+                    ax.plot([st["p50"]], [im], "D", color=_C["primary"], ms=5, zorder=3)
             if show_live:
                 self._plot_live(ax, snap, edp)
 
@@ -366,15 +377,15 @@ class STKOEdpMonitorPlotWidget(QMainWindow):
                     if edp in r["edps"]:
                         vals.append(r["edps"][edp])
             if show_rec and vals:
-                ax.plot(range(1, len(vals) + 1), vals, "o", color="steelblue",
+                ax.plot(range(1, len(vals) + 1), vals, "o", color=_C["secondary"],
                         ms=4)
             if lv is not None:
                 st = lv["edp_stats"].get(edp)
                 if st:
-                    ax.axhline(st["p50"], color="navy", lw=1.5, label="median")
-                    ax.axhline(st["p16"], color="gray", lw=1.0, ls="--",
+                    ax.axhline(st["p50"], color=_C["primary"], lw=1.5, label="median")
+                    ax.axhline(st["p16"], color=_C["muted"], lw=1.0, ls="--",
                                label="16-84%")
-                    ax.axhline(st["p84"], color="gray", lw=1.0, ls="--")
+                    ax.axhline(st["p84"], color=_C["muted"], lw=1.0, ls="--")
             if show_live:
                 # live code runs: draw at the far right as hollow markers
                 live_vals = [lvd["edps"][edp] for lvd in snap["live"]
@@ -390,17 +401,19 @@ class STKOEdpMonitorPlotWidget(QMainWindow):
         cv.draw()
 
     def _plot_fractiles(self, ax, agg, edp):
+        # data colours for the active theme (see stko_theme.plot_colors)
+        _C = plot_colors()
         pts = [(lv["edp_stats"][edp], lv["im"]) for lv in agg["levels"]
                if edp in lv["edp_stats"]]
         if len(pts) < 1:
             return
         pts.sort(key=lambda t: t[1])
         ims = [im for _s, im in pts]
-        ax.plot([s["p50"] for s, _ in pts], ims, "-", color="black", lw=2.0,
+        ax.plot([s["p50"] for s, _ in pts], ims, "-", color=_C["ink"], lw=2.0,
                 label="median", zorder=5)
-        ax.plot([s["p16"] for s, _ in pts], ims, "--", color="black", lw=1.0,
+        ax.plot([s["p16"] for s, _ in pts], ims, "--", color=_C["ink"], lw=1.0,
                 label="16-84%", zorder=5)
-        ax.plot([s["p84"] for s, _ in pts], ims, "--", color="black", lw=1.0,
+        ax.plot([s["p84"] for s, _ in pts], ims, "--", color=_C["ink"], lw=1.0,
                 zorder=5)
         ax.legend(loc="lower right")
 
@@ -431,6 +444,8 @@ class STKOEdpMonitorPlotWidget(QMainWindow):
     # fragility
     # ------------------------------------------------------------------ #
     def _draw_fragility(self, agg, method):
+        # data colours for the active theme (see stko_theme.plot_colors)
+        _C = plot_colors()
         cv = self.frag_canvas
         cv.clear()
         ax = cv.ax
@@ -448,12 +463,12 @@ class STKOEdpMonitorPlotWidget(QMainWindow):
             ims = [lv["im"] for lv in agg["levels"]]
             fr = [lv["collapse_fraction"] for lv in agg["levels"]]
             ns = [lv["n"] for lv in agg["levels"]]
-            ax.scatter(ims, fr, s=[20 + 10 * n for n in ns], color="crimson",
+            ax.scatter(ims, fr, s=[20 + 10 * n for n in ns], color=_C["accent"],
                        zorder=3, label="observed")
 
         frag = agg["fragility"]
         if frag:
-            ax.plot(frag["im"], frag["p_collapse"], "-", color="navy", lw=2.0,
+            ax.plot(frag["im"], frag["p_collapse"], "-", color=_C["primary"], lw=2.0,
                     label="lognormal fit")
             ax.set_title(u"Collapse fragility — θ={:.3g}, β={:.3g}"
                          .format(frag["theta"], frag["beta"]))
@@ -484,7 +499,7 @@ class STKOEdpMonitorPlotWidget(QMainWindow):
                 it = QTableWidgetItem(text)
                 it.setTextAlignment(Qt.AlignCenter)
                 if warn:
-                    it.setForeground(QColor("crimson"))
+                    it.setForeground(QColor(plot_colors()["accent"]))
                 self.table.setItem(r, c, it)
 
             cell(0, "{:g}".format(lv["im"]))
