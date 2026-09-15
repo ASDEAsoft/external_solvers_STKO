@@ -26,7 +26,8 @@
      @windowBg          window body, dock title, toolbar, status bar
      @baseBg            editable / list / popup surfaces
      @altBaseBg         alternating rows, soft panels
-     @selectedText      text drawn ON the accent
+     @selectionBg       background of a selection (a pale wash of the accent)
+     @selectedText      text drawn on @selectionBg -- the ordinary text colour
      @textColor @disabledText @hintText @errorText @warningText
      @borders @bordersStrong   surface edge / interactive control outline
      @tbHover @tbOn     hover and checked states
@@ -37,7 +38,7 @@
 QWidget {
     background-color: @windowBg;
     color: @textColor;
-    selection-background-color: @highlight;
+    selection-background-color: @selectionBg;
     selection-color: @selectedText;
 }
 QWidget:disabled {
@@ -165,7 +166,7 @@ QLineEdit {
     border: 1px solid @borders;
     border-radius: 3px;
     padding: 3px 5px;
-    selection-background-color: @highlight;
+    selection-background-color: @selectionBg;
     selection-color: @selectedText;
 }
 QLineEdit:hover {
@@ -205,7 +206,7 @@ QComboBox QAbstractItemView {   /* the popup list */
     background-color: @baseBg;
     color: @textColor;
     border: 1px solid @bordersStrong;
-    selection-background-color: @highlight;
+    selection-background-color: @selectionBg;
     selection-color: @selectedText;
     outline: none;
 }
@@ -246,7 +247,7 @@ QTableView {
     color: @textColor;
     gridline-color: @borders;
     border: 1px solid @borders;
-    selection-background-color: @highlight;
+    selection-background-color: @selectionBg;
     selection-color: @selectedText;
     outline: none;
 }
@@ -273,7 +274,7 @@ QTableCornerButton::section {
 QProgressBar {
     background-color: @altBaseBg;
     color: @textColor;
-    border: 1px solid @borders;
+    border: 1px solid @bordersStrong;
     border-radius: 3px;
     text-align: center;
 }
@@ -310,7 +311,7 @@ QMenu::item {
     background: transparent;
 }
 QMenu::item:selected {
-    background-color: @highlight;
+    background-color: @selectionBg;
     color: @selectedText;
 }
 QMenu::separator {

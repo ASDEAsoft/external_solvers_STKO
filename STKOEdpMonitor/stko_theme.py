@@ -50,9 +50,11 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 # these are ever what you see, the token file failed to ship.
 _FALLBACK = {
     "light": {"windowBg": "#ffffff", "baseBg": "#ffffff", "textColor": "#000000",
-              "highlight": "#1883d7", "selectedText": "#ffffff"},
+              "highlight": "#1883d7", "selectionBg": "#cde5f7",
+              "selectedText": "#000000"},
     "dark": {"windowBg": "#2d303a", "baseBg": "#22242c", "textColor": "#dee0e4",
-             "highlight": "#1883d7", "selectedText": "#ffffff"},
+             "highlight": "#1883d7", "selectionBg": "#1f405f",
+             "selectedText": "#dee0e4"},
 }
 
 
@@ -116,7 +118,8 @@ def palette(values=None):
     pal.setColor(QPalette.ButtonText, text)
     pal.setColor(QPalette.BrightText, col("errorText"))
     pal.setColor(QPalette.Link, hl)
-    pal.setColor(QPalette.Highlight, hl)
+    # The selection is a wash, not the accent: see AsTheme::selectionBg.
+    pal.setColor(QPalette.Highlight, col("selectionBg", values.get("highlight", "#1883d7")))
     pal.setColor(QPalette.HighlightedText, col("selectedText"))
     disabled = col("disabledText")
     for role in (QPalette.WindowText, QPalette.Text, QPalette.ButtonText,
