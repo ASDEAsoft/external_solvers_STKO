@@ -322,36 +322,114 @@ QMenu::separator {
 
 /* ----- Scroll bars (thin, accent handle — mirrors stko_style_default.css) --- */
 QScrollBar:vertical {
-    background: transparent;
-    width: 10px;
+    background-color: @borders;
+    border: none;
+    width: 8px;
     margin: 0px;
 }
 QScrollBar:horizontal {
-    background: transparent;
-    height: 10px;
+    background-color: @borders;
+    border: none;
+    height: 8px;
     margin: 0px;
 }
 QScrollBar::handle:vertical {
     background-color: @highlightLight;
-    min-height: 24px;
-    border-radius: 4px;
-    margin: 2px;
+    min-height: 20px;
 }
 QScrollBar::handle:horizontal {
     background-color: @highlightLight;
-    min-width: 24px;
-    border-radius: 4px;
-    margin: 2px;
+    min-width: 20px;
 }
 QScrollBar::handle:hover {
     background-color: @highlight;
 }
+QScrollBar::handle:pressed {
+    background-color: @highlightPressed;
+}
+QScrollBar::handle:disabled {
+    background-color: @bordersStrong;
+}
+/* No arrow buttons, and no lane reserved for them. */
 QScrollBar::add-line, QScrollBar::sub-line {
     border: none;
     background: none;
     width: 0px;
     height: 0px;
 }
+/* The track either side of the handle is the lane itself, not a third colour. */
 QScrollBar::add-page, QScrollBar::sub-page {
-    background: transparent;
+    background: none;
+}
+/* The square where a vertical and a horizontal bar meet. */
+QAbstractScrollArea::corner {
+    background-color: @borders;
+    border: none;
+}
+
+/* ----- Sliders (mirrors stko_style_default.css) ----------------------------- */
+/* Same language as the scroll bars: a thin lane in the surface colour, and the
+   accent for the part that means something -- here the travelled side, from the
+   start of the lane to the handle.
+
+   The handle is the accent too, and is told apart by SHAPE rather than colour:
+   it is the only thing taller than the lane, standing 6px proud of it on either
+   side. A second blue would have said "two controls".
+
+   The groove is drawn by ::sub-page / ::add-page once those carry a background,
+   so ::groove only fixes the lane's thickness. The handle's height is not a
+   property: Qt derives it from the groove height minus the handle's vertical
+   margins, which is why they are negative. */
+
+QSlider::groove:horizontal {
+    background-color: @borders;
+    border: none;
+    height: 4px;
+    margin: 0px;
+}
+QSlider::sub-page:horizontal {
+    background-color: @highlightLight;
+}
+QSlider::add-page:horizontal {
+    background-color: @borders;
+}
+QSlider::handle:horizontal {
+    background-color: @highlightLight;
+    border: none;
+    width: 6px;
+    margin: -6px 0px;               /* 4px groove + 6 + 6 = a 16px handle */
+}
+
+/* Vertical: the travelled side is BELOW the handle (Qt's ::add-page), since a
+   vertical slider counts up from the bottom. Same handle, turned: wider than
+   the lane instead of taller. */
+QSlider::groove:vertical {
+    background-color: @borders;
+    border: none;
+    width: 4px;
+    margin: 0px;
+}
+QSlider::add-page:vertical {
+    background-color: @highlightLight;
+}
+QSlider::sub-page:vertical {
+    background-color: @borders;
+}
+QSlider::handle:vertical {
+    background-color: @highlightLight;
+    border: none;
+    height: 6px;
+    margin: 0px -6px;
+}
+
+QSlider::handle:hover {
+    background-color: @highlight;
+}
+QSlider::handle:pressed {
+    background-color: @highlightPressed;
+}
+QSlider::handle:disabled,
+QSlider::sub-page:horizontal:disabled,
+QSlider::add-page:vertical:disabled {
+    background-color: @bordersStrong;
 }
