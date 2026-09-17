@@ -80,6 +80,18 @@ class _Canvas(FigureCanvas):
         self.ax.grid(linestyle=":", color=plot_colors()["grid"])
         apply_mpl_theme(self.figure, self.ax)
 
+    def draw(self):
+        """Theme LAST, every time.
+
+        The legend is the reason: the four plot routines build it at the end of
+        their work, long after _theme() ran, so it kept matplotlib's own white
+        box and black text in the middle of a dark plot. Drawing is the one
+        moment at which the picture is complete, so that is where the colours
+        are settled -- and a routine added later cannot forget it.
+        """
+        self._theme()
+        FigureCanvas.draw(self)
+
 
 class STKOEdpMonitorPlotWidget(QMainWindow):
     """The realtime view, laid out as dockable panels: the two plots

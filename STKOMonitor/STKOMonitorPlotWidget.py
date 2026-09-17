@@ -381,11 +381,27 @@ class MyMplCanvas(FigureCanvas):
 		FigureCanvas.updateGeometry(self)
 	
 	def _apply_theme(self):
-		"""Paint the canvas in the active theme. Called on build and after
-		every clear(), which resets the axes' own colours with its contents.
+		"""Paint the canvas in the active theme. Called on build, after every
+		clear(), which resets the axes' own colours with its contents, and once
+		more from draw().
 		"""
 		self.subplot.grid(linestyle=':', color=plot_colors()['grid'])
 		apply_mpl_theme(self.figure, self.subplot)
+
+	def draw(self):
+		"""Theme LAST, every time.
+
+		The legend is the reason. It is not built with the axes, it is built at
+		the end of an update once it is known whether there is anything to put in
+		it -- long after _apply_theme() has run -- so it kept matplotlib's own
+		white box and black text in the middle of a dark plot. Anything else
+		added late would have gone the same way.
+
+		Drawing is the one moment at which the picture is complete, so that is
+		where the colours are settled.
+		"""
+		self._apply_theme()
+		FigureCanvas.draw(self)
 
 	def prepare(self, keys, force=False):
 		import random
