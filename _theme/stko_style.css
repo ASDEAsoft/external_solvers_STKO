@@ -188,56 +188,12 @@ QLineEdit:disabled {
    padded height (24px) already matches it. The popup is forced to drop BELOW
    the combo by _ComboPopupBelowStyle in stko_theme.py (Fusion otherwise pops
    it centred over the widget, overlapping it). */
-QComboBox {
-    background-color: @baseBg;
-    color: @textColor;
-    border: 1px solid @borders;
-    border-radius: 3px;
-    padding: 3px 5px;
-}
-QComboBox:hover {
-    border-color: @bordersStrong;
-}
-QComboBox:focus,
-QComboBox:on {
-    border-color: @highlight;
-}
-QComboBox QAbstractItemView {   /* the popup list */
-    background-color: @baseBg;
-    color: @textColor;
-    border: 1px solid @bordersStrong;
-    selection-background-color: @selectionBg;
-    selection-color: @selectedText;
-    outline: none;
-}
-
-/* ----- Check boxes (tick drawn by Fusion from the palette) ----------------- */
-QCheckBox {
-    background: transparent;
-    color: @textColor;
-    spacing: 6px;
-}
-QCheckBox::indicator {
-    width: 13px;
-    height: 13px;
-    border: 1px solid @bordersStrong;
-    background-color: @baseBg;
-    border-radius: 2px;
-}
-QCheckBox::indicator:hover {
-    border-color: @highlight;
-}
-QCheckBox::indicator:checked {
-    background-color: @highlightLight;
-    border-color: @highlight;
-}
-QCheckBox::indicator:checked:hover {
-    background-color: @highlight;
-    border-color: @highlightPressed;
-}
-QCheckBox:disabled {
-    color: @disabledText;
-}
+/* Nothing here for QComboBox, QCheckBox or QRadioButton on purpose. STKO has
+   no rule for any of them either: the box comes from Fusion and the palette,
+   and the tick and the dot are DRAWN, by StkoStyle there and by _StkoStyle in
+   stko_theme.py here. A style-sheet rule would take the widget away from the
+   style and give back the flat square this sheet used to draw -- a checked box
+   that is a filled square with no tick in it. */
 
 /* ----- Tables (the levels panel) ------------------------------------------- */
 QTableWidget,
@@ -251,24 +207,10 @@ QTableView {
     selection-color: @selectedText;
     outline: none;
 }
-QHeaderView::section {
-    background-color: @altBaseBg;
-    color: @textColor;
-    padding: 4px 6px;
-    border: none;
-    border-right: 1px solid @borders;
-    border-bottom: 1px solid @borders;
-    font-weight: bold;
-}
-QHeaderView::section:last {
-    border-right: none;
-}
-QTableCornerButton::section {
-    background-color: @altBaseBg;
-    border: none;
-    border-bottom: 1px solid @borders;
-    border-right: 1px solid @borders;
-}
+/* The header sections are drawn by _StkoStyle, like STKO's: one flat colour,
+   the closing line and the seams in @borders, and the empty area past the last
+   column carried along with them. Not bold and not padded -- a header names a
+   column, it does not announce it. */
 
 /* ----- Progress bar (suite progress in the status bar) --------------------- */
 QProgressBar {
