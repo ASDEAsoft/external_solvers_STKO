@@ -262,7 +262,7 @@ QMenu::separator {
     margin: 4px 6px;
 }
 
-/* ----- Scroll bars (thin, accent handle — mirrors stko_style_default.css) --- */
+/* ----- Scroll bars (thin lane, grey capsule — mirrors stko_style_default.css) --- */
 QScrollBar:vertical {
     background-color: @borders;
     border: none;
@@ -276,21 +276,24 @@ QScrollBar:horizontal {
     margin: 0px;
 }
 QScrollBar::handle:vertical {
-    background-color: @highlightLight;
+    background-color: @scrollHandle;
+    border-radius: 4px;
     min-height: 20px;
 }
 QScrollBar::handle:horizontal {
-    background-color: @highlightLight;
+    background-color: @scrollHandle;
+    border-radius: 4px;
     min-width: 20px;
 }
 QScrollBar::handle:hover {
-    background-color: @highlight;
+    background-color: @highlightLight;
 }
 QScrollBar::handle:pressed {
-    background-color: @highlightPressed;
+    background-color: @highlight;
 }
+/* Nothing to scroll: the lane alone, with no grip drawn on it. */
 QScrollBar::handle:disabled {
-    background-color: @bordersStrong;
+    background-color: @borders;
 }
 /* No arrow buttons, and no lane reserved for them. */
 QScrollBar::add-line, QScrollBar::sub-line {
