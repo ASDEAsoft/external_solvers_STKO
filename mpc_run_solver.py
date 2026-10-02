@@ -1,7 +1,13 @@
-def run(wdir, command, script, np, do_pause):
+def run(wdir, command, script, np, do_pause, extra_args=''):
+	# extra_args is appended verbatim after the two positional arguments every
+	# solver kit agrees on ("<command>" "<script>" <np>), for flags that belong
+	# to the kit rather than to the model -- today the OpenSeesMP launcher's
+	# -log and -tee. It stays optional: other callers pass five arguments.
 	import os
 	import subprocess
 	import platform
+
+	tail = ' {}'.format(extra_args) if extra_args else ''
 
 	def error():
 		raise Exception(
@@ -22,7 +28,7 @@ def run(wdir, command, script, np, do_pause):
 		fname = os.path.join(wdir, runner_name)
 		with open(fname, 'w+') as f:
 			f.write('#!/bin/sh\n')
-			f.write('"{}" "{}" {}\n'.format(command, script, np))
+			f.write('"{}" "{}" {}{}\n'.format(command, script, np, tail))
 			if do_pause:
 				f.write('read -p "Press [Enter] key to continue..." dummy')
 		os.chmod(fname, 0o777)
@@ -39,7 +45,7 @@ def run(wdir, command, script, np, do_pause):
 		runner_name = '{}.bat'.format(runner_base_name)
 		fname = os.path.join(wdir, runner_name)
 		with open(fname, 'w+') as f:
-			f.write('"{}" "{}" {}'.format(command.replace('/', '\\'), script.replace('/', '\\'), np))
+			f.write('"{}" "{}" {}{}'.format(command.replace('/', '\\'), script.replace('/', '\\'), np, tail))
 			if do_pause:
 				f.write(' & pause')
 			else:
@@ -65,7 +71,7 @@ def run(wdir, command, script, np, do_pause):
 		with open(fname, 'w+') as f:
 			f.write('#!/bin/sh\n')
 			f.write('cd "{}"\n'.format(wdir))
-			f.write('"{}" "{}" {}\n'.format(command, script, np))
+			f.write('"{}" "{}" {}{}\n'.format(command, script, np, tail))
 			if do_pause:
 				f.write('read -p "Press [Enter] key to continue..." dummy\n')
 		os.chmod(fname, 0o777)
