@@ -515,14 +515,17 @@ class MyMplCanvas(FigureCanvas):
 					plot.set_xdata([])
 					plot.set_ydata([])
 					plot.set_label('_nolegend_')
-			# tip
+			# tip (the marker at the last data point). matplotlib >= 3.9 rejects a
+			# scalar in set_xdata/set_ydata ("x must be a sequence") — older versions
+			# accepted it. Wrap the single point in a list so it works on every
+			# matplotlib version (the bundled macOS stack ships a recent one).
 			if self.do_fft:
-				tip.set_xdata(fft_tip_x)
-				tip.set_ydata(fft_tip_y)
+				tip.set_xdata([fft_tip_x])
+				tip.set_ydata([fft_tip_y])
 			else:
 				if data.plot is not None and len(data.plot.x) > 0:
-					tip.set_xdata(data.plot.x[-1])
-					tip.set_ydata(data.plot.y[-1])
+					tip.set_xdata([data.plot.x[-1]])
+					tip.set_ydata([data.plot.y[-1]])
 				else:
 					tip.set_xdata([])
 					tip.set_ydata([])

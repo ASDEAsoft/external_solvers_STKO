@@ -613,8 +613,40 @@ def initializeMonitor(pinfo):
 			fmon.write('.\\STKOMonitor\\STKOMonitor.bat')
 	elif sys.platform == 'linux' or sys.platform == 'darwin':
 		launcher_name = '{}/LaunchSTKOMonitor.sh'.format(pinfo.out_dir)
+		launcher_body = './STKOMonitor/STKOMonitor.sh'
+		if sys.platform == 'darwin':
+			# macOS: the STKOMonitor is a standalone Qt (PySide2) process, launched
+			# from the project output dir (the STKOMonitor folder is copied there).
+			# A bare `python3` on PATH is Apple's system Python with no PySide2, and
+			# even the bundled interpreter cannot dlopen PySide2's Qt extension
+			# modules unless the loader is pointed at the .app's Frameworks dir (the
+			# @rpath the *.abi3.so were linked against). So bake the bundle's
+			# interpreter + framework/package paths into the launcher. This also lets
+			# the user re-run the monitor manually. Falls back to the generic
+			# launcher in develop mode, where the bundled Python.framework does not
+			# exist beside the build output. "3.10" matches the pinned macOS toolchain.
+			# Data root that holds external_solvers + python_packages. In a signed
+			# .app this is <app>/Contents/Resources; in an unsigned/older layout it
+			# is <app>/Contents/MacOS. Either way python_packages is its sibling and
+			# Frameworks is one level up, so deriving from external_solvers' parent
+			# stays correct regardless of the MacOS-vs-Resources layout.
+			data_dir = os.path.dirname(Utils.get_external_solvers_dir())
+			frameworks_dir = os.path.normpath(os.path.join(data_dir, os.pardir, 'Frameworks'))
+			# The child interpreter the packager puts in Contents/MacOS: NOT the
+			# framework's bin/python3.10, which links Homebrew's libPython and does
+			# not start on a Mac without it.
+			py_bin = os.path.normpath(os.path.join(data_dir, os.pardir, 'MacOS', 'python3.10'))
+			if os.path.isfile(py_bin):
+				launcher_body = (
+					'#!/bin/sh\n'
+					'DIR=$(cd "$(dirname "$0")" && pwd)\n'
+					'export STKO_INSTALL_DIR="{data}"\n'
+					'export DYLD_FRAMEWORK_PATH="{fw}${{DYLD_FRAMEWORK_PATH:+:$DYLD_FRAMEWORK_PATH}}"\n'
+					'export PYTHONPATH="{data}/python_packages${{PYTHONPATH:+:$PYTHONPATH}}"\n'
+					'"{py}" "$DIR/STKOMonitor/STKOMonitorMain.py"\n'
+				).format(data=data_dir, fw=frameworks_dir, py=py_bin)
 		with open(launcher_name, 'w+', encoding='utf-8') as fmon:
-			fmon.write('./STKOMonitor/STKOMonitor.sh')
+			fmon.write(launcher_body)
 		os.chmod(launcher_name, 0o777)
 	
 	# write the stats monitor actor
