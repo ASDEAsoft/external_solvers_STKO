@@ -2,7 +2,7 @@ from STKOMonitorStatisticsWidget import *
 from STKOMonitorTimerWidget import *
 from STKOTabsWidget import *
 import sys
-from PySide2.QtWidgets import (QVBoxLayout, QMainWindow, QDockWidget, QWidget, QTabWidget, QTabBar)
+from PySide2.QtWidgets import (QVBoxLayout, QMainWindow, QDockWidget, QWidget, QTabWidget, QTabBar, QStyle)
 from PySide2.QtCore import Qt
 
 class STKOMonitorWindow(QMainWindow):
@@ -14,7 +14,10 @@ class STKOMonitorWindow(QMainWindow):
 		# central
 		central_widget = QWidget()
 		central_widget.setLayout(QVBoxLayout())
-		central_widget.layout().setContentsMargins(0,0,0,0)
+		# the tabs keep the same margin from the window as the Statistics dock
+		# above them; none at the bottom, where the timer brings its own
+		m = self.style().pixelMetric(QStyle.PM_LayoutLeftMargin)
+		central_widget.layout().setContentsMargins(m, m, m, 0)
 		self.setCentralWidget(central_widget)
 		
 		# tabs
