@@ -35,9 +35,15 @@ import os
 
 from PySide2.QtCore import QPointF, QRectF, Qt
 from PySide2.QtGui import QColor, QPainter, QPainterPath, QPalette, QPolygonF
-from PySide2.QtWidgets import (QProxyStyle, QStyle, QStyleFactory, QStyleOptionHeader,
-                               QStyleOptionTab, QStyleOptionTabBarBase,
-                               QStyleOptionTabWidgetFrame, QTabBar)
+from PySide2.QtWidgets import (QProxyStyle, QStyle, QStyleFactory, QStyleOption,
+                               QStyleOptionHeader, QStyleOptionTab,
+                               QStyleOptionTabBarBase, QStyleOptionTabWidgetFrame,
+                               QTabBar)
+
+try:
+    import shiboken2
+except ImportError:
+    shiboken2 = None
 
 # Fusion renders the Qt Style Sheet sub-controls (combo drop-down arrow, check
 # indicator, dock buttons, ...) from the palette WITHOUT bundled PNGs, which is
@@ -178,6 +184,17 @@ def palette(values=None):
     return pal
 
 
+def _as(option, cls, so_type):
+    """*option* seen as *cls* when its type says it is one, else None: the
+    qstyleoption_cast PySide2 does not do. None too without shiboken2, so the
+    caller falls back to Fusion rather than failing."""
+    if shiboken2 is None or option is None or option.type != so_type:
+        return None
+    if isinstance(option, cls):
+        return option
+    return shiboken2.wrapInstance(shiboken2.getCppPointer(option)[0], cls)
+
+
 class _StkoStyle(QProxyStyle):
     """The handful of controls STKO does not leave to Fusion.
 
@@ -193,6 +210,11 @@ class _StkoStyle(QProxyStyle):
     element it mirrors.
 
     Everything not listed here is Fusion's, exactly as in STKO.
+
+    PySide2 hands every option to drawControl / drawPrimitive as a plain
+    QStyleOption: it does not downcast them the way a C++ qstyleoption_cast
+    would. ``isinstance(option, QStyleOptionTab)`` is therefore never true, and
+    every method that needs a subclass's fields asks :func:`_as` for them.
     """
 
     def __init__(self, base, values):
@@ -230,7 +252,7 @@ class _StkoStyle(QProxyStyle):
         if element in (QStyle.CE_HeaderSection, QStyle.CE_HeaderEmptyArea):
             self._draw_header(element, option, painter)
             return
-        if element == QStyle.CE_TabBarTabShape and self._draw_tab(option, painter):
+        if element == QStyle.CE_TabBarTabShape and self._draw_tab(option, painter, widget):
             return
         super(_StkoStyle, self).drawControl(element, option, painter, widget)
 
@@ -322,7 +344,7 @@ class _StkoStyle(QProxyStyle):
         states its orientation in State_Horizontal -- QHeaderView does that for
         exactly this case.
         """
-        header = option if isinstance(option, QStyleOptionHeader) else None
+        header = _as(option, QStyleOptionHeader, QStyleOption.SO_Header)
         if header is not None:
             horizontal = header.orientation == Qt.Horizontal
         else:
@@ -349,7 +371,7 @@ class _StkoStyle(QProxyStyle):
 
     # -- StkoStyle.cpp, CE_TabBarTabShape ------------------------------------
 
-    def _draw_tab(self, option, painter):
+    def _draw_tab(self, option, painter, widget=None):
         """The current tab IS the colour of the page it opens onto; the others
         sit half a shade back. Fusion's tab is a gradient over a colour taken
         from Button or from Window depending on whether the tab widget has a
@@ -357,7 +379,8 @@ class _StkoStyle(QProxyStyle):
 
         Returns False for shapes this does not handle, so they fall through.
         """
-        if not isinstance(option, QStyleOptionTab):
+        option = _as(option, QStyleOptionTab, QStyleOption.SO_Tab)
+        if option is None:
             return False
         north = option.shape == QTabBar.RoundedNorth
         south = option.shape == QTabBar.RoundedSouth
@@ -370,6 +393,18 @@ class _StkoStyle(QProxyStyle):
         last = (option.position == QStyleOptionTab.OnlyOneTab
                 or (not rtl and option.position == QStyleOptionTab.End)
                 or (rtl and option.position == QStyleOptionTab.Beginning))
+        # Asked of the geometry when the bar is at hand: QTabBar answers
+        # position from a cached index that insertTab() can leave one tab short
+        # (see StkoStyle.cpp). The last tab is the one no other sits beyond.
+        if isinstance(widget, QTabBar):
+            last = True
+            for i in range(widget.count()):
+                tr = widget.tabRect(i)
+                if tr.isNull():
+                    continue
+                if (tr.left() < option.rect.left()) if rtl else (tr.right() > option.rect.right()):
+                    last = False
+                    break
         overlap = 0 if last else self.pixelMetric(QStyle.PM_TabBarTabOverlap, option)
 
         # Where the page's edge falls INSIDE the strip: Fusion answers 2, and
@@ -432,7 +467,7 @@ class _StkoStyle(QProxyStyle):
         QTabWidget::setTabBar() calls setDrawBase(false) on its tab bar, so
         inside a tab widget that primitive is never asked for.
         """
-        frame = option if isinstance(option, QStyleOptionTabWidgetFrame) else None
+        frame = _as(option, QStyleOptionTabWidgetFrame, QStyleOption.SO_TabWidgetFrame)
         north = frame is None or frame.shape == QTabBar.RoundedNorth
         sided = frame is not None and frame.shape not in (QTabBar.RoundedNorth,
                                                           QTabBar.RoundedSouth)
@@ -472,7 +507,7 @@ class _StkoStyle(QProxyStyle):
         """The same line for a tab bar that is NOT inside a tab widget, whose
         bar does draw its base. QTabBar hands over only the overlap rows, so the
         page's edge is the side of that band facing the page."""
-        base = option if isinstance(option, QStyleOptionTabBarBase) else None
+        base = _as(option, QStyleOptionTabBarBase, QStyleOption.SO_TabBarBase)
         if base is None or base.shape not in (QTabBar.RoundedNorth, QTabBar.RoundedSouth):
             return False
         north = base.shape == QTabBar.RoundedNorth
