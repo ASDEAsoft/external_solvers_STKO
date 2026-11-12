@@ -106,8 +106,30 @@ def makeXObjectMetaData():
 	at_nsteps = mka(MpcAttributeType.Integer, 'nsteps/time', 'Time options', 'number of steps')
 	at_nsteps.setDefault(0)
 	
+	# File options ==================================================================================
+
+	at_compression = mka(MpcAttributeType.String, 'Compression', 'File options',
+				html_par('Compresses the datasets of the .mpco file (lossless: the values are the same). Possible options are:<br/>' +
+				html_boldtext('None') + ': nothing is compressed, as in previous versions.<br/>' +
+				html_boldtext('Model') + ': only the model (nodes, elements, sections, sets, activation) and the headers of the results. '
+					'It takes no measurable time, and in a staged analysis it shrinks the model of each stage by tens of times.<br/>' +
+				html_boldtext('Model and results') + ': also the results written at each step. The file is about 20% smaller, '
+					'but writing it takes 20-80% more time, and a history chart reads more data at each step.<br/>' +
+				'It requires the OpenSees-ASDEA solver: other OpenSees builds do not know the -compress option.'))
+	at_compression.sourceType = MpcAttributeSourceType.List
+	at_compression.setSourceList(['None', 'Model', 'Model and results'])
+	at_compression.setDefault('None')
+
+	at_full_model_stages = mka(MpcAttributeType.Boolean, 'Full model stages', 'File options',
+				html_par('Writes the whole model again at each model stage, as in previous versions.<br/>'
+				'By default a model stage links the parts of the model that did not change from the previous one, '
+				'and does not recompute the sections and the element recorders when the mesh, the activation and the constraints did not change. '
+				'Turn it on only to rule this out when something looks wrong: it can make a staged analysis much slower.<br/>'
+				'It requires the OpenSees-ASDEA solver.'))
+	at_full_model_stages.setDefault(False)
+
 	# Regions ==================================================================================
-	
+
 	at_regions = mka(MpcAttributeType.IndexVector, 'Regions', 'Regions', 
 			('Select one or multiple regions if you want to save results only on those parts of the model.'
 			'Leave this vector empty (default) if you want to save results using the whole model.'))
@@ -172,7 +194,10 @@ def makeXObjectMetaData():
 	xom.addAttribute(at_use_always)
 	xom.addAttribute(at_use_dt)
 	xom.addAttribute(at_use_nsteps)
-	
+
+	xom.addAttribute(at_compression)
+	xom.addAttribute(at_full_model_stages)
+
 	xom.addAttribute(at_regions)
 	
 	# visibility dependencies
@@ -377,7 +402,24 @@ def writeTcl(pinfo):
 		pinfo.out_file.write(' \\\n'.join(['-R {}'.format(item) for item in regions]))
 	
 	################################################################
-	# write the cdata file in the same location and 
+	# write the file options
+	# (documents saved before these options have no such attributes:
+	# they behave as before)
+	################################################################
+
+	a = xobj.getAttribute('Compression')
+	compression = a.string if a is not None else 'None'
+	if compression == 'Model':
+		pinfo.out_file.write(' \\\n{}-compress 1'.format(pinfo.indent))
+	elif compression == 'Model and results':
+		pinfo.out_file.write(' \\\n{}-compress 1 -results'.format(pinfo.indent))
+
+	a = xobj.getAttribute('Full model stages')
+	if a is not None and a.boolean:
+		pinfo.out_file.write(' \\\n{}-fullModelStages'.format(pinfo.indent))
+
+	################################################################
+	# write the cdata file in the same location and
 	# with the same name as the mpco file
 	################################################################
 	
