@@ -63,7 +63,7 @@ def __option1(phys_prop):
 		raise Exception('Error: cannot find "numIntPts" attribute')
 	numIntPts = numIntPts_at.integer
 	
-	return ('{} {} {}'.format(IntegrationType, secTag, numIntPts))
+	return ('{} {} {} {}'.format(IntegrationType, 'tag', secTag, numIntPts))
 
 def __option2(phys_prop):
 	# UserDefined
@@ -106,7 +106,7 @@ def __option2(phys_prop):
 		positions_ += ' {}'.format(positions.valueAt(i))
 		weights_ += ' {}'.format(weights.valueAt(i))
 	
-	return ('{} {}{}{}{}'.format(IntegrationType, numIntPts, secTag_, positions_, weights_))
+	return ('{} {} {} {} {} {}'.format(IntegrationType, 'tag', numIntPts, secTag_, positions_, weights_))
 
 def __option3(phys_prop):
 	# Hinge
@@ -141,7 +141,7 @@ def __option3(phys_prop):
 		raise Exception('Error: cannot find "secTagE" attribute')
 	secTagE = secTagE_at.index
 	
-	return ('{} {} {} {} {} {}'.format(IntegrationType, secTagI, lpI, secTagJ, lpJ, secTagE))
+	return ('{} {} {} {} {} {} {}'.format(IntegrationType, 'tag', secTagI, lpI, secTagJ, lpJ, secTagE))
 
 def __option4(phys_prop):
 	# UserHinge
@@ -202,7 +202,7 @@ def __option4(phys_prop):
 	str_spw_I = ' '.join(itertools.chain([str(tag) for tag in secTagI], [str(ipw.valueAt(i)) for ipw in [positionsI, weightsI] for i in range(len(ipw))]))
 	str_spw_J = ' '.join(itertools.chain([str(tag) for tag in secTagJ], [str(ipw.valueAt(i)) for ipw in [positionsJ, weightsJ] for i in range(len(ipw))]))
 	
-	return ('{} {} {} {} {} {}'.format(IntegrationType, secTagE, npI, str_spw_I, npJ, str_spw_J))
+	return ('{} {} {} {} {} {} {}'.format(IntegrationType, 'tag', secTagE, npI, str_spw_I, npJ, str_spw_J))
 
 def __option5(phys_prop):
 	# DistHinge
@@ -247,8 +247,8 @@ def __option5(phys_prop):
 		raise Exception('Error: cannot find "secTagE" attribute')
 	secTagE = secTagE_at.index
 	
-	return ('{} {} {} {} {} {} {} {}'.format(
-			IntegrationType, HingeIntegrationType, numIntPts, secTagI, lpI, secTagJ, lpJ, secTagE))
+	return ('{} {} {} {} {} {} {} {} {}'.format(
+			IntegrationType, 'tag', HingeIntegrationType, numIntPts, secTagI, lpI, secTagJ, lpJ, secTagE))
 
 def __option6(phys_prop):
 	# RegularizedHinge
@@ -303,8 +303,8 @@ def __option6(phys_prop):
 		raise Exception('Error: cannot find "secTagE" attribute')
 	secTagE = secTagE_at.index
 	
-	return ('{} {} {} {} {} {} {} {} {} {}'.format(
-			IntegrationType, HingeIntegrationType, numIntPts, secTagI, lpI, zetaI, secTagJ, lpJ, zetaJ, secTagE))
+	return ('{} {} {} {} {} {} {} {} {} {} {}'.format(
+			IntegrationType, 'tag', HingeIntegrationType, numIntPts, secTagI, lpI, zetaI, secTagJ, lpJ, zetaJ, secTagE))
 
 def __option7(phys_prop):
 	# FixedLocation
@@ -341,7 +341,7 @@ def __option7(phys_prop):
 		secTag_ += ' {}'.format(secTag[i])
 		positions_ += ' {}'.format(positions.valueAt(i))
 	
-	return ('{} {}{}{}'.format(IntegrationType, numIntPts, secTag_, positions_))
+	return ('{} {} {} {} {}'.format(IntegrationType, 'tag', numIntPts, secTag_, positions_))
 
 def __option8(phys_prop):
 	# LowOrder
@@ -387,7 +387,7 @@ def __option8(phys_prop):
 	for j in range(len(weights)):
 		weights_ += ' {}'.format(weights.valueAt(j))
 	
-	return ('{} {}{}{}{}'.format(IntegrationType, numIntPts, secTag_, positions_, weights_))
+	return ('{} {} {} {} {} {}'.format(IntegrationType, 'tag', numIntPts, secTag_, positions_, weights_))
 
 def __option9(phys_prop):
 	# MidDistance
@@ -424,7 +424,67 @@ def __option9(phys_prop):
 		secTag_ += ' {}'.format(secTag[i])
 		positions_ += ' {}'.format(positions.valueAt(i))
 	
-	return ('{} {}{}{}'.format(IntegrationType, numIntPts, secTag_, positions_))
+	return ('{} {} {} {} {}'.format(IntegrationType, 'tag', numIntPts, secTag_, positions_))
+
+def __option10(phys_prop):
+	# ConcentratedPlasticity
+	
+	IntegrationType_at = phys_prop.XObject.getAttribute('IntegrationType/10')
+	if(IntegrationType_at is None):
+		raise Exception('Error: cannot find "IntegrationType" attribute')
+	IntegrationType = IntegrationType_at.string
+	
+	secTagI_at = phys_prop.XObject.getAttribute('secTagI/10')
+	if(secTagI_at is None):
+		raise Exception('Error: cannot find "secTagI" attribute')
+	secTagI = secTagI_at.index
+	
+	secTagJ_at = phys_prop.XObject.getAttribute('secTagJ/10')
+	if(secTagJ_at is None):
+		raise Exception('Error: cannot find "secTagJ" attribute')
+	secTagJ = secTagJ_at.index
+	
+	secTagE_at = phys_prop.XObject.getAttribute('secTagE/10')
+	if(secTagE_at is None):
+		raise Exception('Error: cannot find "secTagE" attribute')
+	secTagE = secTagE_at.index
+
+	return ('{} {} {} {} {}'.format(IntegrationType, 'tag', secTagI, secTagJ, secTagE))
+
+def __option11(phys_prop):
+	# ConcentratedCurvature
+	
+	IntegrationType_at = phys_prop.XObject.getAttribute('IntegrationType/11')
+	if(IntegrationType_at is None):
+		raise Exception('Error: cannot find "IntegrationType" attribute')
+	IntegrationType = IntegrationType_at.string
+	
+	secTagI_at = phys_prop.XObject.getAttribute('secTagI/11')
+	if(secTagI_at is None):
+		raise Exception('Error: cannot find "secTagI" attribute')
+	secTagI = secTagI_at.index
+
+	lpI_at = phys_prop.XObject.getAttribute('lpI/11')
+	if(lpI_at is None):
+		raise Exception('Error: cannot find "lpI" attribute')
+	lpI = lpI_at.quantityScalar.value
+	
+	secTagJ_at = phys_prop.XObject.getAttribute('secTagJ/11')
+	if(secTagJ_at is None):
+		raise Exception('Error: cannot find "secTagJ" attribute')
+	secTagJ = secTagJ_at.index
+
+	lpJ_at = phys_prop.XObject.getAttribute('lpJ/11')
+	if(lpJ_at is None):
+		raise Exception('Error: cannot find "lpJ" attribute')
+	lpJ = lpJ_at.quantityScalar.value
+	
+	secTagE_at = phys_prop.XObject.getAttribute('secTagE/11')
+	if(secTagE_at is None):
+		raise Exception('Error: cannot find "secTagE" attribute')
+	secTagE = secTagE_at.index
+
+	return ('{} {} {} {} {} {} {}'.format(IntegrationType, 'tag', secTagI, lpI, secTagJ, lpJ, secTagE))
 
 def writeTcl_internalBeamFunction(pinfo, specific_options = ''):
 	
@@ -482,6 +542,10 @@ def writeTcl_internalBeamFunction(pinfo, specific_options = ''):
 		sopt1 = __option8(phys_prop)
 	elif Option=='MidDistance':
 		sopt1 = __option9(phys_prop)
+	elif Option=='ConcentratedPlasticity':
+		sopt1 = __option10(phys_prop)
+	elif Option=='ConcentratedCurvature':
+		sopt1 = __option11(phys_prop)
 	
 	# optional paramters
 	sopt = ''
@@ -501,7 +565,11 @@ def writeTcl_internalBeamFunction(pinfo, specific_options = ''):
 	# geometric transformation command
 	pinfo.out_file.write(gtran.writeGeomTransf(pinfo, (not Dimension2)))
 	
-	str_tcl = '{}element {} {} {} {} {}{}{}\n'.format(pinfo.indent, ClassName, tag, nstr, tag, sopt1, sopt, specific_options)
-	
+	# beam integration command
+	pinfo.out_file.write('beamIntegration {}\n'.format(sopt1.replace('tag', str(tag))))
+
+	# element command
+	str_tcl = '{}element {} {} {} {} {}{}{}\n'.format(pinfo.indent, ClassName, tag, nstr, tag, tag, sopt, specific_options)
+
 	# now write the string into the file
 	pinfo.out_file.write(str_tcl)

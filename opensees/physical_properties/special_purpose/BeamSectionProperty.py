@@ -920,7 +920,184 @@ def makeXObjectMetaData():
 		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Force-Based_Beam-Column_Element','Force-Based Beam-Column Element')+'<br/>') +
 		html_end()
 		)
+		
+	# OPTION_10
+	at_OPTION_10 = MpcAttributeMetaData()
+	at_OPTION_10.type = MpcAttributeType.Boolean
+	at_OPTION_10.name = 'ConcentratedPlasticity'
+	at_OPTION_10.group = 'Group'
+	at_OPTION_10.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('OPTION_10')+'<br/>') +
+		html_par('') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Force-Based_Beam-Column_Element','Force-Based Beam-Column Element')+'<br/>') +
+		html_end()
+		)
+	at_OPTION_10.editable = False
 	
+	# IntegrationType_10
+	at_IntegrationType_10 = MpcAttributeMetaData()
+	at_IntegrationType_10.type = MpcAttributeType.String
+	at_IntegrationType_10.name = 'IntegrationType/10'
+	at_IntegrationType_10.group = 'ConcentratedPlasticity'
+	at_IntegrationType_10.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('IntegrationType')+'<br/>') +
+		html_par('') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Force-Based_Beam-Column_Element','Force-Based Beam-Column Element')+'<br/>') +
+		html_end()
+		)
+	at_IntegrationType_10.setDefault('ConcentratedPlasticity')
+	at_IntegrationType_10.editable = False
+	
+	# secTagI_10
+	at_secTagI_10 = MpcAttributeMetaData()
+	at_secTagI_10.type = MpcAttributeType.Index
+	at_secTagI_10.name = 'secTagI/10'
+	at_secTagI_10.group = 'ConcentratedPlasticity'
+	at_secTagI_10.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('secTagI')+'<br/>') +
+		html_par('') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Force-Based_Beam-Column_Element','Force-Based Beam-Column Element')+'<br/>') +
+		html_end()
+		)
+	at_secTagI_10.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
+	at_secTagI_10.indexSource.addAllowedNamespace("sections")
+
+	# secTagJ_10
+	at_secTagJ_10 = MpcAttributeMetaData()
+	at_secTagJ_10.type = MpcAttributeType.Index
+	at_secTagJ_10.name = 'secTagJ/10'
+	at_secTagJ_10.group = 'ConcentratedPlasticity'
+	at_secTagJ_10.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('secTagJ')+'<br/>') +
+		html_par('') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Force-Based_Beam-Column_Element','Force-Based Beam-Column Element')+'<br/>') +
+		html_end()
+		)
+	at_secTagJ_10.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
+	at_secTagJ_10.indexSource.addAllowedNamespace("sections")
+	
+	# secTagE_10
+	at_secTagE_10 = MpcAttributeMetaData()
+	at_secTagE_10.type = MpcAttributeType.Index
+	at_secTagE_10.name = 'secTagE/10'
+	at_secTagE_10.group = 'ConcentratedPlasticity'
+	at_secTagE_10.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('secTagE')+'<br/>') +
+		html_par('') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Force-Based_Beam-Column_Element','Force-Based Beam-Column Element')+'<br/>') +
+		html_end()
+		)
+	at_secTagE_10.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
+	at_secTagE_10.indexSource.addAllowedNamespace("sections")
+
+
+	# OPTION_11
+	at_OPTION_11 = MpcAttributeMetaData()
+	at_OPTION_11.type = MpcAttributeType.Boolean
+	at_OPTION_11.name = 'ConcentratedCurvature'
+	at_OPTION_11.group = 'Group'
+	at_OPTION_11.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('OPTION_11')+'<br/>') +
+		html_par('') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Force-Based_Beam-Column_Element','Force-Based Beam-Column Element')+'<br/>') +
+		html_end()
+		)
+	at_OPTION_11.editable = False
+	
+	# IntegrationType_11
+	at_IntegrationType_11 = MpcAttributeMetaData()
+	at_IntegrationType_11.type = MpcAttributeType.String
+	at_IntegrationType_11.name = 'IntegrationType/11'
+	at_IntegrationType_11.group = 'ConcentratedCurvature'
+	at_IntegrationType_11.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('IntegrationType')+'<br/>') +
+		html_par('') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Force-Based_Beam-Column_Element','Force-Based Beam-Column Element')+'<br/>') +
+		html_end()
+		)
+	at_IntegrationType_11.setDefault('ConcentratedCurvature')
+	at_IntegrationType_11.editable = False
+	
+	# secTagI_11
+	at_secTagI_11 = MpcAttributeMetaData()
+	at_secTagI_11.type = MpcAttributeType.Index
+	at_secTagI_11.name = 'secTagI/11'
+	at_secTagI_11.group = 'ConcentratedCurvature'
+	at_secTagI_11.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('secTagI')+'<br/>') +
+		html_par('') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Force-Based_Beam-Column_Element','Force-Based Beam-Column Element')+'<br/>') +
+		html_end()
+		)
+	at_secTagI_11.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
+	at_secTagI_11.indexSource.addAllowedNamespace("sections")
+
+	# lpI_11
+	at_lpI_11 = MpcAttributeMetaData()
+	at_lpI_11.type = MpcAttributeType.QuantityScalar
+	at_lpI_11.name = 'lpI/11'
+	at_lpI_11.group = 'ConcentratedCurvature'
+	at_lpI_11.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('lpI')+'<br/>') +
+		html_par('plastic hinge length at node J') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Force-Based_Beam-Column_Element','Force-Based Beam-Column Element')+'<br/>') +
+		html_end()
+		)
+	at_lpI_11.dimension = u.L
+
+	# secTagJ_11
+	at_secTagJ_11 = MpcAttributeMetaData()
+	at_secTagJ_11.type = MpcAttributeType.Index
+	at_secTagJ_11.name = 'secTagJ/11'
+	at_secTagJ_11.group = 'ConcentratedCurvature'
+	at_secTagJ_11.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('secTagJ')+'<br/>') +
+		html_par('') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Force-Based_Beam-Column_Element','Force-Based Beam-Column Element')+'<br/>') +
+		html_end()
+		)
+	at_secTagJ_11.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
+	at_secTagJ_11.indexSource.addAllowedNamespace("sections")
+
+	# lpJ_11
+	at_lpJ_11 = MpcAttributeMetaData()
+	at_lpJ_11.type = MpcAttributeType.QuantityScalar
+	at_lpJ_11.name = 'lpJ/11'
+	at_lpJ_11.group = 'ConcentratedCurvature'
+	at_lpJ_11.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('lpJ')+'<br/>') +
+		html_par('plastic hinge length at node J') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Force-Based_Beam-Column_Element','Force-Based Beam-Column Element')+'<br/>') +
+		html_end()
+		)
+	at_lpJ_11.dimension = u.L
+	
+	# secTagE_11
+	at_secTagE_11 = MpcAttributeMetaData()
+	at_secTagE_11.type = MpcAttributeType.Index
+	at_secTagE_11.name = 'secTagE/11'
+	at_secTagE_11.group = 'ConcentratedCurvature'
+	at_secTagE_11.description = (
+		html_par(html_begin()) +
+		html_par(html_boldtext('secTagE')+'<br/>') +
+		html_par('') +
+		html_par(html_href('http://opensees.berkeley.edu/wiki/index.php/Force-Based_Beam-Column_Element','Force-Based Beam-Column Element')+'<br/>') +
+		html_end()
+		)
+	at_secTagE_11.indexSource.type = MpcAttributeIndexSourceType.PhysicalProperty
+	at_secTagE_11.indexSource.addAllowedNamespace("sections")
+
 	#aex_option
 	at_aex_option = MpcAttributeMetaData()
 	at_aex_option.type = MpcAttributeType.String
@@ -935,7 +1112,7 @@ def makeXObjectMetaData():
 		)
 	at_aex_option.sourceType = MpcAttributeSourceType.List
 	at_aex_option.setSourceList(['StandardIntegrationTypes', 'UserDefined', 'Hinge', 'UserHinge', 'DistHinge',
-								'RegularizedHinge', 'FixedLocation', 'LowOrder', 'MidDistance'])
+								'RegularizedHinge', 'FixedLocation', 'LowOrder', 'MidDistance', 'ConcentratedPlasticity', 'ConcentratedCurvature'])
 	at_aex_option.setDefault('StandardIntegrationTypes')
 	
 	
@@ -1006,6 +1183,18 @@ def makeXObjectMetaData():
 	xom.addAttribute(at_numIntPts_9)
 	xom.addAttribute(at_secTag_9)
 	xom.addAttribute(at_positions_9)
+	xom.addAttribute(at_OPTION_10)
+	xom.addAttribute(at_IntegrationType_10)
+	xom.addAttribute(at_secTagI_10)
+	xom.addAttribute(at_secTagJ_10)
+	xom.addAttribute(at_secTagE_10)
+	xom.addAttribute(at_OPTION_11)
+	xom.addAttribute(at_IntegrationType_11)
+	xom.addAttribute(at_secTagI_11)
+	xom.addAttribute(at_lpI_11)
+	xom.addAttribute(at_secTagJ_11)
+	xom.addAttribute(at_lpJ_11)
+	xom.addAttribute(at_secTagE_11)
 	xom.addAttribute(at_aex_option)
 	
 	
@@ -1081,9 +1270,20 @@ def makeXObjectMetaData():
 	xom.setVisibilityDependency(at_OPTION_9, at_secTag_9)
 	xom.setVisibilityDependency(at_OPTION_9, at_positions_9)
 	
+	# OPTION_10-dep
+	xom.setVisibilityDependency(at_OPTION_10, at_secTagI_10)
+	xom.setVisibilityDependency(at_OPTION_10, at_secTagJ_10)
+	xom.setVisibilityDependency(at_OPTION_10, at_secTagE_10)
+
+	# OPTION_11-dep
+	xom.setVisibilityDependency(at_OPTION_11, at_secTagI_11)
+	xom.setVisibilityDependency(at_OPTION_11, at_lpI_11)
+	xom.setVisibilityDependency(at_OPTION_11, at_secTagJ_11)
+	xom.setVisibilityDependency(at_OPTION_11, at_lpJ_11)
+	xom.setVisibilityDependency(at_OPTION_11, at_secTagE_11)
 	
 	# auto-exclusive dependencies
-	# OPTION_1 ... OPTION_9
+	# OPTION_1 ... OPTION_11
 	xom.setBooleanAutoExclusiveDependency(at_aex_option, at_OPTION_1)
 	xom.setBooleanAutoExclusiveDependency(at_aex_option, at_OPTION_2)
 	xom.setBooleanAutoExclusiveDependency(at_aex_option, at_OPTION_3)
@@ -1093,7 +1293,8 @@ def makeXObjectMetaData():
 	xom.setBooleanAutoExclusiveDependency(at_aex_option, at_OPTION_7)
 	xom.setBooleanAutoExclusiveDependency(at_aex_option, at_OPTION_8)
 	xom.setBooleanAutoExclusiveDependency(at_aex_option, at_OPTION_9)
-	
+	xom.setBooleanAutoExclusiveDependency(at_aex_option, at_OPTION_10)
+	xom.setBooleanAutoExclusiveDependency(at_aex_option, at_OPTION_11)	
 	
 	return xom
 
@@ -1580,7 +1781,87 @@ def makeExtrusionBeamDataCompoundInfo(xobj):
 			info_item = processed_info_items[i]
 			info.add(info_item.property, weights[i], True, False, info_item.yOffset, info_item.zOffset)
 		return info
+        
+	at_option = xobj.getAttribute('ConcentratedPlasticity')
+	if(at_option is None):
+		raise Exception('Error: cannot find "ConcentratedPlasticity" attribute')
+	if at_option.boolean:
+		'''
+		option 10. concentrated plasticity hinge rule.
+		'''
+		at_secTagE_10 = xobj.getAttribute('secTagE/10')
+		if(at_secTagE_10 is None):
+			raise Exception('Error: cannot find "secTagE/10" attribute')
+		secTagE_10 = at_secTagE_10.index
+		at_secTagI_10 = xobj.getAttribute('secTagI/10')
+		if(at_secTagI_10 is None):
+			raise Exception('Error: cannot find "secTagI/10" attribute')
+		secTagI_10 = at_secTagI_10.index
+		at_secTagJ_10 = xobj.getAttribute('secTagJ/10')
+		if(at_secTagJ_10 is None):
+			raise Exception('Error: cannot find "secTagJ/10" attribute')
+		secTagJ_10 = at_secTagJ_10.index
+		'''
+		here we allow some of the n properties to be None. but not all of them!
+		'''
+		prop_I = exutils.getExtrusionDataSingleItem(doc.getPhysicalProperty(secTagI_10))
+		prop_J = exutils.getExtrusionDataSingleItem(doc.getPhysicalProperty(secTagJ_10))
+		prop_E = exutils.getExtrusionDataSingleItem(doc.getPhysicalProperty(secTagE_10))
+		if (prop_I is None) and (prop_J is None) and (prop_E is None):
+			return info # quick return
+		'''
+		fill info.
+		'''
+		exutils.checkOffsetCompatibility([prop_I, prop_E, prop_J])
+		info.add(prop_I.property, 0.167,  True, False, prop_I.yOffset, prop_I.zOffset)
+		info.add(prop_E.property, 0.666,  True, False, prop_E.yOffset, prop_E.zOffset)
+		info.add(prop_J.property, 0.167,  True, False, prop_J.yOffset, prop_J.zOffset)
+		return info
 	
+	at_option = xobj.getAttribute('ConcentratedCurvature')
+	if(at_option is None):
+		raise Exception('Error: cannot find "ConcentratedCurvature" attribute')
+	if at_option.boolean:
+		'''
+		option 11. concentrated curvature hinge rule.
+		'''
+		at_secTagE_11 = xobj.getAttribute('secTagE/11')
+		if(at_secTagE_11 is None):
+			raise Exception('Error: cannot find "secTagE/11" attribute')
+		secTagE_11 = at_secTagE_11.index
+		at_secTagI_11 = xobj.getAttribute('secTagI/11')
+		if(at_secTagI_11 is None):
+			raise Exception('Error: cannot find "secTagI/11" attribute')
+		secTagI_11 = at_secTagI_11.index
+		at_secTagJ_11 = xobj.getAttribute('secTagJ/11')
+		if(at_secTagJ_11 is None):
+			raise Exception('Error: cannot find "secTagJ/11" attribute')
+		secTagJ_11 = at_secTagJ_11.index
+		at_lpI_11 = xobj.getAttribute('lpI/11')
+		if(at_lpI_11 is None):
+			raise Exception('Error: cannot find "lpI/11" attribute')
+		lpI_11 = at_lpI_11.quantityScalar.value
+		at_lpJ_11 = xobj.getAttribute('lpJ/11')
+		if(at_lpJ_11 is None):
+			raise Exception('Error: cannot find "lpJ/11" attribute')
+		lpJ_11 = at_lpJ_11.quantityScalar.value
+		'''
+		here we allow some of the n properties to be None. but not all of them!
+		'''
+		prop_I = exutils.getExtrusionDataSingleItem(doc.getPhysicalProperty(secTagI_11))
+		prop_J = exutils.getExtrusionDataSingleItem(doc.getPhysicalProperty(secTagJ_11))
+		prop_E = exutils.getExtrusionDataSingleItem(doc.getPhysicalProperty(secTagE_11))
+		if (prop_I is None) and (prop_J is None) and (prop_E is None):
+			return info # quick return
+		'''
+		fill info.
+		'''
+		exutils.checkOffsetCompatibility([prop_I, prop_E, prop_J])
+		info.add(prop_I.property, lpI_11,  True, False, prop_I.yOffset, prop_I.zOffset)
+		info.add(prop_E.property, 1.0,    True, False, prop_E.yOffset, prop_E.zOffset)
+		info.add(prop_J.property, lpI_11,  True, False, prop_J.yOffset, prop_J.zOffset)
+		return info
+		
 	return info
 
 def getSectionOffset(xobj):
