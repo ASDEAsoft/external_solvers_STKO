@@ -14,8 +14,8 @@ both checkouts are side by side.
 The file
 --------
 A CSV with a header row: ``Time, Input, Kinetic, Strain, RayleighAlphaM,
-RayleighBetaK, Modal, Viscous, Implex, Dissipated, Error``, then one
-``Dissipated:<group>`` column per group the writer declared and
+RayleighBetaK, Modal, Viscous, Implex, Activation, Dissipated, Error``, then
+one ``Dissipated:<group>`` column per group the writer declared and
 ``Dissipated:Other`` last. Every value is CUMULATED from the moment the balance
 was switched on, so Kinetic and Strain are CHANGES since then and may be
 negative (a balance started after gravity sees the strain energy of the
@@ -27,6 +27,16 @@ the extrapolated forces each step delivers, the materials commit their
 implicit state, and the difference is kept apart from the dissipation. Zero
 without IMPL-EX; absent from the files of solvers older than it, which read
 the same with the column missing.
+
+``Activation`` is the energy that staged construction exchanges with the
+model, signed: POSITIVE when it leaves (the strain and kinetic energy an
+element holds when it is deactivated, or releases while it fades out; the
+kinetic energy of a nodal mass rewritten smaller, or of a node fixed while
+it moves), NEGATIVE when it comes in (an element born prestressed, or whose
+mass appears on moving nodes; a nodal mass rewritten larger). It is not
+dissipation and not error: what Dissipated holds is what the materials
+dissipated. Zero without element activation; absent from the files of
+solvers older than it.
 
 opspro names it ``<name>.ebal`` (the monitors have ``.plt``), but the user may
 pick any extension: a file is a balance when its first line starts with the
@@ -47,6 +57,10 @@ SIGNATURE = 'Time,Input,Kinetic'
 # recoverable state, whose swings ride on top of what is spent for good.
 DAMPING_COLUMNS = ('RayleighAlphaM', 'RayleighBetaK', 'Modal', 'Viscous')
 STATE_COLUMNS = ('Strain', 'Kinetic')
+# Above the state: what the activation of elements took out of the model or
+# brought in. Without it, the energy that left with a removed lot would show
+# as a gap between the stack and the Input line, which reads as Error.
+ACTIVATION_COLUMNS = ('Activation',)
 # At the top of the stack: the numerical error of the integration that is not
 # Error, so that what is left up to the Input line is.
 NUMERICAL_COLUMNS = ('Implex',)
@@ -71,6 +85,7 @@ LABELS = {
     'Modal': 'Modal damping',
     'Viscous': 'Viscous',
     'Implex': 'IMPL-EX error',
+    'Activation': 'Activation (staging)',
     'Dissipated': 'Dissipated',
     'Error': 'Error',
 }
@@ -273,11 +288,12 @@ class EnergyBalanceData:
 
     def stack_columns(self):
         """The columns the stacked area shows, bottom to top: the dissipation
-        per group, damping, strain, kinetic, then the IMPL-EX error. A column
-        that is zero everywhere is left out (no modal damping, no viscous
-        mechanism, no IMPL-EX...)."""
+        per group, damping, strain, kinetic, the activation, then the IMPL-EX
+        error. A column that is zero everywhere is left out (no modal damping,
+        no viscous mechanism, no staging, no IMPL-EX...)."""
         cols = [c for c in self.groups() if not self.is_zero(c)]
-        cols += [c for c in DAMPING_COLUMNS + STATE_COLUMNS + NUMERICAL_COLUMNS
+        cols += [c for c in DAMPING_COLUMNS + STATE_COLUMNS + ACTIVATION_COLUMNS
+                 + NUMERICAL_COLUMNS
                  if c in self.values and not self.is_zero(c)]
         return cols
 

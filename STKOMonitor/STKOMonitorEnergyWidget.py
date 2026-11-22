@@ -4,10 +4,11 @@ Balance observer, ``energyBalance on -file <name>.ebal``), drawn the Perform3D
 way while the analysis runs, and read from the start on a finished one.
 
   * top: the energy components stacked (the dissipation per group, damping,
-    strain, kinetic, then the IMPL-EX error), with the input as a line over
-    them: the gap
+    strain, kinetic, the energy staged construction exchanged, then the
+    IMPL-EX error), with the input as a line over them: the gap
     between the line and the stack is the balance error. Negative changes
-    (strain energy released by a state that unloads) stack below zero;
+    (strain energy released by a state that unloads, energy a birth brought
+    in) stack below zero;
   * bottom left: the error in % of the largest input;
   * bottom right: the dissipation per group at the chosen instant.
 
@@ -49,6 +50,9 @@ _COLUMN_COLORS = {
 	# the IMPL-EX energy error: a bright red that no group takes, it must
 	# stand out
 	'Implex': '#ff1a1a',
+	# the energy that left (or entered) with the elements of a staged model:
+	# a dark cyan, apart from the state's blue and green and from Viscous
+	'Activation': '#1f6f78',
 	# the hinges, the largest band of a frame, a violet of their own
 	GROUP_PREFIX + 'Hinges': '#7b4fb0',
 }
@@ -347,6 +351,8 @@ class STKOMonitorEnergyWidget(QWidget):
 			cols.get('Error', 0.0))
 		if 'Implex' in cols:
 			text += 'IMPL-EX error {:.4g}\n'.format(cols['Implex'])
+		if 'Activation' in cols:
+			text += 'Activation (staging) {:.4g}\n'.format(cols['Activation'])
 		text += 'max |Error| = {:.3g} % of max |Input|'.format(
 			summary['max_error_percent'])
 		if 'Implex' in cols:
