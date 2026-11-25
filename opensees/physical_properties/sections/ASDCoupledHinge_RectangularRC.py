@@ -1775,8 +1775,8 @@ def writeTcl (pinfo):
 				out_string = out_string.replace(key,str(val))
 			else:
 				raise Exception('Keyword {} not recognized. Please check the string for the field {}: {}'.format(key,fieldName,process_string))
-		out_string = out_string.replace("[","\[")
-		out_string = '"\[expr ' + out_string + '\]"'
+		out_string = out_string.replace("[","\\[")
+		out_string = '"\\[expr ' + out_string + '\\]"'
 		if _constants.verbose: print(out_string)
 		return out_string
 		

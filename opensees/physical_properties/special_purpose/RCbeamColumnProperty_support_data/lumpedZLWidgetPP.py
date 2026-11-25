@@ -654,8 +654,8 @@ class lumpedZLWidgetPP(QWidget):
 				# msg.setWindowTitle("Error")
 				# msg.setDetailedText("Please select a length greater than zero")
 				# msg.setStandardButtons(QMessageBox.Ok)
-				# # retval = msg.exec_()
-				# msg.exec_()
+				# # retval = msg.exec()
+				# msg.exec()
 				# self.sender().setFocus()
 				# self.sender().selectAll()
 			# else:
@@ -673,8 +673,8 @@ class lumpedZLWidgetPP(QWidget):
 					# msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
 					# msg.setEscapeButton(QMessageBox.Yes)
 					# msg.setDefaultButton(QMessageBox.No)
-					# # retval = msg.exec_()
-					# retval = msg.exec_()
+					# # retval = msg.exec()
+					# retval = msg.exec()
 					# if retval == 65536:
 						# self.sender().setFocus()
 						# self.sender().selectAll()

@@ -433,7 +433,7 @@ def writeTcl(pinfo):
 			'{0}\t}} else {{\n'
 			'{0}\t\tset STKO_plot_00 [open "./{4}.plt" a+]\n'
 			'{0}\t}}\n'
-		).format(indent, id_monitor, xLabel + ' ' + xLabelAppend.replace("[","\["), yLabel + ' ' + yLabelAppend.replace("[","\["), _get_plot_name(xobj))
+		).format(indent, id_monitor, xLabel + ' ' + xLabelAppend.replace("[","\\["), yLabel + ' ' + yLabelAppend.replace("[","\\["), _get_plot_name(xobj))
 	if is_par:
 		f.write('\tif {$STKO_VAR_process_id == 0} {\n')
 		f.write(plot_begin('\t'))

@@ -19,7 +19,7 @@ class QBlockingSlot(QObject):
 		loop = QEventLoop()
 		self.done.connect(loop.quit)
 		self.requestCall.emit()
-		loop.exec_()
+		loop.exec()
 
 '''
 Utility to run a function with a QBlockingSlot on the GUI thread
@@ -146,4 +146,4 @@ def runOnWorkerThread(worker, dialog = None):
 	thread.start()
 	
 	# run dialog event loop
-	dialog.exec_()
+	dialog.exec()

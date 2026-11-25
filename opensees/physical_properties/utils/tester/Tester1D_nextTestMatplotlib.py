@@ -686,8 +686,8 @@ class Tester1DWidget(QWidget):
 				msg.setWindowTitle("Reference strain history")
 				msg.setDetailedText("Please provide stress-strain curve or change strain history\nSetting default strain history")
 				msg.setStandardButtons(QMessageBox.Ok)
-				# retval = msg.exec_()
-				msg.exec_()
+				# retval = msg.exec()
+				msg.exec()
 				# PER MASSIMO: PER DIEGO
 				# L'eccezione meglio non lanciarla perche si trova in uno slot che viene chiamato
 				# nell'event loop della gui... in questi casi (errori dell'utente) meglio gestirli con messaggi di errore

@@ -778,8 +778,8 @@ class Tester1DWidget(QWidget):
 				msg.setWindowTitle("Reference strain history")
 				msg.setDetailedText("Please provide stress-strain curve or change strain history\nSetting default strain history")
 				msg.setStandardButtons(QMessageBox.Ok)
-				# retval = msg.exec_()
-				msg.exec_()
+				# retval = msg.exec()
+				msg.exec()
 				# PER MASSIMO: PER DIEGO
 				# L'eccezione meglio non lanciarla perche si trova in uno slot che viene chiamato
 				# nell'event loop della gui... in questi casi (errori dell'utente) meglio gestirli con messaggi di errore
@@ -942,7 +942,7 @@ class Tester1DWidget(QWidget):
 				table.setItem(i, 0, make_item(self.chart_data.x[i]))
 				table.setItem(i, 1, make_item(self.chart_data.y[i]))
 			dialog.layout().addWidget(table)
-			dialog.exec_()
+			dialog.exec()
 		except:
 			exdata = traceback.format_exc().splitlines()
 			PyMpc.IO.write_cerr('Error:\n{}\n'.format('\n'.join(exdata)))

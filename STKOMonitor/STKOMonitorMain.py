@@ -19,7 +19,7 @@ def run():
 	# Create and show the form
 	form = STKOMonitorWindow()
 	form.show()
-	sys.exit(app.exec_())
+	sys.exit(app.exec())
 
 # PySide6's own qt.conf points at the Qt a PyPI wheel carries; STKO's PySide6
 # runs on STKO's Qt, so let Qt find its plugins where it really is. Must come

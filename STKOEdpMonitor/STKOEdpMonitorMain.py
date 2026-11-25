@@ -25,7 +25,7 @@ def run():
     QLocale.setDefault(def_locale)
     form = STKOEdpMonitorWindow()
     form.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 # PySide6's own qt.conf points at the Qt a PyPI wheel carries; STKO's PySide6

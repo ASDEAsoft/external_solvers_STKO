@@ -840,7 +840,7 @@ class TesterGeotechnicalWidget(QWidget):
 					table.setItem(i, j*2, make_item(cdata.x[i]))
 					table.setItem(i, j*2+1, make_item(cdata.y[i]))
 			dialog.layout().addWidget(table)
-			dialog.exec_()
+			dialog.exec()
 		except:
 			exdata = traceback.format_exc().splitlines()
 			PyMpc.IO.write_cerr('Error:\n{}\n'.format('\n'.join(exdata)))
