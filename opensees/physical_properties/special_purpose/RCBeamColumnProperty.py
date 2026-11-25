@@ -23,18 +23,18 @@ import PyMpc
 import traceback
 from io import StringIO
 
-from PySide2.QtCore import (
+from PySide6.QtCore import (
 	QSignalBlocker,
 	QSize,
 	Qt
 	)
 
-from PySide2.QtGui import (
+from PySide6.QtGui import (
 	QPixmap,
 	QImage
 	)
 
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
 	QWidget,
 	QDialog,
 	QVBoxLayout,
@@ -55,7 +55,7 @@ from PySide2.QtWidgets import (
 	QScrollArea
 	)
 
-import shiboken2
+import shiboken6
 
 class _constants:
 	#gui
@@ -192,7 +192,7 @@ class RCBeamColumnWidget(QWidget):
 			print('RCBeamColumnProperty::__init__\t\t\t->\tAdding the widget to the main editor with shiboken')
 		# we want to add this widget to the xobject editor
 		# on the right of the main tree widget used for the editing of xobject attributes.
-		self.editor_splitter = shiboken2.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
+		self.editor_splitter = shiboken6.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
 		self.editor_splitter.addWidget(self)
 		total_width = self.editor_splitter.size().width()
 		width_1 = 0

@@ -1,5 +1,5 @@
-from PySide2.QtCore import Qt, QObject, Signal, Slot, QThread, QEventLoop, QTimer, QSize
-from PySide2.QtWidgets import QMessageBox, QApplication, QDialog, QLabel, QProgressBar, QVBoxLayout, QTextEdit
+from PySide6.QtCore import Qt, QObject, Signal, Slot, QThread, QEventLoop, QTimer, QSize
+from PySide6.QtWidgets import QMessageBox, QApplication, QDialog, QLabel, QProgressBar, QVBoxLayout, QTextEdit
 
 '''
 A simple QObject that wraps a user-defined function,

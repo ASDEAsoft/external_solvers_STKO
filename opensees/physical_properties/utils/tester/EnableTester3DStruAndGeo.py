@@ -8,9 +8,9 @@ from opensees.physical_properties.utils.tester.TesterND import NDTraits, TesterN
 from opensees.physical_properties.utils.tester.TesterGeotechnical import TesterGeotechnicalWidget
 
 # TODO: replace with Jose's new implementation
-# now a simple PySide2 QLabel implementation
-from PySide2.QtWidgets import QTabWidget, QSplitter, QLabel
-import shiboken2
+# now a simple PySide6 QLabel implementation
+from PySide6.QtWidgets import QTabWidget, QSplitter, QLabel
+import shiboken6
 from PyMpc import MpcXObjectEditorChildCode
 
 # let's create a new class that is a QTabWidget with 2 tabs, 1 for TesterNDWidget and 1 for a simple QLabel
@@ -23,7 +23,7 @@ class Tester3DStruAndGeoGuiTabWidget(QTabWidget):
         self.addTab(self.geotech_tester, "Geotechnical Tester")
 		
         # emdbed here
-        self.editor_splitter = shiboken2.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
+        self.editor_splitter = shiboken6.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
         self.editor_splitter.addWidget(self)
         total_width = self.editor_splitter.size().width()
         width_1 = total_width//3

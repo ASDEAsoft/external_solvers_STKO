@@ -1,7 +1,7 @@
 import sys
-from PySide2.QtCore import (Signal, QTimer)
-from PySide2.QtWidgets import (QHBoxLayout, QWidget, QLabel)
-from PySide2 import QtGui
+from PySide6.QtCore import (Signal, QTimer)
+from PySide6.QtWidgets import (QHBoxLayout, QWidget, QLabel)
+from PySide6 import QtGui
 import os
 
 class STKOMonitorTimerWidget(QWidget):

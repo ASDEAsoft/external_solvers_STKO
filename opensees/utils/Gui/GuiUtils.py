@@ -5,16 +5,16 @@
 import traceback
 import PyMpc
 from PyMpc import MpcChartData
-from PySide2.QtCore import (
+from PySide6.QtCore import (
 	Qt,
 	QLocale,
 	)
-from PySide2.QtGui import (
+from PySide6.QtGui import (
 	QDoubleValidator,
 	QKeySequence,
 	QGuiApplication
 	)
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
 	QVBoxLayout,
 	QFrame,
 	QLabel,

@@ -16,7 +16,7 @@ import traceback
 import importlib
 import json
 
-from PySide2.QtCore import (
+from PySide6.QtCore import (
 	QTimer,
 	QSize,
 	Slot,
@@ -24,11 +24,11 @@ from PySide2.QtCore import (
 	Qt
 	)
 
-from PySide2.QtGui import (
+from PySide6.QtGui import (
 	QPixmap
 	)
 	
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
 	QWidget,
 	QDialog,
 	QVBoxLayout,
@@ -42,7 +42,7 @@ from PySide2.QtWidgets import (
 	QMessageBox,
 	QFrame
 	)
-import shiboken2
+import shiboken6
 # import random
 
 pi = 3.14159265359
@@ -122,7 +122,7 @@ class ColumnTimeSafeFiberSectionWidget(QWidget):
 		self.sec_widget_container.setLayout(self.sec_widget_layout)
 		# section widget container
 		# # note: it comes from PyMpc so we need to take the c++ ptr
-		# # and use shiboken2 to wrap it as a simple widget
+		# # and use shiboken6 to wrap it as a simple widget
 		# 1) get section and clear graphis, that must be done on the main thread
 		sec = _get_xobj_attribute(xobj, 'Fiber section').customObject;
 		sec.clear()
@@ -130,8 +130,8 @@ class ColumnTimeSafeFiberSectionWidget(QWidget):
 		# #    so that the widget will be created and optimized for visualization
 		# #    of fiber cross sections
 		self.sec_widget = MpcSceneWidget(sec)
-		# # 3) wrap the Mpc widget by means of shiboken2
-		self.scene_widget = shiboken2.wrapInstance(self.sec_widget.getPtr(), QWidget)
+		# # 3) wrap the Mpc widget by means of shiboken6
+		self.scene_widget = shiboken6.wrapInstance(self.sec_widget.getPtr(), QWidget)
 		self.scene_widget.setMinimumSize(QSize(250,250))
 		self.sec_widget_layout.addWidget(self.scene_widget, 0, 0, 10, 1)
 		# self.sec_widget_layout.setColumnMinimumWidth(0,100)
@@ -219,7 +219,7 @@ class ColumnTimeSafeFiberSectionWidget(QWidget):
 		self.mpc_chart_widget = MpcChartWidget()
 		self.mpc_chart_widget.chart = self.chart
 		# self.mpc_chart_widget.removeLegend()
-		self.chart_widget = shiboken2.wrapInstance(self.mpc_chart_widget.getPtr(), QWidget)
+		self.chart_widget = shiboken6.wrapInstance(self.mpc_chart_widget.getPtr(), QWidget)
 		self.chart_frame.layout().addWidget(self.chart_widget)
 		
 		# sc = MyStaticMplCanvas()
@@ -231,7 +231,7 @@ class ColumnTimeSafeFiberSectionWidget(QWidget):
 		
 		# we want to add this widget to the xobject editor
 		# on the right of the main tree widget used for the editing of xobject attributes.
-		self.editor_splitter = shiboken2.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
+		self.editor_splitter = shiboken6.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
 		self.editor_splitter.addWidget(self)
 		total_width = self.editor_splitter.size().width()
 		width_1 = total_width//3
@@ -636,7 +636,7 @@ class ColumnTimeSafeFiberSectionWidget(QWidget):
 				# now we can run the tester
 				self.tester = Tester1D(materials, self.strain_hist_time, self.strain_hist.strain)
 				self.tester.testProcessUpdated.connect(self.onTestUnconfinedProcessUpdated)
-				parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
+				parent_dialog = shiboken6.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
 				parent_dialog.setEnabled(False)
 				self.editor.setCanClose(False)
 				try:
@@ -739,7 +739,7 @@ class ColumnTimeSafeFiberSectionWidget(QWidget):
 				# now we can run the tester
 				self.tester = Tester1D(materials, self.strain_hist_time, self.strain_hist.strain)
 				self.tester.testProcessUpdated.connect(self.onTestConfinedProcessUpdated)
-				parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
+				parent_dialog = shiboken6.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
 				parent_dialog.setEnabled(False)
 				self.editor.setCanClose(False)
 				try:
@@ -776,7 +776,7 @@ class ColumnTimeSafeFiberSectionWidget(QWidget):
 						# now we can run the tester
 						self.tester = Tester1DMaterialConfinedSection(materialTclString, self.strain_hist_time, self.strain_hist.strain)
 						self.tester.testProcessUpdated.connect(self.onTestConfinedProcessUpdated)
-						parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
+						parent_dialog = shiboken6.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
 						parent_dialog.setEnabled(False)
 						self.editor.setCanClose(False)
 						try:

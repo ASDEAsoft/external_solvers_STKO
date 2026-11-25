@@ -7,12 +7,12 @@ from math import sin, cos, pi
 
 import traceback
 	
-from PySide2.QtCore import (
+from PySide6.QtCore import (
 	QSize,
 	Qt,
 	QLocale,
 	)
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
 	QWidget,
 	QDialog,
 	QDialogButtonBox,
@@ -36,13 +36,13 @@ from PySide2.QtWidgets import (
 	QStyledItemDelegate,
 	)
 
-from PySide2.QtGui import (
+from PySide6.QtGui import (
 	QTextDocumentFragment,
 	QDoubleValidator,
 	QKeySequence,
 	QGuiApplication,
 	)
-import shiboken2
+import shiboken6
 # import random
 
 # Expressions hard coded

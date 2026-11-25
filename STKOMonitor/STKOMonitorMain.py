@@ -2,8 +2,8 @@ import sys
 import os
 
 def run():
-	from PySide2.QtCore import QLocale
-	from PySide2.QtWidgets import QApplication
+	from PySide6.QtCore import QLocale
+	from PySide6.QtWidgets import QApplication
 	from STKOMonitorWindow import STKOMonitorWindow
 	from stko_theme import apply_theme
 	# Create the Qt Application
@@ -21,13 +21,18 @@ def run():
 	form.show()
 	sys.exit(app.exec_())
 
+# PySide6's own qt.conf points at the Qt a PyPI wheel carries; STKO's PySide6
+# runs on STKO's Qt, so let Qt find its plugins where it really is. Must come
+# before the first PySide6 import (STKO sets it too; a manual run does not).
+os.environ.setdefault('PYSIDE_DISABLE_INTERNAL_QT_CONF', '1')
+
 # add current direcotry
 sys.path.insert(0, os.path.dirname(__file__))
 
 # add STKO directories if we run it via STKO python
 if 'STKO_INSTALL_DIR' in os.environ:
 	stko_dir = os.environ['STKO_INSTALL_DIR']
-	# to find extra packages as pyside2, matplotlib, etc...
+	# to find extra packages as pyside6, matplotlib, etc...
 	sys.path.insert(0, '{}/python_packages'.format(stko_dir))
 	# to find Qt DLLs...
 	path_name = 'PATH' # NOTE: valid on windows only! make it cross plat.

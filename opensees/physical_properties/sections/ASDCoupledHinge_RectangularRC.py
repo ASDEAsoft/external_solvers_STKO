@@ -4,7 +4,7 @@ from PyMpc import *
 from mpc_utils_html import *
 import opensees.utils.tcl_input as tclin
 import opensees.utils.Gui.GuiUtils as gu
-from PySide2.QtCore import QCoreApplication
+from PySide6.QtCore import QCoreApplication
 import numpy as np
 import opensees.physical_properties.sections.ASDCoupledHinge_support_data.RectangularFiberSectionDomain as domain
 from opensees.physical_properties.sections.ASDCoupledHinge_support_data.editor_widget import EquationEditorWidget
@@ -20,7 +20,7 @@ import traceback
 import importlib
 import json
 
-from PySide2.QtCore import (
+from PySide6.QtCore import (
 	QTimer,
 	QSize,
 	Slot,
@@ -30,7 +30,7 @@ from PySide2.QtCore import (
 	Signal,
 	QObject
 	)
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
 	QWidget,
 	QDialog,
 	QVBoxLayout,
@@ -46,7 +46,7 @@ from PySide2.QtWidgets import (
 	QPushButton,
 	QApplication
 	)
-import shiboken2
+import shiboken6
 # import random
 
 class _constants:
@@ -121,7 +121,7 @@ class ASDCoupledHinge_RectangularRCWidget(QWidget):
 		self.sec_widget_container.setLayout(self.sec_widget_layout)
 		# section widget container
 		# # note: it comes from PyMpc so we need to take the c++ ptr
-		# # and use shiboken2 to wrap it as a simple widget
+		# # and use shiboken6 to wrap it as a simple widget
 		# 1) get section and clear graphis, that must be done on the main thread
 		sec = _get_xobj_attribute(xobj, 'Fiber section').customObject;
 		sec.clear()
@@ -129,8 +129,8 @@ class ASDCoupledHinge_RectangularRCWidget(QWidget):
 		# #    so that the widget will be created and optimized for visualization
 		# #    of fiber cross sections
 		self.sec_widget = MpcSceneWidget(sec)
-		# # 3) wrap the Mpc widget by means of shiboken2
-		self.scene_widget = shiboken2.wrapInstance(self.sec_widget.getPtr(), QWidget)
+		# # 3) wrap the Mpc widget by means of shiboken6
+		self.scene_widget = shiboken6.wrapInstance(self.sec_widget.getPtr(), QWidget)
 		self.scene_widget.setMinimumSize(QSize(250,250))
 		self.sec_widget_layout.addWidget(self.scene_widget, 0, 0, 10, 1)
 		
@@ -208,7 +208,7 @@ class ASDCoupledHinge_RectangularRCWidget(QWidget):
 		self.mpc_chart_widget = MpcChartWidget()
 		self.mpc_chart_widget.chart = self.chart
 		# self.mpc_chart_widget.removeLegend()
-		self.chart_widget = shiboken2.wrapInstance(self.mpc_chart_widget.getPtr(), QWidget)
+		self.chart_widget = shiboken6.wrapInstance(self.mpc_chart_widget.getPtr(), QWidget)
 		self.chart_frame.layout().addWidget(self.chart_widget)
 		
 		# Temporary test button
@@ -225,7 +225,7 @@ class ASDCoupledHinge_RectangularRCWidget(QWidget):
 		
 		# we want to add this widget to the xobject editor
 		# on the right of the main tree widget used for the editing of xobject attributes.
-		self.editor_splitter = shiboken2.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
+		self.editor_splitter = shiboken6.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
 		self.editor_splitter.addWidget(self)
 		total_width = self.editor_splitter.size().width()
 		width_1 = total_width//3
@@ -312,9 +312,9 @@ class ASDCoupledHinge_RectangularRCWidget(QWidget):
 	def onEditorClicked(self):
 		try:
 			# @note Some widgets used here comes from STKO Python API, they are C++ classes exposed to Python via Boost.Python
-			# while all other widgets are part of PySide2 and thus exposed via Shiboken2. Since they are incompatible, we use
-			# the shiboken2.wrapInstance method on the raw C++ pointer.
-			parentPtr = shiboken2.wrapInstance(self.editor.getPtr(), QWidget)
+			# while all other widgets are part of PySide6 and thus exposed via Shiboken6. Since they are incompatible, we use
+			# the shiboken6.wrapInstance method on the raw C++ pointer.
+			parentPtr = shiboken6.wrapInstance(self.editor.getPtr(), QWidget)
 			dialog = EquationEditorWidget(parent = parentPtr, title = 'thetaPy')
 			# I am not actually using the result
 			res = dialog.exec()
@@ -336,7 +336,7 @@ class ASDCoupledHinge_RectangularRCWidget(QWidget):
 					# Create a worker that computes the domain (may be a long operation, so it's better to do on a separate thread)
 					try:
 						domainBuildWorker = ASDCoupledHinge_RectangularRCWidget.Worker(self.xobj,self.materials)
-						parentPtr = shiboken2.wrapInstance(self.editor.getPtr(), QWidget)
+						parentPtr = shiboken6.wrapInstance(self.editor.getPtr(), QWidget)
 						tu.runOnWorkerThread(domainBuildWorker ,dialog = tu.WorkerDialog(parent = parentPtr, fadeIn = False, width = 500))
 						# if _constants.verbose: print('Exception object: {}\n'.format(str(ASDCoupledHinge_RectangularRCWidget.exception)))
 						if ASDCoupledHinge_RectangularRCWidget.exception is not None:
@@ -355,9 +355,9 @@ class ASDCoupledHinge_RectangularRCWidget(QWidget):
 					# if _constants.verbose: print('Time used in TestClicked: {} s'.format(t2-t1))
 					try:
 						# @note Some widgets used here comes from STKO Python API, they are C++ classes exposed to Python via Boost.Python
-						# while all other widgets are part of PySide2 and thus exposed via Shiboken2. Since they are incompatible, we use
-						# the shiboken2.wrapInstance method on the raw C++ pointer.
-						parentPtr = shiboken2.wrapInstance(self.editor.getPtr(), QWidget)
+						# while all other widgets are part of PySide6 and thus exposed via Shiboken6. Since they are incompatible, we use
+						# the shiboken6.wrapInstance method on the raw C++ pointer.
+						parentPtr = shiboken6.wrapInstance(self.editor.getPtr(), QWidget)
 						dialog = domain.DomainResultWidget(domainBuild, parent = parentPtr)
 						# I am not actually using the result
 						res = dialog.exec()

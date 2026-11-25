@@ -54,8 +54,8 @@ def initialize():
 	# The backend should be set before we import matplotlib.pyplot for the first time
 	# so we can do it here
 	import matplotlib
-	# Make sure that we are using QT5
-	matplotlib.use('Qt5Agg')
+	# The Qt backend on the binding STKO runs (PySide6 under Qt 6)
+	matplotlib.use('QtAgg')
 
 def initialize_get_available_solvers():
 	"""Function called by the application to get a list of available external solvers

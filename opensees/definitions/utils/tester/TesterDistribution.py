@@ -21,7 +21,7 @@ import opensees.utils.write_definitions as write_definitions
 import opensees.utils.Gui.GuiUtils as gu
 import opensees.utils.Gui.TesterUtils as tu
 
-from PySide2.QtCore import (
+from PySide6.QtCore import (
 	QObject,
 	Signal,
 	Slot,
@@ -30,10 +30,10 @@ from PySide2.QtCore import (
 	QCoreApplication,
 	QTimer,
 	)
-from PySide2.QtGui import (
+from PySide6.QtGui import (
 	QDoubleValidator
 	)
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
 	QWidget,
 	QVBoxLayout,
 	QGridLayout,
@@ -51,7 +51,7 @@ from PySide2.QtWidgets import (
 	QMessageBox,
 	QSizePolicy
 	)
-import shiboken2
+import shiboken6
 
 # creates the default label for Distribution tester widgets
 def makeDistributionTesterLabel():
@@ -206,11 +206,11 @@ class TesterDistribution(QObject):
 import random
 import matplotlib
 # Make sure that we are using QT5
-matplotlib.use('Qt5Agg')
+matplotlib.use('QtAgg')
 
 from numpy import arange, sin, pi
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib import cm
 import matplotlib.pyplot as plt
@@ -302,8 +302,8 @@ class MyMplCanvas(FigureCanvas):
 # @note This widget requires a correctly installed external solver kit (i.e. an OpenSEES version installed
 # and loaded in STKO kits)
 # @note Some widgets used here comes from STKO Python API, they are C++ classes exposed to Python via Boost.Python
-# while all other widgets are part of PySide2 and thus exposed via Shiboken2. Since they are incompatible, we use
-# the shiboken2.wrapInstance method on the raw C++ pointer.
+# while all other widgets are part of PySide6 and thus exposed via Shiboken6. Since they are incompatible, we use
+# the shiboken6.wrapInstance method on the raw C++ pointer.
 class TesterDistributionWidget(QWidget):
 
 	## constructor
@@ -376,7 +376,7 @@ class TesterDistributionWidget(QWidget):
 
 		# we want to add this widget to the xobject editor
 		# on the right of the main tree widget used for the editing of xobject attributes.
-		self.editor_splitter = shiboken2.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
+		self.editor_splitter = shiboken6.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
 		self.editor_splitter.addWidget(self)
 		total_width = self.editor_splitter.size().width()
 		width_1 = total_width//3
@@ -494,7 +494,7 @@ class TesterDistributionWidget(QWidget):
 			# now we can run the tester
 			self.tester = TesterDistribution(parent_component, div)
 			self.tester.testProcessUpdated.connect(self.onTestProcessUpdated)
-			parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
+			parent_dialog = shiboken6.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
 			parent_dialog.setEnabled(False)
 			self.editor.setCanClose(False)
 			try:

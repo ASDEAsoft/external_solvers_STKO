@@ -615,16 +615,17 @@ def initializeMonitor(pinfo):
 		launcher_name = '{}/LaunchSTKOMonitor.sh'.format(pinfo.out_dir)
 		launcher_body = './STKOMonitor/STKOMonitor.sh'
 		if sys.platform == 'darwin':
-			# macOS: the STKOMonitor is a standalone Qt (PySide2) process, launched
+			# macOS: the STKOMonitor is a standalone Qt (PySide6) process, launched
 			# from the project output dir (the STKOMonitor folder is copied there).
-			# A bare `python3` on PATH is Apple's system Python with no PySide2, and
-			# even the bundled interpreter cannot dlopen PySide2's Qt extension
+			# A bare `python3` on PATH is Apple's system Python with no PySide6, and
+			# even the bundled interpreter cannot dlopen PySide6's Qt extension
 			# modules unless the loader is pointed at the .app's Frameworks dir (the
 			# @rpath the *.abi3.so were linked against). So bake the bundle's
 			# interpreter + framework/package paths into the launcher. This also lets
 			# the user re-run the monitor manually. Falls back to the generic
 			# launcher in develop mode, where the bundled Python.framework does not
-			# exist beside the build output. "3.10" matches the pinned macOS toolchain.
+			# exist beside the build output. The interpreter's name carries the
+			# Python version STKO embeds (python3.10 on Qt 5, python3.12 on Qt 6).
 			# Data root that holds external_solvers + python_packages. In a signed
 			# .app this is <app>/Contents/Resources; in an unsigned/older layout it
 			# is <app>/Contents/MacOS. Either way python_packages is its sibling and
@@ -633,9 +634,10 @@ def initializeMonitor(pinfo):
 			data_dir = os.path.dirname(Utils.get_external_solvers_dir())
 			frameworks_dir = os.path.normpath(os.path.join(data_dir, os.pardir, 'Frameworks'))
 			# The child interpreter the packager puts in Contents/MacOS: NOT the
-			# framework's bin/python3.10, which links Homebrew's libPython and does
+			# framework's bin/python3.x, which links Homebrew's libPython and does
 			# not start on a Mac without it.
-			py_bin = os.path.normpath(os.path.join(data_dir, os.pardir, 'MacOS', 'python3.10'))
+			py_name = 'python{}.{}'.format(sys.version_info[0], sys.version_info[1])
+			py_bin = os.path.normpath(os.path.join(data_dir, os.pardir, 'MacOS', py_name))
 			if os.path.isfile(py_bin):
 				launcher_body = (
 					'#!/bin/sh\n'

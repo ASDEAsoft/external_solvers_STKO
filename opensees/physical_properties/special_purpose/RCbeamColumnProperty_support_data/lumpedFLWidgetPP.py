@@ -2,8 +2,8 @@ from PyMpc import *
 import opensees.utils.Gui.GuiUtils as gu
 # Import the section navigator
 from opensees.physical_properties.special_purpose.RCbeamColumnProperty_support_data.sectionsNavigator import SectionsNavigator
-from PySide2 import QtCore, QtGui, QtWidgets
-from PySide2.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt
 import opensees.physical_properties.special_purpose.beam_section_utils as bsutils
 import traceback
 import PyMpc
@@ -36,7 +36,7 @@ class modelLumpedFL:
 		self.hingeLengthI = hingeLengthI
 		self.hingeLengthJ = hingeLengthJ
 
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
 	QWidget,
 	QVBoxLayout,
 	QHBoxLayout,
@@ -50,15 +50,15 @@ from PySide2.QtWidgets import (
 	QMessageBox,
 	)
 	
-from PySide2.QtGui import (
+from PySide6.QtGui import (
 	QDoubleValidator,
 	)
 	
-from PySide2.QtCore import (
+from PySide6.QtCore import (
 	QSignalBlocker,
 	)
 
-import shiboken2
+import shiboken6
 
 class _constants:
 	#some constants
@@ -142,7 +142,7 @@ class lumpedFLWidgetPP(QWidget):
 		if self.comboSection.currentData() > 0:
 			sec_xobj = doc.getPhysicalProperty(self.comboSection.currentData()).XObject
 		self.sec_widget = MpcSceneWidget()
-		self.scene_widget = shiboken2.wrapInstance(self.sec_widget.getPtr(), QWidget)
+		self.scene_widget = shiboken6.wrapInstance(self.sec_widget.getPtr(), QWidget)
 		self.widgetSceneContainer.setMinimumSize(QtCore.QSize(150,150))
 		self.widgetSceneContainer.layout().addWidget(self.scene_widget)
 		
@@ -894,7 +894,7 @@ class lumpedFLWidgetPP(QWidget):
 			self.sec_widget = MpcSceneWidget()
 		
 		# Create and add the new widget
-		self.scene_widget = shiboken2.wrapInstance(self.sec_widget.getPtr(), QWidget)
+		self.scene_widget = shiboken6.wrapInstance(self.sec_widget.getPtr(), QWidget)
 		aux.deleteLater()
 		self.widgetSceneContainer.layout().addWidget(self.scene_widget) # insertWidget(1,self.scene_widget)
 	

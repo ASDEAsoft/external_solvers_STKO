@@ -1,22 +1,22 @@
 import sys
-from PySide2.QtCore import (Signal, QTimer, Qt)
-from PySide2.QtWidgets import (
+from PySide6.QtCore import (Signal, QTimer, Qt)
+from PySide6.QtWidgets import (
 	QLineEdit, QPushButton, QApplication, 
 	QVBoxLayout, QHBoxLayout, QGridLayout, 
 	QDialog, QTableWidget, QTabWidget, 
 	QWidget, QTableWidgetItem, QComboBox, QTreeWidget, QTreeWidgetItem, QAbstractItemView,
 	QLabel, QSpinBox, QRadioButton, QSplitter, QFrame, QCheckBox)
-from PySide2 import QtGui
+from PySide6 import QtGui
 import os
 from STKODoubleItemDelegate import *
 
 from stko_theme import apply_mpl_theme, curve_lightness, plot_colors
 import matplotlib
 # Make sure that we are using QT5
-matplotlib.use('Qt5Agg')
+matplotlib.use('QtAgg')
 from numpy import arange, sin, pi
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib import cm
 import matplotlib.pyplot as plt

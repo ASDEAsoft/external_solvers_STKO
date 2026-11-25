@@ -1,7 +1,7 @@
 import sys
-from PySide2.QtCore import (Signal, QTimer)
-from PySide2.QtWidgets import (QLineEdit, QPushButton, QApplication, QVBoxLayout, QDialog, QTableWidget, QTabWidget, QGridLayout, QWidget, QTableWidgetItem, QCheckBox)
-from PySide2 import QtGui
+from PySide6.QtCore import (Signal, QTimer)
+from PySide6.QtWidgets import (QLineEdit, QPushButton, QApplication, QVBoxLayout, QDialog, QTableWidget, QTabWidget, QGridLayout, QWidget, QTableWidgetItem, QCheckBox)
+from PySide6 import QtGui
 import os
 from STKODoubleItemDelegate import *
 

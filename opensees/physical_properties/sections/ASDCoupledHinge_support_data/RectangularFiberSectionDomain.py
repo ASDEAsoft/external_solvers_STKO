@@ -7,12 +7,12 @@ from math import sin, cos, pi
 
 import traceback
 	
-from PySide2.QtCore import (
+from PySide6.QtCore import (
 	QSize,
 	Qt,
 	QLocale,
 	)
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
 	QWidget,
 	QDialog,
 	QGridLayout,
@@ -31,13 +31,13 @@ from PySide2.QtWidgets import (
 	QStyledItemDelegate,
 	)
 
-from PySide2.QtGui import (
+from PySide6.QtGui import (
 	QDoubleValidator,
 	QKeySequence,
 	QGuiApplication,
 	QIcon,
 	)
-import shiboken2
+import shiboken6
 # import random
 
 # import for convex hull
@@ -46,9 +46,9 @@ from scipy.spatial import ConvexHull
 # Matplotlib utilities
 import matplotlib
 # Make sure that we are using QT5
-matplotlib.use('Qt5Agg')
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+matplotlib.use('QtAgg')
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib import cm
 import matplotlib.pyplot as plt
@@ -1239,9 +1239,9 @@ class ContainerDomainGraphs(QWidget):
 					#Here I open a new widget window with all details for the section in that state
 					try:
 						# @note Some widgets used here comes from STKO Python API, they are C++ classes exposed to Python via Boost.Python
-						# while all other widgets are part of PySide2 and thus exposed via Shiboken2. Since they are incompatible, we use
-						# the shiboken2.wrapInstance method on the raw C++ pointer.
-						# parentPtr = shiboken2.wrapInstance(self.editor.getPtr(), QWidget)
+						# while all other widgets are part of PySide6 and thus exposed via Shiboken6. Since they are incompatible, we use
+						# the shiboken6.wrapInstance method on the raw C++ pointer.
+						# parentPtr = shiboken6.wrapInstance(self.editor.getPtr(), QWidget)
 						if self.ylabel[0] == 'k':
 							if _verbose: print('è un dominio in deformazione')
 							dialog = DetailSectionResultWidget(self.mainWidgetPtr.getData(), self.N, ky, kz, My, Mz, ea, parent = self)

@@ -7,22 +7,22 @@ import h5py
 import sys
 import traceback
 
-from PySide2.QtCore import (
+from PySide6.QtCore import (
 	QCoreApplication,
 	Qt,
 	QLocale
 	)
-from PySide2.QtCore import (
+from PySide6.QtCore import (
 	QTimer,
 	QSize,
 	Signal,
 	Slot,
 	QSignalBlocker
 	)
-from PySide2.QtGui import (
+from PySide6.QtGui import (
 	QDoubleValidator
 	)
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
 	QWidget,
 	QVBoxLayout,
 	QGridLayout,
@@ -37,13 +37,13 @@ from PySide2.QtWidgets import (
 	QSlider,
 	QApplication
 	)
-import shiboken2
+import shiboken6
 
 import matplotlib
 # Make sure that we are using QT5
-matplotlib.use('Qt5Agg')
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+matplotlib.use('QtAgg')
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib import cm
 import matplotlib.pyplot as plt
@@ -311,7 +311,7 @@ class DRMWidget(QWidget):
 		#
 		# we want to add this widget to the xobject editor
 		# on the right of the main tree widget used for the editing of xobject attributes.
-		self.editor_splitter = shiboken2.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
+		self.editor_splitter = shiboken6.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
 		self.editor_splitter.addWidget(self)
 		#
 		# default value data

@@ -20,7 +20,7 @@ from PyMpc import *
 import opensees.utils.tcl_input as tclin
 import opensees.utils.Gui.GuiUtils as gu
 
-from PySide2.QtCore import (
+from PySide6.QtCore import (
 	QObject,
 	Signal,
 	Slot,
@@ -29,10 +29,10 @@ from PySide2.QtCore import (
 	QCoreApplication,
 	QTimer,
 	)
-from PySide2.QtGui import (
+from PySide6.QtGui import (
 	QDoubleValidator
 	)
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
 	QWidget,
 	QVBoxLayout,
 	QGridLayout,
@@ -50,7 +50,7 @@ from PySide2.QtWidgets import (
 	QMessageBox,
 	QSizePolicy
 	)
-import shiboken2
+import shiboken6
 
 # creates the default label for Distribution tester widgets
 def makeRayleighDampingTesterLabel():
@@ -111,10 +111,10 @@ class RayleighDampingTester(QObject):
 import random
 import matplotlib
 # Make sure that we are using QT5
-matplotlib.use('Qt5Agg')
+matplotlib.use('QtAgg')
 from numpy import arange, sin, pi
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib import cm
 import matplotlib.pyplot as plt
@@ -268,7 +268,7 @@ class RayleighDampingTesterWidget(QWidget):
 		self.csi = max(xobj.getAttribute('damp_2/Rayleigh').real,xobj.getAttribute('damp_1/Rayleigh').real)*2.0
 		# we want to add this widget to the xobject editor
 		# on the right of the main tree widget used for the editing of xobject attributes.
-		self.editor_splitter = shiboken2.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
+		self.editor_splitter = shiboken6.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
 		self.editor_splitter.addWidget(self)
 		total_width = self.editor_splitter.size().width()
 		width_1 = total_width//3
@@ -357,7 +357,7 @@ class RayleighDampingTesterWidget(QWidget):
 			# now we can run the tester
 			self.tester = RayleighDampingTester(parent_component, self.xobj)
 			self.tester.testProcessUpdated.connect(self.onTestProcessUpdated)
-			parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
+			parent_dialog = shiboken6.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
 			parent_dialog.setEnabled(False)
 			self.editor.setCanClose(False)
 			try:

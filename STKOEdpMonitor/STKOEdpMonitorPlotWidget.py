@@ -20,17 +20,17 @@ point inserts the bundle directory on ``sys.path`` exactly like STKOMonitorMain.
 import colorsys
 import os
 
-from PySide2.QtCore import Qt, QTimer
-from PySide2.QtGui import QColor, QDoubleValidator
-from PySide2.QtWidgets import (
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QColor, QDoubleValidator
+from PySide6.QtWidgets import (
     QMainWindow, QDockWidget, QToolBar, QWidget, QVBoxLayout, QLabel, QComboBox,
     QLineEdit, QTableWidget, QTableWidgetItem, QHeaderView, QCheckBox,
     QProgressBar)
 
 import matplotlib
-matplotlib.use("Qt5Agg")
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+matplotlib.use("QtAgg")
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 

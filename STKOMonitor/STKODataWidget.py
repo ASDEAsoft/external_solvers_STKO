@@ -1,13 +1,13 @@
 import sys
 import traceback
-from PySide2.QtCore import (Signal, QTimer, Qt, QLocale)
-from PySide2.QtWidgets import (
+from PySide6.QtCore import (Signal, QTimer, Qt, QLocale)
+from PySide6.QtWidgets import (
 	QLineEdit, QPushButton, QApplication,
 	QVBoxLayout, QHBoxLayout,
 	QDialog, QTableWidget, QTabWidget, QGridLayout,
 	QWidget, QTableWidgetItem, QComboBox, QTreeWidget, QTreeWidgetItem, QAbstractItemView,
 	QLabel, QSpinBox, QRadioButton, QSplitter)
-from PySide2 import QtGui
+from PySide6 import QtGui
 import os
 from STKODoubleItemDelegate import *
 from numpy import arange, sin, pi

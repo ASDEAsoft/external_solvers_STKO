@@ -3,7 +3,7 @@ Entry point of the STKO EDP Monitor standalone app.
 
 Run in the suite ROOT directory (the launcher ``cd``s there): the plot widget
 polls ``.edp`` records + ``runs.json`` in ``os.getcwd()`` and aggregates them
-live. Mirrors STKOMonitorMain: it finds PySide2 / matplotlib / numpy and the Qt
+live. Mirrors STKOMonitorMain: it finds PySide6 / matplotlib / numpy and the Qt
 DLLs through ``STKO_INSTALL_DIR`` when started by STKO, and adds its own bundle
 directory to ``sys.path`` so the flat imports (STKOEdpMonitorWindow,
 nlth_edp_aggregate, edp_realtime) resolve regardless of the working directory.
@@ -13,8 +13,8 @@ import sys
 
 
 def run():
-    from PySide2.QtCore import QLocale
-    from PySide2.QtWidgets import QApplication
+    from PySide6.QtCore import QLocale
+    from PySide6.QtWidgets import QApplication
     from STKOEdpMonitorWindow import STKOEdpMonitorWindow
     from stko_theme import apply_theme
     app = QApplication(sys.argv)
@@ -28,10 +28,15 @@ def run():
     sys.exit(app.exec_())
 
 
+# PySide6's own qt.conf points at the Qt a PyPI wheel carries; STKO's PySide6
+# runs on STKO's Qt, so let Qt find its plugins where it really is. Must come
+# before the first PySide6 import (STKO sets it too; a manual run does not).
+os.environ.setdefault('PYSIDE_DISABLE_INTERNAL_QT_CONF', '1')
+
 # the bundle directory holds the flat-imported modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# find PySide2 / matplotlib / numpy + the Qt DLLs when launched by STKO
+# find PySide6 / matplotlib / numpy + the Qt DLLs when launched by STKO
 if "STKO_INSTALL_DIR" in os.environ:
     stko_dir = os.environ["STKO_INSTALL_DIR"]
     sys.path.insert(0, "{}/python_packages".format(stko_dir))

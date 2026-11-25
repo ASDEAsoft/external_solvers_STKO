@@ -5,7 +5,7 @@ wrapped in a container whose layout margins give the breathing space around the
 whole dock region."""
 import os
 
-from PySide2.QtWidgets import QMainWindow, QWidget, QVBoxLayout
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout
 
 from STKOEdpMonitorPlotWidget import STKOEdpMonitorPlotWidget
 

@@ -1,6 +1,6 @@
 import sys
-from PySide2.QtWidgets import (QLineEdit, QStyledItemDelegate)
-from PySide2.QtGui import (QDoubleValidator)
+from PySide6.QtWidgets import (QLineEdit, QStyledItemDelegate)
+from PySide6.QtGui import (QDoubleValidator)
 
 class STKODoubleItemDelegate(QStyledItemDelegate):
 

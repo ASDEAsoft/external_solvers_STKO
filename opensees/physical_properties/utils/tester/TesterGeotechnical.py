@@ -22,7 +22,7 @@ import opensees.utils.Gui.GuiUtils as gu
 import opensees.utils.Gui.TesterUtils as tu
 from opensees.physical_properties.utils.tester.StrainHistory import *
 
-from PySide2.QtCore import (
+from PySide6.QtCore import (
 	QObject,
 	Signal,
 	Slot,
@@ -32,10 +32,10 @@ from PySide2.QtCore import (
 	QTimer,
 	Qt,
 	)
-from PySide2.QtGui import (
+from PySide6.QtGui import (
 	QDoubleValidator
 	)
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
 	QWidget, 
 	QVBoxLayout,
 	QGridLayout,
@@ -57,7 +57,7 @@ from PySide2.QtWidgets import (
 	QTableWidget,
 	QTableWidgetItem
 	)
-import shiboken2
+import shiboken6
 
 class GeotechnicalTraits:
 	# types
@@ -281,8 +281,8 @@ class TesterGeotechnical(QObject):
 # @note This widget requires a correctly installed external solver kit (i.e. an OpenSEES version installed
 # and loaded in STKO kits)
 # @note Some widgets used here comes from STKO Python API, they are C++ classes exposed to Python via Boost.Python
-# while all other widgets are part of PySide2 and thus exposed via Shiboken2. Since they are incompatible, we use
-# the shiboken2.wrapInstance method on the raw C++ pointer.
+# while all other widgets are part of PySide6 and thus exposed via Shiboken6. Since they are incompatible, we use
+# the shiboken6.wrapInstance method on the raw C++ pointer.
 class TesterGeotechnicalWidget(QWidget):
 	
 	## a custom radio button with an int data (0 to 5)
@@ -396,7 +396,7 @@ class TesterGeotechnicalWidget(QWidget):
 		self.strain_hist_mpc_chart_widget = MpcChartWidget()
 		self.strain_hist_mpc_chart_widget.chart = self.strain_hist_chart
 		self.strain_hist_mpc_chart_widget.removeLegend()
-		self.strain_hist_chart_widget = shiboken2.wrapInstance(self.strain_hist_mpc_chart_widget.getPtr(), QWidget)
+		self.strain_hist_chart_widget = shiboken6.wrapInstance(self.strain_hist_mpc_chart_widget.getPtr(), QWidget)
 		self.strain_hist_chart_frame.layout().addWidget(self.strain_hist_chart_widget)
 		# add it to main widget
 		self.layout().addWidget(self.strain_hist_container)
@@ -485,7 +485,7 @@ class TesterGeotechnicalWidget(QWidget):
 			mpc_chart_widget.chart = chart
 			mpc_chart_widget.removeLegend()
 			self.mpc_chart_widget.append(mpc_chart_widget)
-			chart_widget = shiboken2.wrapInstance(mpc_chart_widget.getPtr(), QWidget)
+			chart_widget = shiboken6.wrapInstance(mpc_chart_widget.getPtr(), QWidget)
 			self.chart_widget.append(chart_widget)
 			chart_frame.layout().addWidget(chart_widget)
 			# add tab
@@ -516,7 +516,7 @@ class TesterGeotechnicalWidget(QWidget):
 		# we want to add this widget to the xobject editor
 		# on the right of the main tree widget used for the editing of xobject attributes.
 		if embed:
-			self.editor_splitter = shiboken2.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
+			self.editor_splitter = shiboken6.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
 			self.editor_splitter.addWidget(self)
 			total_width = self.editor_splitter.size().width()
 			width_1 = total_width//3
@@ -800,7 +800,7 @@ class TesterGeotechnicalWidget(QWidget):
 			# now we can run the tester
 			self.tester = TesterGeotechnical(self.type, materials, locale.toDouble(self.lch_value.text())[0], cdata, self.strain_hist_time, self.strain_hist.strain)
 			self.tester.testProcessUpdated.connect(self.onTestProcessUpdated)
-			parent_dialog = shiboken2.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
+			parent_dialog = shiboken6.wrapInstance(self.editor.getParentWindowPtr(), QWidget)
 			parent_dialog.setEnabled(False)
 			self.editor.setCanClose(False)
 			try:

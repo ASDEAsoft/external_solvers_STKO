@@ -33,17 +33,17 @@ written by ``export_theme_tokens.py``: edit this one, then re-run it.
 import json
 import os
 
-from PySide2.QtCore import QPointF, QRectF, Qt
-from PySide2.QtGui import QColor, QPainter, QPainterPath, QPalette, QPolygonF
-from PySide2.QtWidgets import (QProxyStyle, QStyle, QStyleFactory, QStyleOption,
+from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QPalette, QPolygonF
+from PySide6.QtWidgets import (QProxyStyle, QStyle, QStyleFactory, QStyleOption,
                                QStyleOptionHeader, QStyleOptionTab,
                                QStyleOptionTabBarBase, QStyleOptionTabWidgetFrame,
                                QTabBar)
 
 try:
-    import shiboken2
+    import shiboken6
 except ImportError:
-    shiboken2 = None
+    shiboken6 = None
 
 # Fusion renders the Qt Style Sheet sub-controls (combo drop-down arrow, check
 # indicator, dock buttons, ...) from the palette WITHOUT bundled PNGs, which is
@@ -98,13 +98,13 @@ def _saved_theme():
     this machine is running or will run next.
     """
     try:
-        from PySide2.QtCore import QSettings
+        from PySide6.QtCore import QSettings
         settings = QSettings(QSettings.NativeFormat, QSettings.UserScope,
                              _SETTINGS_ORG, _SETTINGS_APP)
         value = settings.value(_SETTINGS_KEY)
         return str(value).strip().lower() if value is not None else None
     except Exception:
-        # No PySide2 yet, no registry access, a locked-down user profile: the
+        # No PySide6 yet, no registry access, a locked-down user profile: the
         # theme is a detail, and none of them is worth failing a launch over.
         return None
 
@@ -186,13 +186,13 @@ def palette(values=None):
 
 def _as(option, cls, so_type):
     """*option* seen as *cls* when its type says it is one, else None: the
-    qstyleoption_cast PySide2 does not do. None too without shiboken2, so the
+    qstyleoption_cast PySide6 does not do. None too without shiboken6, so the
     caller falls back to Fusion rather than failing."""
-    if shiboken2 is None or option is None or option.type != so_type:
+    if shiboken6 is None or option is None or option.type != so_type:
         return None
     if isinstance(option, cls):
         return option
-    return shiboken2.wrapInstance(shiboken2.getCppPointer(option)[0], cls)
+    return shiboken6.wrapInstance(shiboken6.getCppPointer(option)[0], cls)
 
 
 class _StkoStyle(QProxyStyle):
@@ -201,7 +201,7 @@ class _StkoStyle(QProxyStyle):
     A SECOND implementation of what ``STKO/StkoStyle.cpp`` draws, and said so
     plainly: a check box's tick, a radio button's dot, a table header, the
     shape of a tab. There is no way to share the first one -- these monitors are
-    separate processes running PySide2's own build of Qt, so the C++ style
+    separate processes running PySide6's own build of Qt, so the C++ style
     cannot be loaded into them at any price.
 
     What CAN be shared is shared already: the colours come from the same
@@ -211,7 +211,7 @@ class _StkoStyle(QProxyStyle):
 
     Everything not listed here is Fusion's, exactly as in STKO.
 
-    PySide2 hands every option to drawControl / drawPrimitive as a plain
+    PySide6 hands every option to drawControl / drawPrimitive as a plain
     QStyleOption: it does not downcast them the way a C++ qstyleoption_cast
     would. ``isinstance(option, QStyleOptionTab)`` is therefore never true, and
     every method that needs a subclass's fields asks :func:`_as` for them.

@@ -16,19 +16,19 @@ from io import StringIO
 strengthString = {'k': 'Characteristic (5th percentile) strength because selected new material',
 				'm': 'Mean strength because selected existing material'}
 
-from PySide2.QtCore import (
+from PySide6.QtCore import (
 	QSignalBlocker,
 	QSize,
 	Qt
 	)
 
-from PySide2.QtGui import (
+from PySide6.QtGui import (
 	QPixmap,
 	QImage,
 	QDoubleValidator,
 	)
 
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
 	QWidget,
 	QDialog,
 	QVBoxLayout,
@@ -51,7 +51,7 @@ from PySide2.QtWidgets import (
 	QLineEdit,
 	)
 
-import shiboken2
+import shiboken6
 
 class _constants:
 	#gui
@@ -166,7 +166,7 @@ class concreteWidget(QWidget):
 			print('concreteWidget::__init__\t\t\t->\tAdding the widget to the editor')
 		# we want to add this widget to the xobject editor
 		# on the right of the main tree widget used for the editing of xobject attributes.
-		self.editor_splitter = shiboken2.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
+		self.editor_splitter = shiboken6.wrapInstance(editor.getChildPtr(MpcXObjectEditorChildCode.MainSplitter), QSplitter)
 		self.editor_splitter.addWidget(self)
 		total_width = self.editor_splitter.size().width()
 		width_1 = 0 #○total_width//3

@@ -1,7 +1,7 @@
 from STKODataWidget import *
 from STKOMonitorPlotWidget import *
 from STKOMonitorEnergyWidget import STKOMonitorEnergyWidget
-from PySide2.QtWidgets import (QTabWidget, QGridLayout)
+from PySide6.QtWidgets import (QTabWidget, QGridLayout)
 
 class STKOTabsWidget(QTabWidget):
 	def __init__(self, parent=None):

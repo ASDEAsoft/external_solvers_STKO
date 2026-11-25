@@ -1,5 +1,5 @@
-from PySide2 import QtCore, QtGui, QtWidgets
-from PySide2.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt
 from math import floor
 
 import traceback

@@ -2,8 +2,8 @@ from STKOMonitorStatisticsWidget import *
 from STKOMonitorTimerWidget import *
 from STKOTabsWidget import *
 import sys
-from PySide2.QtWidgets import (QVBoxLayout, QMainWindow, QDockWidget, QWidget, QTabWidget, QTabBar, QStyle)
-from PySide2.QtCore import Qt
+from PySide6.QtWidgets import (QVBoxLayout, QMainWindow, QDockWidget, QWidget, QTabWidget, QTabBar, QStyle)
+from PySide6.QtCore import Qt
 
 class STKOMonitorWindow(QMainWindow):
 
