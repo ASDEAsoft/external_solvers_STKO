@@ -534,6 +534,17 @@ def apply_theme(app):
     """
     values = tokens()
     try:
+        # The window frame (title bar) is the system's, not the style's: on
+        # macOS it follows the SYSTEM appearance, so a dark monitor got a light
+        # title bar on a Mac in light mode (STKO itself forces its own in
+        # StkoMacAppearance.mm). Qt >= 6.8 lets the app ask for one; first,
+        # because the scheme also picks Qt's default palette, replaced below.
+        hints = app.styleHints()
+        if hasattr(hints, "setColorScheme"):
+            hints.setColorScheme(Qt.ColorScheme.Dark if is_dark() else Qt.ColorScheme.Light)
+    except Exception:
+        pass
+    try:
         base = QStyleFactory.create(_BASE_STYLE)
         if base is not None:
             app.setStyle(_StkoStyle(base, values))
